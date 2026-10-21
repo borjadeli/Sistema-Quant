@@ -1,0 +1,96 @@
+# Quant Advisory — configuración central.
+# Todo lo que cambia el comportamiento del sistema vive acá (versionado en git),
+# para que cada análisis sea reproducible: el hash de este archivo se guarda en cada corrida.
+
+database_url: "sqlite:///data/qa.sqlite"
+
+# ---------------------------------------------------------------------------
+# Proveedores de datos (sustituibles). El orden define prioridad.
+# ---------------------------------------------------------------------------
+providers:
+  fundamentals: ["sec_edgar", "manual_csv"]     # fuentes oficiales primero
+  prices: ["yahoo"]                             # no oficial; reemplazable por IBKR / Polygon
+  options: ["yahoo"]
+  sec_user_agent: "QuantAdvisory research (set-your-email@example.com)"  # SEC exige User-Agent identificable
+  request_timeout_s: 30
+
+# ---------------------------------------------------------------------------
+# Modelos por capa del embudo. Configurable: cada capa puede usar cualquier modelo.
+# Precios en USD por millón de tokens (input, output) para el control de presupuesto.
+# ---------------------------------------------------------------------------
+llm:
+  provider: "anthropic"
+  pricing_usd_per_mtok:
+    claude-haiku-5-5:  {input: 0.10, output: 0.50}
+    claude-sonnet-5-5: {input: 2.00, output: 10.00}
+    claude-opus-5-5:   {input: 4.00, output: 20.00}
+    claude-fable-5-1:  {input: 10.00, output: 50.00}
+  tiers:
+    L1_triage:   {model: "claude-haiku-5-5",  effort: "low",    max_tokens: 4000,  web_search_uses: 0}
+    L2_standard: {model: "claude-sonnet-5-5", effort: "medium", max_tokens: 16000, web_search_uses: 3}
+    L3_deep:     {model: "claude-opus-5-5",   effort: "high",   max_tokens: 32000, web_search_uses: 8}
+    committee:   {model: "claude-opus-5-5",   effort: "high",   max_tokens: 32000, web_search_uses: 0}
+    map_curator: {model: "claude-sonnet-5-5", effort: "medium", max_tokens: 16000, web_search_uses: 10}
+    discovery:   {model: "claude-sonnet-5-5", effort: "medium", max_tokens: 16000, web_search_uses: 10}
+  # Fallback server-side ante rechazos de clasificadores (solo modelos que lo soportan).
+  server_side_fallback: true
+
+# ---------------------------------------------------------------------------
+# Embudo de análisis (control de costos). Ver docs/06_embudo_analisis.md
+# ---------------------------------------------------------------------------
+funnel:
+  monthly_budget_usd: 60.0
+  per_run_budget_usd: 30.0
+  L0:   # screen cuantitativo, costo 0, corre sobre todo el universo
+    min_market_cap_usd: 150_000_000
+    min_adv_usd: 2_000_000          # liquidez diaria promedio (20d)
+    max_promoted: 80
+  L1:   # triage LLM barato
+    min_priority: 4.0
+    max_promoted: 25
+  L2:   # análisis estándar multiagente
+    min_score: 6.0
+    max_promoted: 8
+  L3:   # deep dive + comité (bear, auditor, PM)
+    always_include_holdings: true
+  # Reutilización: no se re-analiza si el data pack no cambió materialmente.
+  reuse:
+    max_age_days: {L1: 30, L2: 45, L3: 90}
+    price_move_trigger_pct: 15.0
+
+# ---------------------------------------------------------------------------
+# Scoring (pesos iniciales del usuario). Ver docs/05_scoring_rubricas.md
+# ---------------------------------------------------------------------------
+scoring:
+  weights:
+    bottleneck_importance: 0.20
+    economic_capture: 0.20
+    valuation_asymmetry: 0.25
+    catalysts: 0.15
+    financial_quality: 0.10
+    informational_edge: 0.10
+  # Topes: una narrativa no puede compensar fundamentos graves.
+  caps:
+    - {factor: financial_quality,   below: 3.0, max_total: 5.0}
+    - {factor: valuation_asymmetry, below: 3.0, max_total: 5.5}
+    - {factor: economic_capture,    below: 2.0, max_total: 5.0}
+
+# ---------------------------------------------------------------------------
+# Cartera simulada (paper trading). NUNCA envía órdenes reales.
+# ---------------------------------------------------------------------------
+portfolio:
+  name: "QA-Model-Portfolio"
+  initial_capital_usd: 100000
+  max_positions: 15
+  min_positions: 6
+  max_weight: 0.10
+  max_weight_per_bottleneck: 0.25
+  max_weight_per_layer: 0.40
+  min_cash: 0.02
+  rebalance: "monthly"            # + revisiones por evento (earnings, cambios de tesis)
+  commission_bps: 5
+  slippage_bps_by_liquidity: {large: 5, mid: 15, small: 40}
+  benchmarks: ["SPY", "QQQ", "SMH", "URA", "COPX", "XLU", "GRID"]
+  live_trading_enabled: false     # Regla 14: no se conecta trading real sin autorización explícita
+
+risk_free_rate: 0.04

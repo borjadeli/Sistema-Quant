@@ -1,0 +1,1370 @@
+[
+  {
+    "id": "cowos_advanced_packaging",
+    "name": "CoWoS / 2.5D advanced packaging capacity (TSMC)",
+    "layer": "packaging",
+    "constrained_item": "TSMC CoWoS (CoWoS-S/-L/-R) 2.5D packaging capacity and related back-end steps (interposers, CoW front-end)",
+    "demand_driver": "NVIDIA Blackwell/Rubin GPUs and hyperscaler custom ASICs; interposer size growing each generation (TSMC producing 5x reticle, 9x/14x in development per Q3 2026 call coverage)",
+    "supply_limit": "Cleanroom/tool build-out and qualification; TrendForce relays estimates of TSMC monthly capacity rising from ~70k wpm (2025) to ~120-140k wpm (2026); NVIDIA reportedly holds more than half of 2026 capacity",
+    "estimated_duration": "TrendForce (2026): severe 2.5D shortage expected to start easing by 2027; investor estimates relayed by TrendForce/Economic Daily News (Jun 2026): gap narrows from ~20% to ~10% by end-2026. TSMC CEO (15 Oct 2026): gap 'still quite big'. A Sep-2026 Chinese brokerage note (secondary) says orders booked through 2027.",
+    "status": "current_shortage",
+    "evidence": [
+      {
+        "claim": "On the Q3 2026 call, CEO C.C. Wei said the gap between demand and supply remains 'still quite big' and TSMC is working to add capacity; management said demand for its capacity, including advanced CoWoS packaging, exceeds supply.",
+        "source_name": "Global Brands Magazine (summary of TSMC Q3 2026 earnings call); BigGo Finance call summary",
+        "source_url": "https://www.globalbrandsmagazine.com/tsmc-q3-2026-results-analysis",
+        "secondary_url": "https://finance.biggo.com/news/US_TSM_2026-10-15",
+        "date": "2026-10-15",
+        "evidence_type": "company_statement"
+      },
+      {
+        "claim": "CoWoS supply-demand gap expected to narrow from ~20% to ~10% by end-2026 (institutional-investor estimate relayed from Economic Daily News); TSMC 2026 capacity estimated at 120k-140k wpm, ~200k incl. OSAT partners; TrendForce expects the severe 2.5D shortage to start easing by 2027 with TSMC expanding CoWoS >60% by 2027.",
+        "source_name": "TrendForce News",
+        "source_url": "https://www.trendforce.com/news/?p=59316",
+        "date": "2026-06 (approx.; month per search extract)",
+        "evidence_type": "industry_research"
+      },
+      {
+        "claim": "TSMC reportedly expanding outsourcing of the CoW front-end step of CoWoS to OSATs amid rising NVIDIA and ASIC demand.",
+        "source_name": "TrendForce News",
+        "source_url": "https://www.trendforce.com/news/2026/08/05/news-tsmc-reportedly-expands-outsourcing-of-key-cowos-front-end-step-to-osats-amid-rising-nvidia-asic-demand/",
+        "date": "2026-08-05",
+        "evidence_type": "industry_research"
+      },
+      {
+        "claim": "KGI forecast TSMC CoWoS capacity rising from 95k to 110k wpm by end-2026 and warned the shortage could become severe in 2027 if all clients maintain demand (older forecast, superseded by higher 2026 estimates).",
+        "source_name": "KGI Securities research report (TSMC 2330 TT)",
+        "source_url": "https://www.kgi.com.hk/en/-/media/files/kgishk/research-reports/tw-reports/tsmc_2330-tt_01102025e.pdf",
+        "date": "2025-01-10",
+        "evidence_type": "industry_research"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "Taiwan Semiconductor Manufacturing Co.", "ticker_if_listed": "TSM / 2330.TW", "note": "Dominant CoWoS supplier"},
+      {"company": "ASE Technology Holding (incl. SPIL)", "ticker_if_listed": "ASX / 3711.TW", "note": "OSAT taking CoWoS overflow; reported to expect advanced packaging revenue to double in 2026 (secondary report)"},
+      {"company": "Amkor Technology", "ticker_if_listed": "AMKR", "note": "OSAT reportedly taking AMD overflow (secondary report)"},
+      {"company": "Intel", "ticker_if_listed": "INTC", "note": "EMIB-T alternative packaging; customers named in coverage are evaluations, not confirmed"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "TrendForce expects the severe 2.5D packaging shortage to begin easing by 2027, and the gap to shrink to ~10% by end-2026.",
+        "source_name": "TrendForce News",
+        "source_url": "https://www.trendforce.com/news/?p=59316",
+        "date": "2026-06 (approx.)"
+      },
+      {
+        "claim": "Industry estimates put Intel EMIB-T at ~15-20k wpm (12-inch equivalent) in 2027 rising to ~40-45k wpm in 2028, an alternative to CoWoS; Wei hinted TSMC could back up customers if Intel's ramp falls short.",
+        "source_name": "Xenospectrum",
+        "source_url": "https://xenospectrum.com/intel-emib-t-2027-volume-ramp/",
+        "date": "2026 (exact date not captured)"
+      },
+      {
+        "claim": "TSMC turned cautious on 2027, citing challenged consumer and price-sensitive segments due to rising component prices (not AI-specific, but signals demand-side limits).",
+        "source_name": "The Next Web",
+        "source_url": "https://thenextweb.com/news/tsmc-q3-2026-record-profit-prudent-2027",
+        "date": "2026-10-15"
+      }
+    ],
+    "confidence": "high",
+    "confidence_reason": "TSMC management (Oct 2026) and multiple TrendForce reports agree supply < demand; size of the gap (10-30%) and 2027 easing timing are estimates, not company disclosures.",
+    "access_note": "WebFetch was unavailable in this environment (DNS/proxy denial for all domains); claims were read from page text extracted by WebSearch, not from full-page reads. Verify figures against primary documents before trading on them."
+  },
+  {
+    "id": "hbm_memory",
+    "name": "HBM memory supply",
+    "layer": "memory",
+    "constrained_item": "High-bandwidth memory (HBM3E/HBM4/HBM4E) stacks",
+    "demand_driver": "AI accelerators (NVIDIA, AMD, custom ASICs) with rising HBM content per package",
+    "supply_limit": "DRAM wafer allocation, TSV stacking yield, HBM4 base-die/qualification; three suppliers (SK hynix >50% share per TrendForce)",
+    "estimated_duration": "Micron (Q4 FY26 call, ~1 Oct 2026): supply tight through FY2027 and FY2028. Samsung (via Yonhap, cited by TrendForce Oct 2026): AI memory imbalance expected to persist through 2028. TrendForce (Aug 2026): DRAM/HBM supply up ~27% in 2H27 as capacity arrives.",
+    "status": "current_shortage",
+    "evidence": [
+      {
+        "claim": "SK hynix said its 2026 supply (DRAM, NAND and HBM) was sold out, alongside record Q3 2025 operating profit of KRW 11.4tn.",
+        "source_name": "Benzinga",
+        "source_url": "https://benzinga.com/markets/tech/25/10/48485221/nvidia-supplier-sk-hynix-sells-out-2026-chip-supply-as-ai-boom-triggers-historic-super-cycle-posts-record-8-02-billion-q3-profit",
+        "date": "2025-10 (Q3 2025 results)",
+        "evidence_type": "company_statement"
+      },
+      {
+        "claim": "SK hynix Q2 2026: record revenue KRW 79.32tn and operating profit KRW 60.54tn; began HBM4 mass shipments in Q2 with full ramp in 2H; profit missed estimates as HBM4 shipments came in below expectations.",
+        "source_name": "CNBC",
+        "source_url": "https://www.cnbc.com/2026/07/29/sk-hynix-earnings-profit-revenue-hbm-memory.html",
+        "secondary_url": "https://news.skhynix.com/en/q2-2026-business-results/",
+        "date": "2026-07-29",
+        "evidence_type": "company_statement"
+      },
+      {
+        "claim": "Micron management expects supply to stay tight in fiscal 2027 and 2028; a summary says >75% of 2027 output is already committed and HBM pricing was adjusted significantly higher for calendar 2027.",
+        "source_name": "The Motley Fool (Micron Q4 FY2026 call transcript); Yahoo Finance call highlights",
+        "source_url": "https://www.fool.com/earnings/call-transcripts/2026/10/01/micron-mu-q4-2026-earnings-call-transcript/",
+        "secondary_url": "https://finance.yahoo.com/markets/stocks/articles/micron-technology-inc-mu-q4-090022460.html",
+        "date": "2026-10-01 (transcript date)",
+        "evidence_type": "company_statement"
+      },
+      {
+        "claim": "Samsung preliminary Q3 2026 operating profit KRW 107.4tn (+782.5% YoY); HBM bit shipments reportedly up ~50% QoQ (Reuters); Samsung earlier forecast the AI memory shortage worsens next year with imbalance persisting through 2028 (Yonhap).",
+        "source_name": "TrendForce News",
+        "source_url": "https://trendforce.com/news/2026/10/08/news-samsung-sees-3q26-operating-profit-soaring-783-to-record-krw-107-4-trillion-on-hbm4-memory-price-gains",
+        "date": "2026-10-08",
+        "evidence_type": "media_report"
+      },
+      {
+        "claim": "TrendForce projects HBM contract prices could rise as much as 140% in 2027 vs 2026, even though some LTAs now include price caps.",
+        "source_name": "Herald Corp (citing TrendForce)",
+        "source_url": "https://biz.heraldcorp.com/article/10852833",
+        "date": "2026-08 (approx.)",
+        "evidence_type": "industry_research"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "SK hynix", "ticker_if_listed": "000660.KS", "note": ">50% HBM share per TrendForce; HBM4 mass production from Q2 2026"},
+      {"company": "Samsung Electronics", "ticker_if_listed": "005930.KS", "note": "HBM4 ramp; bit shipments +~50% QoQ in Q3 2026 (Reuters via TrendForce)"},
+      {"company": "Micron Technology", "ticker_if_listed": "MU", "note": "Says supply tight through FY2028"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "TrendForce expects DRAM and HBM supply to rise ~27% in 2H27 as capacity additions take effect, and says multiple cloud providers are considering reducing HBM content in next-gen in-house ASICs.",
+        "source_name": "Herald Corp (citing TrendForce)",
+        "source_url": "https://biz.heraldcorp.com/article/10852833",
+        "date": "2026-08 (approx.)"
+      },
+      {
+        "claim": "Goldman Sachs (Jul 2025) forecast HBM prices falling ~10% in 2026 and an oversupply phase in 2026; this did not play out as of late 2026 but shows the bear case.",
+        "source_name": "TrendForce News",
+        "source_url": "https://www.trendforce.com/news/2025/07/18/news-hbm-prices-reportedly-face-double-digit-drop-risks-in-2026-posing-challenges-for-sk-hynix/",
+        "date": "2025-07-18"
+      },
+      {
+        "claim": "Samsung shares fell ~2.4% after record prelim results as investors questioned sustainability of elevated memory prices and margins.",
+        "source_name": "TrendForce News",
+        "source_url": "https://trendforce.com/news/2026/10/08/news-samsung-sees-3q26-operating-profit-soaring-783-to-record-krw-107-4-trillion-on-hbm4-memory-price-gains",
+        "date": "2026-10-08"
+      }
+    ],
+    "confidence": "high",
+    "confidence_reason": "All three suppliers report record results and tight allocation; Micron explicitly guides tightness through FY2028. Main risk is 2H27+ capacity wave and customers trimming HBM content.",
+    "access_note": "Claims read from WebSearch page extracts; WebFetch unavailable. SK hynix 'sold out' statement is from Oct 2025 (covers 2026); no 2027 'sold out' statement was found."
+  },
+  {
+    "id": "inp_substrates_eml_lasers",
+    "name": "Indium phosphide substrates and InP lasers (EML/CW) for optical transceivers",
+    "layer": "networking_optical",
+    "constrained_item": "Semi-insulating/semi-conducting InP wafers (3-inch/4-inch; 6-inch ramping) and InP laser chips (EML, CW, high-power CW for silicon photonics/CPO)",
+    "demand_driver": "800G/1.6T AI datacenter optics; EMLs are substrate-intensive; CPO still needs InP lasers",
+    "supply_limit": "Three substrate makers hold >90% (Sumitomo Electric, AXT incl. Tongmei, JX); Chinese MOFCOM export permits required for AXT's China-made substrates; laser fab capacity and 3-to-6-inch transition",
+    "estimated_duration": "Lumentum CEO (Aug 2026): EML supply still >30% short and 'significantly behind demand' even at end of 2026. Analysts cited by TrendForce/LEDinside: imbalance persists beyond 2027. Suppliers cited by 36Kr: tightness may last until 2028.",
+    "status": "current_shortage",
+    "evidence": [
+      {
+        "claim": "Lumentum CEO said EML output will grow YoY but even at year-end will be significantly behind demand; asked whether the >30% gap changed, he said 'probably no change' - it has not gone up or down; company working to secure more substrate supply for ultra-high-power lasers.",
+        "source_name": "The Motley Fool (Lumentum Q4 FY2026 call transcript); Yahoo Finance highlights",
+        "source_url": "https://www.fool.com/earnings/call-transcripts/2026/08/18/lumentum-lite-q4-2026-earnings-call-transcript/",
+        "secondary_url": "https://finance.yahoo.com/technology/ai/articles/lumentum-q4-earnings-call-focuses-130600686.html",
+        "date": "2026-08-11 (call date per summary)",
+        "evidence_type": "company_statement"
+      },
+      {
+        "claim": "Coherent: 'InP capacity continues to be our primary constraint'; expects to double internal InP output capacity YoY by end of the current quarter (ahead of plan), 6-inch yields exceed 3-inch, Zurich 6-inch site to start 1H CY2027.",
+        "source_name": "BigGo Finance (Coherent Q4 FY2026 call); TradingView/Zacks",
+        "source_url": "https://finance.biggo.com/news/US_COHR_2026-08-12",
+        "secondary_url": "https://www.tradingview.com/news/zacks:1735d9308094b:0-coherent-q4-earnings-call-highlights-faster-ai-optics-capacity-ramp/",
+        "date": "2026-08-12",
+        "evidence_type": "company_statement"
+      },
+      {
+        "claim": "AXT Q2 2026: record revenue $47.6M with InP $30.7M, backlog >$100M; InP capacity target ~$60M/quarter by end-2026 and ~$130M/quarter by end-2027; Tongmei substrates need Chinese MOFCOM export permits, US permits for InP still under review.",
+        "source_name": "The Motley Fool (AXT Q2 2026 call transcript); MarketBeat; AXT 424B5 prospectus (SEC)",
+        "source_url": "https://www.fool.com/earnings/call-transcripts/2026/07/30/axt-axti-q2-2026-earnings-call-transcript/",
+        "secondary_url": "https://www.sec.gov/Archives/edgar/data/0001051627/000121390026046176/ea0287123-424b5_axtinc.htm",
+        "date": "2026-07-30",
+        "evidence_type": "company_statement"
+      },
+      {
+        "claim": "InP shortage emerging as the AI optical interconnect bottleneck; Sumitomo Electric, AXT and JX Nippon Mining & Metals control >90%; tightest segment is 3-/4-inch high-quality semi-insulating wafers; 6-inch still in R&D/pilot.",
+        "source_name": "TrendForce News / LEDinside",
+        "source_url": "https://trendforce.com/news/2026/08/06/news-inp-shortage-emerges-as-ai-optical-interconnect-bottleneck/",
+        "secondary_url": "https://www.ledinside.com/news/2026/08/2026_08_06_01",
+        "date": "2026-08-06",
+        "evidence_type": "industry_research"
+      },
+      {
+        "claim": "Sumitomo Electric raised its InP substrate investment plan to ~JPY 18bn targeting 3.1x FY2024 capacity by FY2028 (TrendForce citing Nikkei).",
+        "source_name": "TrendForce News",
+        "source_url": "https://www.trendforce.com/news/?p=60600",
+        "date": "2026 (exact date not captured)",
+        "evidence_type": "industry_research"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "Sumitomo Electric Industries", "ticker_if_listed": "5802.T", "note": "InP substrate leader; ~3.1x capacity by FY2028 (Nikkei via TrendForce)"},
+      {"company": "AXT Inc. (Beijing Tongmei subsidiary)", "ticker_if_listed": "AXTI", "note": "InP substrates made in China; export-permit risk"},
+      {"company": "JX Advanced Metals", "ticker_if_listed": "5016.T", "note": "InP substrates; reported plan up to JPY 120bn to reach 7-10x FY2025 capacity (36Kr)"},
+      {"company": "Coherent Corp.", "ticker_if_listed": "COHR", "note": "Vertically integrated InP lasers; 6-inch InP; not selling InP lasers externally"},
+      {"company": "Lumentum Holdings", "ticker_if_listed": "LITE", "note": "EML/CW/pump lasers; >30% short of demand"},
+      {"company": "Applied Optoelectronics", "ticker_if_listed": "AAOI", "note": "Named by TrendForce as expanding laser capacity"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "Coherent expects to more than double InP output again by end of next calendar year after doubling ahead of plan; 6-inch yields already exceed 3-inch.",
+        "source_name": "BigGo Finance (Coherent Q4 FY2026 call)",
+        "source_url": "https://finance.biggo.com/news/US_COHR_2026-08-12",
+        "date": "2026-08-12"
+      },
+      {
+        "claim": "LightCounting (Apr 2026) said InP EML/laser shortages 'should be going away by the end of 2026' (later revised more pessimistic in July 2026).",
+        "source_name": "LightCounting LightTrends newsletter",
+        "source_url": "https://lightcounting.com/newsletter/en/april-2026-market-forecast-379",
+        "date": "2026-04"
+      },
+      {
+        "claim": "A Chinese-language Lumentum expert-call note says the optical-chip bottleneck is lifting as 1.6T ramps in 2H and new bottlenecks are DSPs and PCBs.",
+        "source_name": "cnyes (hao.cnyes.com) expert-call note",
+        "source_url": "https://hao.cnyes.com/post/263656",
+        "date": "2026 (exact date not captured)"
+      }
+    ],
+    "confidence": "high",
+    "confidence_reason": "Direct, consistent statements from Lumentum, Coherent and AXT management plus TrendForce; quantified gap (>30%) from Lumentum CEO. Easing timing uncertain given large capacity additions in 2027.",
+    "access_note": "Claims read from WebSearch page extracts; WebFetch unavailable."
+  },
+  {
+    "id": "optical_transceivers_800g_1_6t",
+    "name": "800G/1.6T optical transceivers and silicon photonics capacity",
+    "layer": "networking_optical",
+    "constrained_item": "800G and 1.6T pluggable optical modules (and components: EML/CW lasers, DSPs, PCBs, passives); silicon photonics foundry capacity",
+    "demand_driver": "AI cluster scale-out networks; hyperscalers moving most back-end optics to 800G+",
+    "supply_limit": "Laser chips (InP EML/CW) are the primary limit; double ordering across industry inflates apparent demand; SiPh foundry capacity (Tower) being expanded under customer prepayments",
+    "estimated_duration": "LightCounting (Jul 2026): shortages may stretch into mid-2027. McKinsey: 800G 40-60% short through 2027, 1.6T 30-40% short through 2029.",
+    "status": "current_shortage",
+    "evidence": [
+      {
+        "claim": "LightCounting: growth again limited by InP EML and laser chip production capacity; current demand exceeds supply by ~30%.",
+        "source_name": "LightCounting LightTrends newsletter (April 2026 market forecast)",
+        "source_url": "https://lightcounting.com/newsletter/en/april-2026-market-forecast-379",
+        "date": "2026-04",
+        "evidence_type": "industry_research"
+      },
+      {
+        "claim": "LightCounting: almost every component used in high-speed transceivers is in short supply as double ordering proliferated; shortages may stretch into the middle of next year.",
+        "source_name": "LightCounting LightTrends newsletter (July 2026 cloud data center optics)",
+        "source_url": "https://lightcounting.com/newsletter/en/july-2026-cloud-data-center-optics-385",
+        "date": "2026-07",
+        "evidence_type": "industry_research"
+      },
+      {
+        "claim": "McKinsey: 800G transceiver production projected 40-60% below demand through 2027; 1.6T shortfalls of 30-40% likely through 2029; China-based suppliers ~60% of back-end pluggables.",
+        "source_name": "McKinsey & Company, 'Opportunities in networking optics'; SDxCentral coverage",
+        "source_url": "https://www.mckinsey.com/industries/technology-media-and-telecommunications/our-insights/opportunities-in-networking-optics-boosting-supply-for-data-centers",
+        "secondary_url": "https://www.sdxcentral.com/news/optical-supply-shortfall-threatens-next-gen-networking-mckinsey-warns/",
+        "date": "2026 (exact date not captured)",
+        "evidence_type": "industry_research"
+      },
+      {
+        "claim": "NVIDIA to invest $2bn each in Lumentum and Coherent with multibillion-dollar purchase commitments and future capacity access rights for advanced laser/optical products.",
+        "source_name": "Yahoo Finance (Reuters)",
+        "source_url": "https://finance.yahoo.com/news/nvidia-invest-4-billion-photonic-131110099.html",
+        "date": "2026-03-02",
+        "evidence_type": "media_report"
+      },
+      {
+        "claim": "Tower Semiconductor Q2 2026: SiPh revenue +270% YoY to >$680M annualized run rate, targeting $1bn run rate in Q4 2026; $1.3bn SiPh contracts through 2027 with $290M capacity-reservation advances.",
+        "source_name": "Nasdaq (Tower Q2 2026 call highlights); Globes",
+        "source_url": "https://www.nasdaq.com/articles/tower-semiconductor-q2-earnings-call-highlights",
+        "secondary_url": "https://en.globes.co.il/en/article-1001542859",
+        "date": "2026-08-04",
+        "evidence_type": "company_statement"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "Zhongji Innolight", "ticker_if_listed": "300308.SZ", "note": "Leading 800G/1.6T module maker; no company-specific capacity data verified here"},
+      {"company": "Eoptolink Technology", "ticker_if_listed": "300502.SZ", "note": "Module maker; no company-specific data verified here"},
+      {"company": "Coherent Corp.", "ticker_if_listed": "COHR", "note": "Transceivers + InP lasers; NVIDIA $2bn investment"},
+      {"company": "Lumentum Holdings", "ticker_if_listed": "LITE", "note": "Lasers, transceivers, OCS; NVIDIA $2bn investment"},
+      {"company": "Tower Semiconductor", "ticker_if_listed": "TSEM", "note": "Silicon photonics foundry; capacity prepaid by customers"},
+      {"company": "Applied Optoelectronics", "ticker_if_listed": "AAOI", "note": "Expanding capacity per TrendForce"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "LightCounting attributes part of the shortage to double ordering across the industry, implying apparent demand is inflated and a correction risk.",
+        "source_name": "LightCounting LightTrends newsletter (July 2026)",
+        "source_url": "https://lightcounting.com/newsletter/en/july-2026-cloud-data-center-optics-385",
+        "date": "2026-07"
+      },
+      {
+        "claim": "Cloud builders are widening optical supplier bases from ~2-3 to 5-7 vendors (supply response), per a summary of LightCounting's August 2026 report.",
+        "source_name": "IEEE ComSoc Technology Blog",
+        "source_url": "https://techblog.comsoc.org/2026/08/14/impact-of-optical-component-shortages-bottlenecks-explained-hyperscalers-capex/",
+        "date": "2026-08-14"
+      },
+      {
+        "claim": "Expert-call note says 2026 1.6T volumes are small enough that the impact is manageable and the laser bottleneck is lifting (DSP/PCB become new constraints).",
+        "source_name": "cnyes (hao.cnyes.com)",
+        "source_url": "https://hao.cnyes.com/post/263656",
+        "date": "2026 (exact date not captured)"
+      }
+    ],
+    "confidence": "high",
+    "confidence_reason": "Independent research houses (LightCounting, McKinsey, TrendForce) and supplier actions (NVIDIA prepayments, Tower reservations) align; magnitude inflated by double ordering.",
+    "access_note": "Claims read from WebSearch page extracts; WebFetch unavailable. BofA July 2026 note (70-80% of 800G / 50-60% of 1.6T demand met) seen only second-hand and excluded."
+  },
+  {
+    "id": "power_and_distribution_transformers",
+    "name": "Large power transformers (and distribution transformers) - US lead times",
+    "layer": "grid_power",
+    "constrained_item": "Large power transformers (>100 MVA), generator step-up (GSU) units, substation transformers; distribution transformers",
+    "demand_driver": "Data center interconnections, new generation (GSUs), grid replacement and electrification",
+    "supply_limit": "Limited US domestic capacity (imports ~80% of power transformer supply per WoodMac 2025), grain-oriented electrical steel and copper, skilled labor; new US executive order restricting Chinese bulk-power equipment imports",
+    "estimated_duration": "Wood Mackenzie (Sep 2026): 15% power-transformer shortage in 2026, expected to worsen with Chinese import ban; new US factories (Hitachi Energy 2028-2029, Siemens Energy 2027) imply little relief before 2027-2028 per secondary analyses.",
+    "status": "current_shortage",
+    "evidence": [
+      {
+        "claim": "Power transformers and substations are in estimated market shortages of 15% and 8% in 2026; 100 MVA+ segment most acute; US Executive Order 14420 barring bulk-power equipment from China (> $22bn of imports since 2025) set to worsen shortage; demand for >10 MVA units up ~300% since 2020.",
+        "source_name": "Wood Mackenzie press release",
+        "source_url": "https://www.woodmac.com/press-releases/us-executive-order-banning-chinese-bulk-power-equipment-set-to-worsen-critical-transformer-shortage/",
+        "date": "2026-09 (EO coverage dated 2026-09-02 to 09-04)",
+        "evidence_type": "industry_research"
+      },
+      {
+        "claim": "US transformer lead times reach up to four years for high-capacity units (PwC analysts via Reuters Events); GSU demand +274% and substation transformer demand +116% 2019-2025 (WoodMac data); prices up ~80% over five years; GOES and copper constrain supply.",
+        "source_name": "pv magazine USA",
+        "source_url": "https://pv-magazine-usa.com/2026/05/11/u-s-transformer-market-faces-severe-supply-constraints-as-lead-times-extend-to-four-years/",
+        "date": "2026-05-11",
+        "evidence_type": "media_report"
+      },
+      {
+        "claim": "WoodMac estimated power transformers in ~30% supply deficit and distribution transformers ~6%; imports ~80% of power transformer and ~50% of distribution supply; unit costs +77% (power) and +78-95% (distribution) since 2019.",
+        "source_name": "Wood Mackenzie opinion: 'Transformer troubles'",
+        "source_url": "https://www.woodmac.com/news/opinion/transformer-troubles-manufacturing-and-policy-constraints-hit-us-transformer-supply/",
+        "date": "2025 (mid-year; exact date not captured)",
+        "evidence_type": "industry_research"
+      },
+      {
+        "claim": "Large transformers like those Hitachi Energy will build in South Boston, Virginia can take up to three years from order to delivery; Hitachi's plant runs from 2028.",
+        "source_name": "Utility Dive",
+        "source_url": "https://www.utilitydive.com/news/hitachi-unveils-1b-grid-manufacturing-investment-including-virginia-trans/759219/",
+        "date": "2025 (exact date not captured)",
+        "evidence_type": "media_report"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "Hitachi Energy (Hitachi Ltd.)", "ticker_if_listed": "6501.T", "note": "South Boston VA plant (2028), Mississippi plant (2029) per coverage"},
+      {"company": "Siemens Energy", "ticker_if_listed": "ENR.DE", "note": "Charlotte NC large-transformer plant (~2027; scope figures conflict across sources)"},
+      {"company": "Eaton", "ticker_if_listed": "ETN", "note": "South Carolina transformer plant due by 2027 per EEPower/pv magazine"},
+      {"company": "HD Hyundai Electric", "ticker_if_listed": "267260.KS", "note": "Major importer-supplier to US; not covered in gathered evidence"},
+      {"company": "Hyosung Heavy Industries", "ticker_if_listed": "298040.KS", "note": "Has US transformer plant; not covered in gathered evidence"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "Distribution transformer lead times fell to an average ~30 weeks in Q2 2025 from a 100+ week peak in 2023 (WoodMac survey); squeeze concentrated in large power and GSU units.",
+        "source_name": "EEPower",
+        "source_url": "https://eepower.com/tech-insights/transformer-supply-chain-woes-persist-as-energy-demand-grows",
+        "date": "2025 (data Q2 2025)"
+      },
+      {
+        "claim": "WoodMac's estimated power-transformer shortfall fell from ~30% (2025 estimate) to ~15% (2026 estimate), though methodologies may differ; a secondary source cites WoodMac forward modeling of ~5% by 2030 (unverified).",
+        "source_name": "Wood Mackenzie press release (2026) vs opinion (2025)",
+        "source_url": "https://www.woodmac.com/press-releases/us-executive-order-banning-chinese-bulk-power-equipment-set-to-worsen-critical-transformer-shortage/",
+        "date": "2026-09"
+      },
+      {
+        "claim": "Multiple new US factories announced (Hitachi Energy ~$1.5bn incl. $457M Virginia and $528M Mississippi; Siemens Energy NC; Eaton SC), though most produce from 2027-2029.",
+        "source_name": "Utility Dive / Manufacturing Dive",
+        "source_url": "https://www.manufacturingdive.com/news/hitachi-unveils-1b-grid-manufacturing-investment-virginia-transformer/759512/",
+        "date": "2025 (exact date not captured)"
+      }
+    ],
+    "confidence": "high",
+    "confidence_reason": "Wood Mackenzie (multiple releases), trade press and company factory announcements agree for large power/GSU units; distribution transformers are easing, so the bottleneck is segment-specific.",
+    "access_note": "Claims read from WebSearch page extracts; WebFetch unavailable. Widely cited '128-week' lead-time figure could not be traced to a WoodMac primary text in this search and is excluded."
+  },
+  {
+    "id": "switchgear_medium_voltage",
+    "name": "Switchgear / medium-voltage electrical equipment",
+    "layer": "datacenter_power_thermal",
+    "constrained_item": "Medium-voltage (15kV/38kV) and low-voltage switchgear, breakers, power distribution for data centers and substations",
+    "demand_driver": "Hyperscale/AI data center construction; utility substations",
+    "supply_limit": "OEM factory capacity (Eaton, Schneider, Siemens, ABB) and component/labor constraints; new US plants mostly start late 2026",
+    "estimated_duration": "No authoritative estimate found. Lead-time indices (vendor-compiled, Aug 2026) show MV switchgear still rising; new Siemens/ABB capacity from Q4 2026 suggests relief no earlier than 2027 (inference).",
+    "status": "current_shortage",
+    "evidence": [
+      {
+        "claim": "Eaton Q2 2026: Electrical Americas 12-month rolling orders +41%, segment backlog +33% YoY; data center sales up ~65%; Americas book-to-bill 1.3; raised 2026 organic growth guidance to 11-13%.",
+        "source_name": "Eaton Form 8-K exhibit 99 (Q2 2026 results); MarketBeat call highlights",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001551182/000155118226000027/etn06302026exhibit99.htm",
+        "secondary_url": "https://www.marketbeat.com/instant-alerts/eaton-q2-earnings-call-highlights-2026-07-31/",
+        "date": "2026-07-31",
+        "evidence_type": "company_statement"
+      },
+      {
+        "claim": "Electrical equipment lead-time index: MV switchgear averages ~44 weeks and LV switchgear ~54 weeks, still rising (citing industry surveys).",
+        "source_name": "BADGER Electrical Equipment Lead Time Index (usevawn.com)",
+        "source_url": "https://usevawn.com/resources/electrical-equipment-lead-times/",
+        "date": "2026-08",
+        "evidence_type": "industry_research"
+      },
+      {
+        "claim": "Terrapin Construction Group procurement dataset (June 2026): 15kV switchgear 52-80 weeks; 38kV 78-104 weeks.",
+        "source_name": "Industrial Sage",
+        "source_url": "https://www.industrialsage.com/switchgear-lead-times-2026/",
+        "date": "2026 (data June 2026)",
+        "evidence_type": "media_report"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "Eaton", "ticker_if_listed": "ETN", "note": "Backlog and orders rising on data centers"},
+      {"company": "Schneider Electric", "ticker_if_listed": "SU.PA", "note": "CEO: data center demand 'remained at a very high level' (H1 2026)"},
+      {"company": "Siemens", "ticker_if_listed": "SIE.DE", "note": "New MV switchgear plant in Virginia operated by Jabil, production from autumn 2026"},
+      {"company": "ABB", "ticker_if_listed": "ABBN.SW", "note": "$80M Selmer TN facility (+50% capacity), opening Q4 2026"},
+      {"company": "Jabil", "ticker_if_listed": "JBL", "note": "Contract manufacturer for Siemens switchgear plant"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "Siemens and Jabil plan a 300,000 sq ft MV switchgear plant in Prince George County, Virginia, with production from autumn 2026, explicitly aimed at shortening customer project timelines.",
+        "source_name": "pv magazine USA",
+        "source_url": "https://pv-magazine-usa.com/2026/05/28/siemens-and-jabil-to-expand-electrical-equipment-manufacturing-in-virginia/",
+        "date": "2026-05-28"
+      },
+      {
+        "claim": "ABB investing $80M in Selmer, Tennessee to increase production capacity by over 50%, opening Q4 2026; ABB's 2024 distributor newsletter reported decreased lead times on some switchgear lines (older, vendor-sourced).",
+        "source_name": "The Machine Maker; ABB PowerTalk newsletter",
+        "source_url": "https://themachinemaker.com/news/abb-to-invest-120-million-to-boost-us-manufacturing-capacity/",
+        "date": "2025-2026 (exact date not captured); newsletter 2024-05"
+      },
+      {
+        "claim": "Lead-time estimates vary widely (a market report gives 38-63 weeks vs. other claims of 2-3 years), indicating headline figures may overstate typical conditions.",
+        "source_name": "Dataintelo market report",
+        "source_url": "https://dataintelo.com/report/data-center-medium-voltage-switchgear-market",
+        "date": "2025-2026 (exact date not captured)"
+      }
+    ],
+    "confidence": "medium",
+    "confidence_reason": "OEM order/backlog data are primary and strong, but lead-time figures come from vendor-compiled indices and blogs with wide dispersion; no WoodMac/government dataset found.",
+    "access_note": "Claims read from WebSearch page extracts; WebFetch unavailable. Eaton '228 GW' and '307 GW' data center backlog figures appeared only in unverified secondary posts and are excluded."
+  },
+  {
+    "id": "gas_turbines",
+    "name": "Heavy-duty gas turbines (GE Vernova, Siemens Energy, Mitsubishi Heavy)",
+    "layer": "generation",
+    "constrained_item": "Large-frame and mid-size gas turbines (and slot reservations); hot-section castings/coatings",
+    "demand_driver": "Data center load growth (grid and behind-the-meter), utility capacity additions, coal retirement replacement",
+    "supply_limit": "OEM manufacturing slots; ~30% gap between orders and OEM delivery capability per Rystad; OEMs expanding cautiously",
+    "estimated_duration": "CoBank (Mar 2026): major OEMs close to fully booked through early 2030s. MHI CFO (Aug 2026): latest orders deliver 2028-2030. Siemens Energy (Aug 2026): lead times 3+ years.",
+    "status": "current_shortage",
+    "evidence": [
+      {
+        "claim": "GE Vernova Q2 2026: Gas Power equipment backlog plus slot reservation agreements rose from 100 GW to 116 GW; now expects at least 125 GW by year-end 2026; signed 20 GW (18 GW SRAs, 2 GW orders), converted 10 GW SRAs to orders, shipped 3 GW.",
+        "source_name": "GE Vernova Q2 2026 press release (SEC 8-K)",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1996810/000199681026000147/gevpressrelease2q26.htm",
+        "date": "2026-07-22",
+        "evidence_type": "company_statement"
+      },
+      {
+        "claim": "Siemens Energy gas turbine backlog ~69 GW plus 26 GW under slot reservations; booked 15 GW of orders in the quarter with lead times of three years or more; expanding large-GT capacity (~35 units +15 planned for 2027).",
+        "source_name": "Utility Dive",
+        "source_url": "https://www.utilitydive.com/news/siemens-gas-turbine-backlog-nears-70-gw-as-company-expands-manufacturing/827390/",
+        "date": "2026-08-05",
+        "evidence_type": "company_statement"
+      },
+      {
+        "claim": "Mitsubishi Heavy large-frame gas turbine backlog 35 GW vs 23 GW a year earlier; CFO said latest orders are scheduled for delivery 2028-2030; still plans to double production capacity vs 2024; being selective on projects.",
+        "source_name": "Utility Dive",
+        "source_url": "https://www.utilitydive.com/news/mitsubishi-gas-turbine-backlog-earnings/827761/",
+        "date": "2026-08-06",
+        "evidence_type": "company_statement"
+      },
+      {
+        "claim": "Major turbine makers are close to fully booked through the early 2030s (CoBank Power Plays podcast with former GE Vernova gas turbine executive).",
+        "source_name": "CoBank Knowledge Exchange",
+        "source_url": "https://cobank.com/knowledge-exchange/power-plays/power-plays-s6e03",
+        "date": "2026-03-25",
+        "evidence_type": "industry_research"
+      },
+      {
+        "claim": "Gas turbine and reciprocating engine orders reached ~100 GW last year, ~30% above what OEMs could deliver, and the gap has not closed.",
+        "source_name": "Rystad Energy Gas Turbine Report H2 2026",
+        "source_url": "https://www.rystadenergy.com/insights/gas-turbine-report-H2-2026",
+        "date": "2026 (H2 report; exact date not captured)",
+        "evidence_type": "industry_research"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "GE Vernova", "ticker_if_listed": "GEV", "note": "Largest heavy-duty GT backlog; Q3 2026 results not yet released as of 2026-10-21"},
+      {"company": "Siemens Energy", "ticker_if_listed": "ENR.DE", "note": "69 GW backlog + 26 GW reservations"},
+      {"company": "Mitsubishi Heavy Industries", "ticker_if_listed": "7011.T", "note": "35 GW large-frame backlog; doubling capacity"},
+      {"company": "Doosan Enerbility", "ticker_if_listed": "034020.KS", "note": "Potential share gainer; expanding North American order book (Edaily, Sep 2026)"},
+      {"company": "Ansaldo Energia", "ticker_if_listed": "unlisted", "note": "Returning to US market (POWER Magazine)"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "Slot reservations are less firm than signed orders; GE Vernova's 116 GW blends both, so backlog can overstate firm demand.",
+        "source_name": "Turbomachinery Magazine",
+        "source_url": "https://www.turbomachinerymag.com/view/ge-vernova-gas-turbine-backlog-hits-116-gw-as-power-orders-more-than-double",
+        "date": "2026-07"
+      },
+      {
+        "claim": "Rystad flags new entrants targeting the 20-50 MW segment and raises oversupply risk there (seen only via report table of contents).",
+        "source_name": "Rystad Energy",
+        "source_url": "https://www.rystadenergy.com/insights/gas-turbine-report-H2-2026",
+        "date": "2026"
+      },
+      {
+        "claim": "Supplier field widening: Ansaldo re-entering the US market; small turbines (<20 MW) and reciprocating engines gaining traction as alternatives.",
+        "source_name": "POWER Magazine",
+        "source_url": "https://www.powermag.com/ansaldo-us-gas-turbine-market-equipment-crunch/",
+        "date": "2026 (exact date not captured)"
+      }
+    ],
+    "confidence": "high",
+    "confidence_reason": "Primary disclosures from all three OEMs show rising backlogs and multi-year lead times; risk is that slot reservations and speculative data center demand overstate firm need.",
+    "access_note": "Claims read from WebSearch page extracts; WebFetch unavailable."
+  },
+  {
+    "id": "us_grid_interconnection_transmission",
+    "name": "US grid interconnection queues and transmission / capacity adequacy",
+    "layer": "grid_power",
+    "constrained_item": "Interconnection studies/agreements for generation and large loads; transmission build-out; capacity (PJM)",
+    "demand_driver": "Data center large loads, new generation and storage",
+    "supply_limit": "Study backlogs, transmission build times, equipment, permitting",
+    "estimated_duration": "LBNL (2026 ed.): median request-to-operation >5 years for 2025 projects. PJM capacity shortfall for 2027/28 delivery year; incremental auction Feb 2027.",
+    "status": "current_shortage",
+    "evidence": [
+      {
+        "claim": "~2,061 GW of generation and storage actively seeking interconnection at end-2025 (down 10% from 2024; peak ~2,600 GW end-2023); median time from request to commercial operation >5 years for projects built in 2025; only 13% of 2000-2020 requested capacity reached operation; gas in queues +86% to 253 GW.",
+        "source_name": "Lawrence Berkeley National Laboratory, Queued Up 2026 Edition",
+        "source_url": "https://emp.lbl.gov/news/backlog-power-plants-seeking-transmission-grid-connection-eased-somewhat-2025-amidst",
+        "secondary_url": "https://eta-publications.lbl.gov/sites/default/files/2026-06/queued_up_2026_edition.pdf",
+        "date": "2026-05/06",
+        "evidence_type": "government_data"
+      },
+      {
+        "claim": "PJM 2027/28 Base Residual Auction cleared at the $333.44/MW-day cap (uncapped would have been $529.80); procured 6,623 MW UCAP less than the reliability requirement (14.8% reserve margin vs ~20% target); 5,100 MW of the 5,250 MW peak forecast increase attributed to data centers.",
+        "source_name": "Power Engineering / Renewable Energy World",
+        "source_url": "https://www.power-eng.com/business/pjm-capacity-auction-hits-price-cap-again-as-region-falls-short-of-reliability-target/",
+        "date": "2025-12",
+        "evidence_type": "media_report"
+      },
+      {
+        "claim": "IEA says AI deployment is increasingly constrained by physical bottlenecks, including energy (Key Questions on Energy and AI, April 2026).",
+        "source_name": "IEA podcast page",
+        "source_url": "https://www.iea.org/podcasts/everything-energy/the-relationship-between-energy-and-ai-is-evolving-rapidly",
+        "date": "2026-04",
+        "evidence_type": "government_data"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "PJM Interconnection", "ticker_if_listed": "unlisted (RTO)", "note": "Capacity market operator; shortfall vs reliability requirement"},
+      {"company": "American Electric Power", "ticker_if_listed": "AEP", "note": "Utility named in Ohio data center load-forecast dispute"},
+      {"company": "Quanta Services", "ticker_if_listed": "PWR", "note": "Transmission contractor; not covered in gathered evidence"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "Queue backlog eased ~10% in 2025 amid high withdrawals (first decline from the 2023 peak).",
+        "source_name": "LBNL news release",
+        "source_url": "https://emp.lbl.gov/news/backlog-power-plants-seeking-transmission-grid-connection-eased-somewhat-2025-amidst",
+        "date": "2026-05/06"
+      },
+      {
+        "claim": "Wood Mackenzie (reported by Bloomberg 12 Aug 2026): developers requested ~1,066 GW of grid capacity for data centers but only ~298 GW expected to reach a real grid commitment ('phantom load').",
+        "source_name": "TFTC (summarizing Bloomberg/Wood Mackenzie)",
+        "source_url": "https://www.tftc.io/ai-data-center-phantom-power-demand-wood-mackenzie",
+        "date": "2026-08-12"
+      },
+      {
+        "claim": "PJM's independent market monitor found speculative data center load forecasts raised capacity prices 61% while existing/committed data center load accounted for ~4%; >$47bn capacity costs over three years tied to unbuilt data centers.",
+        "source_name": "Ohio Manufacturers' Association (advocacy, citing PJM IMM)",
+        "source_url": "https://www.ohiomfg.com/our-communities/watchdog-utility-load-forecasts-of-unbuilt-data-centers-costing-customers-47-billion-over-three-years/",
+        "date": "2026 (exact date not captured)"
+      },
+      {
+        "claim": "NERC 2026 Summer Reliability Assessment found adequate resources for normal peak demand; large-load interconnections coming online more slowly than requested.",
+        "source_name": "Foley & Lardner (summary of NERC SRA)",
+        "source_url": "https://www.foley.com/p/102n0rg/the-power-grid-passed-its-report-card-but-read-the-fine-print",
+        "date": "2026-05-19 (NERC release date)"
+      }
+    ],
+    "confidence": "high",
+    "confidence_reason": "Government lab data (LBNL) and PJM auction results are primary and unambiguous on long timelines and tight capacity; demand side is inflated by speculative requests, so severity is debated.",
+    "access_note": "Claims read from WebSearch page extracts; WebFetch unavailable. ERCOT large-load queue data not gathered (search budget exhausted)."
+  },
+  {
+    "id": "uranium_conversion_enrichment",
+    "name": "Uranium supply, conversion and enrichment (incl. US ban on Russian LEU)",
+    "layer": "nuclear_fuel",
+    "constrained_item": "Western enrichment (SWU) and conversion (UF6) capacity; U3O8 mine supply",
+    "demand_driver": "Reactor life extensions/restarts, hyperscaler nuclear PPAs, new builds/SMRs; replacement of Russian enrichment",
+    "supply_limit": "US ban on Russian LEU (waivers only until 1 Jan 2028); few Western converters/enrichers; Kazatomprom output reduced and dependent on sulphuric acid",
+    "estimated_duration": "Russian LEU waivers end 1 Jan 2028 (statute, per WNN/Centrus). New enrichment (Urenco expansions, Orano Project IKE) arrives late-2020s to early 2030s. Sprott: utility coverage falls sharply after 2030.",
+    "status": "projected_shortage",
+    "evidence": [
+      {
+        "claim": "Enrichment averaged about $200/SWU at end-June 2026; Urenco announced a 2.1 million SWU/yr expansion in June 2026.",
+        "source_name": "World Nuclear Association - Uranium Enrichment",
+        "source_url": "https://world-nuclear.org/information-library/nuclear-fuel-cycle/conversion-enrichment-and-fabrication/uranium-enrichment",
+        "date": "2026 (data end-June 2026)",
+        "evidence_type": "industry_research"
+      },
+      {
+        "claim": "US utilities paid an average $108.70/SWU for 2025 enrichment purchases, up from $97.66 in 2024.",
+        "source_name": "US EIA, 2025 Uranium Marketing Annual Report",
+        "source_url": "https://www.eia.gov/uranium/marketing/pdf/umartable16figure15.pdf",
+        "date": "2026-07",
+        "evidence_type": "government_data"
+      },
+      {
+        "claim": "Centrus has received DOE waivers covering committed 2026 and 2027 Russian LEU deliveries; Russia vacates the US market on 1/1/28.",
+        "source_name": "Centrus Energy August 2026 investor presentation",
+        "source_url": "https://investors.centrusenergy.com/static-files/058b474a-c135-4600-a84b-e9908864a7af",
+        "date": "2026-08",
+        "evidence_type": "company_statement"
+      },
+      {
+        "claim": "Kazatomprom 2026 production guidance 27,500-29,000 t U3O8 (Feb 2026), dependent on sulphuric acid supply; Niger moving to sell disputed SOMAIR stockpile (Cameco MD&A).",
+        "source_name": "Cameco Form 6-K (SEC)",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1009001/000119312526049832/d34107dex993.htm",
+        "date": "2026-02",
+        "evidence_type": "company_statement"
+      },
+      {
+        "claim": "Cameco Q2 2026 (citing UxC): pricing for western conversion services 'continues to be strong' in North America and Europe; UxC long-term U3O8 price US$95.50/lb at quarter-end.",
+        "source_name": "Cameco Form 6-K (SEC), Q2 2026",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001009001/000119312526326768/d125942dex992.htm",
+        "date": "2026-07 (approx.)",
+        "evidence_type": "company_statement"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "Cameco", "ticker_if_listed": "CCJ", "note": "Mining, conversion (Port Hope), 49% of Westinghouse"},
+      {"company": "Kazatomprom", "ticker_if_listed": "KAP.L", "note": "Largest producer; 2026 output reduced"},
+      {"company": "Centrus Energy", "ticker_if_listed": "LEU", "note": "Imports Russian LEU under waivers; HALEU/LEU enrichment build-out"},
+      {"company": "Urenco", "ticker_if_listed": "unlisted", "note": "Western enricher; 2.1M SWU/yr expansion (Jun 2026)"},
+      {"company": "Orano", "ticker_if_listed": "unlisted (French state)", "note": "Conversion (Philippe Coste) and enrichment; Project IKE in Tennessee (early 2030s)"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "Spot uranium rose to $89.54/lb in August 2026 but remains well below the current-cycle peak of $107/lb; utilities face coverage decline mainly after 2030 (near-term coverage adequate).",
+        "source_name": "Sprott Insights",
+        "source_url": "https://sprott.com/insights/record-term-prices-mark-a-new-phase-for-uranium/",
+        "date": "2026-09 (August data)"
+      },
+      {
+        "claim": "DOE waivers already cover Centrus's committed 2026-2027 Russian deliveries, smoothing the transition until 2028.",
+        "source_name": "Centrus Energy August 2026 investor presentation",
+        "source_url": "https://investors.centrusenergy.com/static-files/058b474a-c135-4600-a84b-e9908864a7af",
+        "date": "2026-08"
+      },
+      {
+        "claim": "Orano restarted UF4 production at Malvesi feeding Pierrelatte conversion, allowing it to meet existing commitments.",
+        "source_name": "Skillings (low-reliability promotional source)",
+        "source_url": "https://skillings.net/supply-chain-rebound-orano-restarts-uf4-production-amid-uranium-surge/",
+        "date": "2026 (exact date not captured)"
+      }
+    ],
+    "confidence": "medium",
+    "confidence_reason": "Policy cliff (2028) and SWU price strength are documented by EIA/WNA/Centrus; however, physical shortage is not yet occurring, spot U3O8 is below peak, and current conversion $/kgU prices could not be verified.",
+    "access_note": "Claims read from WebSearch page extracts; WebFetch unavailable. Jefferies 'record $215/SWU spot in Aug 2026' figure seen only via ZeroHedge and excluded from evidence."
+  },
+  {
+    "id": "copper_supply",
+    "name": "Copper mine supply deficit and smelter TC/RCs",
+    "layer": "critical_materials",
+    "constrained_item": "Copper concentrate (mine supply); refined copper",
+    "demand_driver": "Grid, transformers, data center power distribution, electrification; US tariff-driven stockpiling",
+    "supply_limit": "Mine disruptions (Grasberg mud rush, Chilean declines), sulphuric acid shortage (China export ban, Hormuz disruption), slow project pipeline",
+    "estimated_duration": "IEA GCMO 2026 (Jul 2026): ~25% supply deficit by 2035 without new projects; short/medium-term outlook 'worsened considerably'. Freeport: Grasberg near full capacity by end-2027.",
+    "status": "current_shortage",
+    "evidence": [
+      {
+        "claim": "2026 annual benchmark copper TC/RC settled at $0/t and 0 c/lb (vs $21.25/2.125c in 2025); Platts spot TC at -$125/mt CIF China on 24 June 2026; Nornickel says concentrate is the tightest segment of the copper chain.",
+        "source_name": "S&P Global Commodity Insights",
+        "source_url": "https://www.spglobal.com/energy/en/news-research/latest-news/metals/062426-concentrate-supply-remains-tightest-segment-of-copper-value-chain-nornickel",
+        "date": "2026-06-24",
+        "evidence_type": "media_report"
+      },
+      {
+        "claim": "IEA Global Critical Minerals Outlook 2026: projected copper supply deficit ~25% by 2035 (vs ~30% in 2025 edition); short- and medium-term supply outlook 'appears to have worsened considerably' due to sulphuric acid constraints (DRC, Chile most exposed).",
+        "source_name": "Mining.com (coverage of IEA report)",
+        "source_url": "https://www.mining.com/?p=1210690",
+        "date": "2026-07-16",
+        "evidence_type": "government_data"
+      },
+      {
+        "claim": "Freeport Q2 2026: Grasberg Block Cave rates rose from 34k tpd (April) to 69k tpd (June); expects ~65% of capacity in 2H26, ~80% by mid-2027 and near full by end-2027; 2026 copper sales guidance 3.1bn lbs.",
+        "source_name": "Freeport-McMoRan Q2 2026 8-K exhibit 99.1",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0000831259/000083125926000033/a2q2026exhibit991.htm",
+        "date": "2026-07-23",
+        "evidence_type": "company_statement"
+      },
+      {
+        "claim": "ICSG (April 2026) cut 2026 world mine output growth forecast to 1.6% and sees refined production +0.4% in 2026.",
+        "source_name": "Engineering & Mining Journal (ICSG forecast)",
+        "source_url": "https://www.e-mj.com/departments/markets/icsg-forecasts-growth-in-copper-usage/",
+        "date": "2026-04",
+        "evidence_type": "industry_research"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "Freeport-McMoRan", "ticker_if_listed": "FCX", "note": "Grasberg recovery through 2027"},
+      {"company": "Antofagasta", "ticker_if_listed": "ANTO.L", "note": "Agreed zero/spot-indexed TC terms with Chinese smelters"},
+      {"company": "Codelco", "ticker_if_listed": "unlisted (Chilean state)", "note": "El Teniente setback cited in coverage"},
+      {"company": "Ivanhoe Mines", "ticker_if_listed": "IVN.TO", "note": "Kamoa-Kakula recovery limited by acid shortages (secondary report)"},
+      {"company": "Nornickel", "ticker_if_listed": "GMKN.MM", "note": "Commentary on concentrate tightness"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "ICSG (April 2026, per Reuters) sees the refined copper market in surplus through 2027, widening from ~104 kt in 2026 to ~368 kt in 2027.",
+        "source_name": "Capital.com (Reuters report on ICSG)",
+        "source_url": "https://capital.com/en-int/news/icsg-sees-global-refined-copper-surplus-widening-in-2027",
+        "date": "2026-04"
+      },
+      {
+        "claim": "IEA's long-term 2035 deficit improved to ~25% from ~30% as DRC and Zambia add ~650 kt of projected capacity.",
+        "source_name": "Ecofin Agency",
+        "source_url": "https://www.ecofinagency.com/news/1707-57470-new-african-copper-projects-brighten-global-supply-prospects",
+        "date": "2026-07"
+      },
+      {
+        "claim": "Record US inflows (>200 kt in July 2026) driven by tariff stockpiling, distorting apparent tightness.",
+        "source_name": "Fastener Shows news",
+        "source_url": "https://fastenershows.com/news/copper-hits-record-highs-as-supply-tightens/145606/",
+        "date": "2026-08-07"
+      }
+    ],
+    "confidence": "medium",
+    "confidence_reason": "Concentrate tightness is unambiguous (zero benchmark, negative spot TCs, IEA); refined balance is contested (ICSG surplus vs deficit views), so the bottleneck is upstream rather than metal availability for end-users.",
+    "access_note": "Claims read from WebSearch page extracts; WebFetch unavailable. October 2026 ICSG forecast not found."
+  },
+  {
+    "id": "gallium_germanium",
+    "name": "Gallium and germanium (China export controls)",
+    "layer": "critical_materials",
+    "constrained_item": "Primary gallium and germanium metal/oxides (inputs to GaN/GaAs devices, InGaAs photonics, fiber-optic and IR germanium)",
+    "demand_driver": "GaN power devices (incl. data center power), RF, photonics; germanium in fiber optics and SiGe",
+    "supply_limit": "China produces ~99% of primary low-purity gallium (USGS) and leads germanium; Chinese dual-use export licensing; ex-China gallium supply ~5 t",
+    "estimated_duration": "China's suspension of the US-specific ban runs to 27 Nov 2026 (MOFCOM, via Fastmarkets/SME); licensing regime remains. S&P Global (2026): ex-China supply could reach ~386 t by 2030 if announced projects deliver.",
+    "status": "current_shortage",
+    "evidence": [
+      {
+        "claim": "China produced 99% of world primary low-purity gallium; in Nov 2025 Beijing lifted its ban on gallium exports to the US for one year.",
+        "source_name": "USGS Mineral Commodity Summaries 2026 - Gallium",
+        "source_url": "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-gallium.pdf",
+        "date": "2026-02",
+        "evidence_type": "government_data"
+      },
+      {
+        "claim": "China suspended its export prohibition on gallium, germanium, antimony and superhard materials to the US until 27 Nov 2026; exporters still need licenses and the ban on dual-use exports to US military users remains.",
+        "source_name": "Fastmarkets; SME Mining Engineering",
+        "source_url": "https://www.fastmarkets.com/insights/china-suspends-export-prohibition-on-superhard-materials-us/",
+        "secondary_url": "https://me.smenet.org/china-halts-ban-on-gallium-germanium-antimony-exports-to-us-but-controls-remain/",
+        "date": "2025-11",
+        "evidence_type": "media_report"
+      },
+      {
+        "claim": "Gallium prices outside China ~US$2,100/kg in 2026 vs ~US$300/kg in China; ex-China supply ~5 t with ~381 t from eight announced projects (e.g., Wagerup Australia, Clarksville US) potentially lifting ex-China supply to 386 t by 2030; some chains still depend on Chinese ion-exchange resins.",
+        "source_name": "S&P Global critical mineral market report - Gallium",
+        "source_url": "https://www.spglobal.com/content/dam/spglobal/global-assets/en/special-reports/critical-mineral-market-reports/Market%20Report%20-%20Gallium%20-%2008052026.pdf",
+        "date": "2026 (file dated 08052026; day/month order unclear)",
+        "evidence_type": "industry_research"
+      },
+      {
+        "claim": "China remained the leading global producer and exporter of germanium metal in 2025.",
+        "source_name": "USGS Mineral Commodity Summaries 2026 - Germanium",
+        "source_url": "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-germanium.pdf",
+        "date": "2026-02",
+        "evidence_type": "government_data"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "Metlen Energy & Metals", "ticker_if_listed": "MTLN (Athens/London)", "note": "EUR300M gallium project in Greece authorized (per search extract)"},
+      {"company": "Alcoa", "ticker_if_listed": "AA", "note": "Operator of Wagerup refinery named as gallium project site in S&P report"},
+      {"company": "Aluminum Corporation of China (Chalco)", "ticker_if_listed": "601600.SS / 2600.HK", "note": "Major Chinese gallium producer; not covered in gathered evidence"},
+      {"company": "Umicore", "ticker_if_listed": "UMI.BR", "note": "Germanium refiner; not covered in gathered evidence"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "US-specific export ban suspended until 27 Nov 2026, restoring licensed flows.",
+        "source_name": "Fastmarkets",
+        "source_url": "https://www.fastmarkets.com/insights/china-suspends-export-prohibition-on-superhard-materials-us/",
+        "date": "2025-11"
+      },
+      {
+        "claim": "A 2026 academic study argues the US reduced direct Chinese gallium imports by shifting to Japanese, German and Canadian suppliers.",
+        "source_name": "IPPR journal article 'Lessons from China's Weaponisation of Critical Minerals'",
+        "source_url": "https://ippr.in/index.php/ippr/article/view/570",
+        "date": "2026"
+      },
+      {
+        "claim": "USGS notes several new gallium projects announced in Australia, Canada, Greece, Kazakhstan and South Korea.",
+        "source_name": "USGS MCS 2026 - Gallium",
+        "source_url": "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-gallium.pdf",
+        "date": "2026-02"
+      }
+    ],
+    "confidence": "medium",
+    "confidence_reason": "Concentration and price dislocation are well documented (USGS, S&P); direct impact on AI hardware output not evidenced; germanium price data not found; key event risk is the 27 Nov 2026 expiry.",
+    "access_note": "Claims read from WebSearch page extracts; WebFetch unavailable."
+  },
+  {
+    "id": "rare_earths_magnets",
+    "name": "Rare earths and NdFeB magnets (China export controls)",
+    "layer": "critical_materials",
+    "constrained_item": "Medium/heavy rare earths (Dy, Tb, etc.) and NdFeB magnets containing them",
+    "demand_driver": "Motors (cooling fans/pumps, EVs, robotics), HDDs, defense, generators",
+    "supply_limit": "China's April 2025 licensing (Announcement No. 18) for 7 medium/heavy REEs and Dy/Tb magnets; October 2025 expanded package suspended only until 10 Nov 2026; limited ex-China separation",
+    "estimated_duration": "Suspension of the October 2025 package expires 10 Nov 2026 with no published extension as of 16 Oct 2026 (per cmgm.net); one source says truce runs to 10 Jan 2027 per Washington. Ex-China heavy RE separation only starting (MP Materials, late 2026).",
+    "status": "projected_shortage",
+    "evidence": [
+      {
+        "claim": "April 2025 licensing for seven medium/heavy rare earths and Dy/Tb-containing NdFeB magnets remains in force; Announcements 61/62 suspended only until 10 Nov 2026 by Announcement No. 70, with no published extension as of 16 Oct 2026; China's rare-earth exports fell 9.6% to 43,711 t in Jan-Sep 2026.",
+        "source_name": "CMGM (China rare earth export licensing status)",
+        "source_url": "https://www.cmgm.net/china-rare-earth-export-controls-2026-status/",
+        "secondary_url": "https://www.technology.org/2026/10/19/china-rare-earth-export-pause-november-10/",
+        "date": "2026-10-16/19",
+        "evidence_type": "media_report"
+      },
+      {
+        "claim": "China's 12-month pause on expanded rare earth controls is set to expire on 10 Nov 2026, with limited progress in reducing global dependence; April 2025 case-by-case licensing remains in force.",
+        "source_name": "Yahoo Finance (Mining Technology analysis)",
+        "source_url": "https://finance.yahoo.com/markets/commodities/articles/china-rare-earth-export-pause-123614106.html",
+        "date": "2026-10 (approx.)",
+        "evidence_type": "media_report"
+      },
+      {
+        "claim": "MP Materials Q2 2026: NdPr output 840 t (+41% YoY); completed first heavy rare earth separation circuit, expects Tb/Dy later in 2026; magnets delivered to GM for qualification with commercial shipments expected Q4 2026.",
+        "source_name": "MarketBeat (MP Materials Q2 2026 call highlights)",
+        "source_url": "https://www.marketbeat.com/instant-alerts/mp-materials-q2-earnings-call-highlights-2026-08-08/",
+        "date": "2026-08-08",
+        "evidence_type": "company_statement"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "MP Materials", "ticker_if_listed": "MP", "note": "US NdPr, heavy RE separation and magnets ramp"},
+      {"company": "Lynas Rare Earths", "ticker_if_listed": "LYC.AX", "note": "Acquired Meteoric (Brazil ionic clay) per search extract; heavy RE volumes not verified"},
+      {"company": "China Northern Rare Earth", "ticker_if_listed": "600111.SS", "note": "Major Chinese producer; not covered in gathered evidence"},
+      {"company": "JL Mag Rare-Earth", "ticker_if_listed": "300748.SZ", "note": "Major Chinese magnet maker; not covered in gathered evidence"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "October 2025 expanded controls suspended; NdFeB magnets made exclusively from light rare earths remain freely exportable.",
+        "source_name": "CMGM",
+        "source_url": "https://www.cmgm.net/china-rare-earth-export-controls-2026-status/",
+        "date": "2026-10"
+      },
+      {
+        "claim": "Ex-China supply ramping: MP Materials heavy RE circuit and Independence magnet plant; 10X facility fully contracted with US Department of War.",
+        "source_name": "MarketBeat",
+        "source_url": "https://www.marketbeat.com/instant-alerts/mp-materials-q2-earnings-call-highlights-2026-08-08/",
+        "date": "2026-08-08"
+      }
+    ],
+    "confidence": "medium",
+    "confidence_reason": "Control regime and expiry dates are documented (though partly via secondary/legal blogs); 2026 evidence of physical magnet shortages hitting AI/datacenter hardware was not found in this search. Binary policy event risk on 10 Nov 2026.",
+    "access_note": "Claims read from WebSearch page extracts; WebFetch unavailable. Dates for suspension expiry conflict across sources (10 Nov 2026 vs 27 Nov 2026 for a separate 2024 measure)."
+  },
+  {
+    "id": "liquid_cooling_thermal",
+    "name": "Liquid cooling components (CDUs, cold plates, quick disconnects)",
+    "layer": "datacenter_power_thermal",
+    "constrained_item": "Universal quick disconnects (UQD), high-redundancy CDUs, custom cold plates for >1000W chips",
+    "demand_driver": "Liquid-cooled GB200/GB300/Vera Rubin racks",
+    "supply_limit": "Few qualified UQD suppliers, precision machining yields; vendor capacity ramps",
+    "estimated_duration": "Huaxi Securities via BigGo (2026): UQD relief in 1-2 years. Vertiv CFO (Jul 2026): supply-chain timing delays resolve in 2H26.",
+    "status": "current_shortage",
+    "evidence": [
+      {
+        "claim": "UQD quick-disconnects are the tightest liquid-cooling segment with few qualified suppliers and expansion lagging delivery, relief expected in 1-2 years; standard CDUs gradually loosening but high-redundancy hyperscale CDUs constrained; >1000W custom cold plates tight.",
+        "source_name": "BigGo Finance (citing Huaxi Securities)",
+        "source_url": "https://finance.biggo.com/news/2a1183d2-e87c-4c48-95b9-8d3929f66b1b",
+        "date": "2026 (exact date not captured)",
+        "evidence_type": "industry_research"
+      },
+      {
+        "claim": "AVC holds an estimated 40-50% share of GB200/GB300 cold plates; chairman said capacity still cannot meet client demand; cold plate output targeted to rise from 200k units (end-2025) to 1M (end-2026).",
+        "source_name": "DigiTimes",
+        "source_url": "https://www.digitimes.com/news/a20260312PD226.html",
+        "date": "2026-03-12",
+        "evidence_type": "media_report"
+      },
+      {
+        "claim": "Vertiv Q2 2026 revenue ($3.28bn) missed consensus, attributed to multiphase project execution and 'temporary supply chain dynamics', expected to resolve in 2H26; Ironton, Ohio expansion adds ~45% liquid-cooling/chilled-water capacity in 2027.",
+        "source_name": "DatacenterDynamics; Chartmill",
+        "source_url": "https://www.datacenterdynamics.com/en/news/vertivs-earnings-and-revenues-grow-shares-fall/",
+        "secondary_url": "https://www.chartmill.com/news/external/100461/vertiv-q2-earnings-call-highlights-ai-data-center-growth",
+        "date": "2026-07-29",
+        "evidence_type": "company_statement"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "Vertiv Holdings", "ticker_if_listed": "VRT", "note": "CDUs/thermal; acquired ThermoKey and Strategic Thermal Labs"},
+      {"company": "Asia Vital Components (AVC)", "ticker_if_listed": "3017.TW", "note": "Leading NVIDIA cold plate supplier"},
+      {"company": "Auras Technology", "ticker_if_listed": "3324.TW", "note": "Liquid cooling ~60% of sales (KGI estimate)"},
+      {"company": "Delta Electronics", "ticker_if_listed": "2308.TW", "note": "Liquid cooling/power; not covered in gathered evidence"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "Cold plate supply is relatively ample overall, with Taiwanese majors at monthly capacity in the millions of units; standard CDU models loosening.",
+        "source_name": "BigGo Finance (citing Huaxi Securities)",
+        "source_url": "https://finance.biggo.com/news/2a1183d2-e87c-4c48-95b9-8d3929f66b1b",
+        "date": "2026"
+      },
+      {
+        "claim": "Vertiv CFO characterized supply issues as temporary timing delays expected to resolve in 2H26 rather than a structural shortage.",
+        "source_name": "DatacenterDynamics",
+        "source_url": "https://www.datacenterdynamics.com/en/news/vertivs-earnings-and-revenues-grow-shares-fall/",
+        "date": "2026-07-29"
+      }
+    ],
+    "confidence": "low",
+    "confidence_reason": "Tightness confined to narrow sub-segments (UQDs, high-end CDUs) and evidence is mainly broker/trade summaries; no primary quantified lead-time data; rapid capacity additions (AVC 5x).",
+    "access_note": "Claims read from WebSearch page extracts; WebFetch unavailable."
+  },
+  {
+    "id": "probe_cards_semiconductor_test",
+    "name": "Probe cards and semiconductor test capacity for AI chips/HBM",
+    "layer": "compute",
+    "constrained_item": "Advanced MEMS probe cards (HBM4, AI GPU/ASIC), SoC/memory testers",
+    "demand_driver": "HBM4 wafer test, AI GPUs/ASICs, data center CPUs, longer test times",
+    "supply_limit": "Probe card manufacturing capacity (FormFactor until Farmers Branch ramps late 2026); tester capacity (Advantest expanding)",
+    "estimated_duration": "FormFactor (Jul 2026): capacity limits until Farmers Branch begins ramping end-2026, continuing through 2027.",
+    "status": "current_shortage",
+    "evidence": [
+      {
+        "claim": "FormFactor Q2 2026: record DRAM probe-card revenue with HBM ~two-thirds of DRAM revenue; supply-chain constraints limit its ability to ramp capacity for new and existing customers until the Farmers Branch site comes online in late 2026; capacity could limit share gains at a fabless CPU customer.",
+        "source_name": "MarketBeat / Nasdaq (FormFactor Q2 2026 call highlights)",
+        "source_url": "https://www.marketbeat.com/instant-alerts/formfactor-q2-earnings-call-highlights-2026-07-29/",
+        "secondary_url": "https://www.nasdaq.com/articles/formfactor-q2-earnings-call-highlights",
+        "date": "2026-07-29",
+        "evidence_type": "company_statement"
+      },
+      {
+        "claim": "Advantest: demand for testers for AI-related high-performance semiconductors grew significantly; company worked to expand production capacity throughout the supply chain; CEO said capacity roughly tripled over past few years with further SoC/memory tester expansion planned.",
+        "source_name": "Advantest FY2026 Q1 results review; CEO New Year's address 2026",
+        "source_url": "https://www.advantest.com/investors/financial-highlights/review.html",
+        "secondary_url": "https://www.advantest.com/en/news/2026/20260105.html",
+        "date": "2026-07 (Q1 FY2026 results); 2026-01-05",
+        "evidence_type": "company_statement"
+      },
+      {
+        "claim": "Technoprobe H1 2026 revenue EUR 464.1M (+42.4% YoY) driven by AI volumes; expanding capacity toward ~EUR 1.6bn annual run rate by early 2027; Deutsche Bank calls it the sole supplier of probe cards for a major group's AI GPUs.",
+        "source_name": "Start Magazine; FinanzaOnline",
+        "source_url": "https://en.startmag.it/?p=344001",
+        "secondary_url": "https://www.finanzaonline.com/?p=785825",
+        "date": "2026-08/09 (approx.)",
+        "evidence_type": "media_report"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "FormFactor", "ticker_if_listed": "FORM", "note": "HBM4 probe cards; capacity-limited until late 2026"},
+      {"company": "Technoprobe", "ticker_if_listed": "TPRO.MI", "note": "AI GPU probe cards; capacity expansion"},
+      {"company": "Advantest", "ticker_if_listed": "6857.T", "note": "SoC/memory testers"},
+      {"company": "Micronics Japan (MJC)", "ticker_if_listed": "6871.T", "note": "HBM probe cards; not covered in gathered evidence"},
+      {"company": "Teradyne", "ticker_if_listed": "TER", "note": "Testers; not covered in gathered evidence"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "Advantest has roughly tripled production capacity, reducing tester bottleneck risk.",
+        "source_name": "Advantest CEO New Year's address 2026",
+        "source_url": "https://www.advantest.com/en/news/2026/20260105.html",
+        "date": "2026-01-05"
+      },
+      {
+        "claim": "Analyst narrative warns that slower customer ramps could leave Technoprobe's enlarged footprint underutilized (overcapacity risk).",
+        "source_name": "Simply Wall St narrative",
+        "source_url": "https://www.simplywall.st/narratives/hwp5tqlh-ai-test-demand-and-capacity-expansion-will-shape-a-fairly-valued-future",
+        "date": "2026"
+      }
+    ],
+    "confidence": "low",
+    "confidence_reason": "Only FormFactor explicitly cites capacity limits; others show strong demand and expanding capacity. Bottleneck is short-dated and company-specific rather than industry-wide.",
+    "access_note": "Claims read from WebSearch page extracts; WebFetch unavailable. No MJC data gathered."
+  },
+  {
+    "id": "datacenter_power_availability",
+    "name": "Datacenter power availability (utility hookups, behind-the-meter, fuel cells)",
+    "layer": "datacenter_power_thermal",
+    "constrained_item": "Energized, powered data center shells ('warm shells') and firm power delivery",
+    "demand_driver": "Hyperscaler AI capex; GPU deliveries outpacing powered capacity",
+    "supply_limit": "Utility interconnection timelines, transformers/switchgear, gas turbines, local moratoria; leading to on-site/behind-the-meter solutions (fuel cells, gas)",
+    "estimated_duration": "Sightline Climate via Bloomberg (Apr 2026): 30-50% of ~16 GW planned 2026 US capacity at risk of delay/cancellation. Goldman (secondary): ~60% of next year's scheduled capacity on time, ~50% over the following two years.",
+    "status": "current_shortage",
+    "evidence": [
+      {
+        "claim": "Bloomberg (citing Sightline Climate) reported 30-50% of ~16 GW of US data center capacity planned for 2026 could be delayed or cancelled due to power availability, equipment shortages and local opposition; only about one-third of ~12 GW expected online in 2026 was under active construction.",
+        "source_name": "Yahoo Finance (Bloomberg)",
+        "source_url": "https://finance.yahoo.com/sectors/technology/articles/half-planned-us-data-center-150928890.html",
+        "secondary_url": "https://letsdatascience.com/news/us-ai-data-center-construction-faces-capacity-delays-9d297021",
+        "date": "2026-04-01",
+        "evidence_type": "media_report"
+      },
+      {
+        "claim": "Microsoft CEO Satya Nadella said the constraint is power and 'warm shells', not chips: 'you may actually have a bunch of chips sitting in inventory that I can't plug in.'",
+        "source_name": "DatacenterDynamics",
+        "source_url": "https://www.datacenterdynamics.com/en/news/microsoft-has-ai-gpus-sitting-in-inventory-because-it-lacks-the-power-necessary-to-install-them",
+        "date": "2025-11 (approx.; podcast date not confirmed in search results)",
+        "evidence_type": "company_statement"
+      },
+      {
+        "claim": "Bloom Energy Q2 2026 revenue $1.065bn (+166% YoY), 2026 guidance raised to $3.9-4.2bn; 2.8 GW Oracle fuel-cell agreement (Apr 2026); 25 GW deployment 'visibility' (framework commitments, not booked revenue); all major US hyperscalers have validated its solution.",
+        "source_name": "Nasdaq (Bloom Q2 2026 call highlights); The Energy Mag",
+        "source_url": "https://www.nasdaq.com/articles/bloom-energy-q2-earnings-call-highlights",
+        "secondary_url": "https://theenergymag.com/news/market-news/bloom-energy-reports-1-06-billion-in-q2-2026-revenue",
+        "date": "2026-07-28",
+        "evidence_type": "company_statement"
+      },
+      {
+        "claim": "Data center energy constraints and moratoria mounting: New York imposed a statewide moratorium on new data center construction in mid-July; Netherlands and Frankfurt effectively barred new connections until at least 2030 due to grid congestion.",
+        "source_name": "Network World",
+        "source_url": "https://www.networkworld.com/article/4200222/data-center-energy-constraints-and-moratoriums-are-mounting-expect-to-see-stalled-ai-projects.html",
+        "date": "2026 (mid/late year; exact date not captured)",
+        "evidence_type": "media_report"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "Bloom Energy", "ticker_if_listed": "BE", "note": "Behind-the-meter fuel cells; Oracle 2.8 GW deal"},
+      {"company": "GE Vernova", "ticker_if_listed": "GEV", "note": "Gas turbines for grid and on-site power"},
+      {"company": "Siemens Energy", "ticker_if_listed": "ENR.DE", "note": "Gas turbines and grid equipment"},
+      {"company": "Constellation Energy", "ticker_if_listed": "CEG", "note": "Nuclear PPAs with hyperscalers; not covered in gathered evidence"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "SemiAnalysis argues the 'half of 2026 US data centers cancelled' framing is overstated: almost all flagged capacity sits in early-stage/pre-construction 'announced' buckets.",
+        "source_name": "SemiAnalysis newsletter (paywalled; summary only)",
+        "source_url": "https://newsletter.semianalysis.com/p/stop-saying-half-of-2026-us-datacenter",
+        "date": "2026-04 (approx.)"
+      },
+      {
+        "claim": "Only ~298 GW of ~1,066 GW of requested data center grid capacity expected to reach commitment (Wood Mackenzie via Bloomberg), implying headline power demand is inflated.",
+        "source_name": "TFTC (summarizing Bloomberg/Wood Mackenzie)",
+        "source_url": "https://www.tftc.io/ai-data-center-phantom-power-demand-wood-mackenzie",
+        "date": "2026-08-12"
+      },
+      {
+        "claim": "NERC (May 2026) found adequate resources for normal summer peak; large loads connecting more slowly than requested.",
+        "source_name": "Foley & Lardner (NERC SRA summary)",
+        "source_url": "https://www.foley.com/p/102n0rg/the-power-grid-passed-its-report-card-but-read-the-fine-print",
+        "date": "2026-05-19"
+      }
+    ],
+    "confidence": "medium",
+    "confidence_reason": "Existence of the constraint is supported by hyperscaler executives, PJM shortfall, and booming behind-the-meter orders; magnitude estimates (30-50% delayed) are contested and the demand side is inflated by speculative requests.",
+    "access_note": "Claims read from WebSearch page extracts; WebFetch unavailable. Bloomberg original not accessed; figures via syndication."
+  },
+  {
+    "id": "t_glass_low_cte_glass_cloth",
+    "name": "T-glass / low-CTE glass fiber cloth for IC substrates (Nittobo)",
+    "layer": "packaging",
+    "constrained_item": "Low-CTE T-glass (and low-Dk NE-glass) cloth used in ABF/BT substrate cores and high-end PCBs",
+    "demand_driver": "Large AI GPU/ASIC packages and HBM packaging requiring low warpage",
+    "supply_limit": "Nittobo holds ~90% of T-glass supply; qualified second sources limited",
+    "estimated_duration": "Prismark (via industry posts, 2026): shortage persists through 2026-2027 and widens by 2028 when only Nittobo-qualified supply counted. Nittobo: capacity to 3x FY3/2026 level by FY3/2029.",
+    "status": "current_shortage",
+    "evidence": [
+      {
+        "claim": "Nittobo raised its FY2027 net profit forecast by JPY 3bn; no further T-glass price hikes planned for now.",
+        "source_name": "TrendForce News",
+        "source_url": "https://www.trendforce.com/news/2026/08/06/news-nittobo-raises-fy2027-net-profit-forecast-by-jpy-3b-no-further-t-glass-price-hikes-planned/",
+        "date": "2026-08-06",
+        "evidence_type": "industry_research"
+      },
+      {
+        "claim": "Prismark forecasts the T-glass shortage from Nittobo will persist through 2026 and 2027 and widen further by 2028 despite Nittobo capacity expansion; demand exceeded Nittobo capacity since 2H24.",
+        "source_name": "X post by @jukan05 summarizing Prismark (social media relay of industry research)",
+        "source_url": "https://x.com/jukan05/status/2038175585768493516?lang=en",
+        "date": "2026 (approx. Q1; exact date not captured)",
+        "evidence_type": "industry_research"
+      },
+      {
+        "claim": "T-glass supply shortage for AI substrates expected through 2028; Nittobo ~90% T-glass share; Fukushima building to start Jan-Mar 2027; capacity in FY3/2029 to reach 3x FY3/2026.",
+        "source_name": "TechNetBooks",
+        "source_url": "https://www.technetbooks.com/2026/03/nittobo-t-glass-supply-shortage-for-ai.html",
+        "date": "2026-03",
+        "evidence_type": "media_report"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "Nitto Boseki (Nittobo)", "ticker_if_listed": "3110.T", "note": "~90% T-glass share"},
+      {"company": "Nan Ya Plastics", "ticker_if_listed": "1303.TW", "note": "Scaling second-source glass cloth"},
+      {"company": "Taiwan Glass Industry", "ticker_if_listed": "1802.TW", "note": "Scaling second-source glass cloth"},
+      {"company": "Fulltech Fiber Glass", "ticker_if_listed": "1815.TW", "note": "Named as second source"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "Nittobo signals no further T-glass price hikes, suggesting pricing tension stabilizing.",
+        "source_name": "TrendForce News",
+        "source_url": "https://www.trendforce.com/news/2026/08/06/news-nittobo-raises-fy2027-net-profit-forecast-by-jpy-3b-no-further-t-glass-price-hikes-planned/",
+        "date": "2026-08-06"
+      },
+      {
+        "claim": "Taiwanese competitors (Taiwan Glass, Fulltech, Baotek, Nan Ya Plastics) are scaling; Nittobo guiding ~10-20% capacity growth in 2026 and 3x by FY2029.",
+        "source_name": "TechNetBooks / LinkedIn industry post",
+        "source_url": "https://www.technetbooks.com/2026/03/nittobo-t-glass-supply-shortage-for-ai.html",
+        "date": "2026-03"
+      }
+    ],
+    "confidence": "medium",
+    "confidence_reason": "Single-supplier concentration and multi-source agreement on tightness; but Prismark forecast seen only via social-media relay and no primary Nittobo filing was read.",
+    "access_note": "Claims read from WebSearch page extracts; WebFetch unavailable."
+  },
+  {
+    "id": "abf_substrates",
+    "name": "ABF substrates and ABF film for AI packages",
+    "layer": "packaging",
+    "constrained_item": "Large-body, high-layer-count ABF (FC-BGA) substrates; Ajinomoto ABF film",
+    "demand_driver": "AI GPUs/ASICs with larger package sizes and more layers",
+    "supply_limit": "Substrate makers at full utilization; Ibiden new capacity from FY2027; dependent on T-glass and ABF film",
+    "estimated_duration": "Counterpoint Research (via secondary, 2026): ~10% gap in 2H26 widening to ~20% in 2027; industry expectation of gap persisting through 2027.",
+    "status": "current_shortage",
+    "evidence": [
+      {
+        "claim": "Counterpoint Research projects an ABF supply gap of ~10% in 2H26 widening to ~20% in 2027, concentrated in large multilayer high-end packages.",
+        "source_name": "Best PCBs blog (summarizing Counterpoint Research)",
+        "source_url": "https://www.bestpcbs.com/blog/2026/08/abf-substrate-shortage/",
+        "date": "2026-08",
+        "evidence_type": "industry_research"
+      },
+      {
+        "claim": "Ajinomoto reportedly considering an ABF film price increase of at least 30% as AI server demand tightens supply (roughly 3-6% on finished substrates).",
+        "source_name": "Digital Citizen",
+        "source_url": "https://www.digitalcitizen.life/ajinomoto-may-raise-abf-film-prices-as-ai-server-demand-tightens-supply/",
+        "date": "2026 (exact date not captured)",
+        "evidence_type": "media_report"
+      },
+      {
+        "claim": "Substrate makers running at full capacity; Unimicron seeing high utilization; ABF substrate prices expected up ~5-10% in 2H26.",
+        "source_name": "Taiwan News",
+        "source_url": "https://www.taiwannews.com.tw/en/news/6359120",
+        "date": "2026 (exact date not captured)",
+        "evidence_type": "media_report"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "Ajinomoto", "ticker_if_listed": "2802.T", "note": "Near-monopoly ABF film supplier"},
+      {"company": "Ibiden", "ticker_if_listed": "4062.T", "note": "New capacity from FY2027"},
+      {"company": "Unimicron Technology", "ticker_if_listed": "3037.TW", "note": "High utilization"},
+      {"company": "AT&S", "ticker_if_listed": "ATS.VI", "note": "ABF substrates; not covered in gathered evidence"},
+      {"company": "Samsung Electro-Mechanics", "ticker_if_listed": "009150.KS", "note": "FC-BGA substrates; not covered in gathered evidence for ABF"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "Film price hike translates to only ~3-6% on finished substrates; shortage is limited to high-end large packages rather than all substrates.",
+        "source_name": "Digital Citizen / Best PCBs blog",
+        "source_url": "https://www.digitalcitizen.life/ajinomoto-may-raise-abf-film-prices-as-ai-server-demand-tightens-supply/",
+        "date": "2026"
+      },
+      {
+        "claim": "Ibiden new mass-production capacity planned from FY2027 (timing dependent on equipment, qualification, yield).",
+        "source_name": "Best PCBs blog",
+        "source_url": "https://www.bestpcbs.com/blog/2026/08/abf-substrate-shortage/",
+        "date": "2026-08"
+      }
+    ],
+    "confidence": "medium",
+    "confidence_reason": "Consistent secondary reporting and linkage to T-glass shortage; quantitative gap comes from Counterpoint via a vendor blog, not read first-hand.",
+    "access_note": "Claims read from WebSearch page extracts; WebFetch unavailable."
+  },
+  {
+    "id": "conventional_dram_nand",
+    "name": "Conventional DRAM (server DDR5) and enterprise NAND shortage",
+    "layer": "memory",
+    "constrained_item": "Server DRAM (DDR5/RDIMM), PC/mobile DRAM, enterprise SSD NAND",
+    "demand_driver": "AI servers and inference (memory-heavy), capacity diverted to HBM",
+    "supply_limit": "Wafer capacity shifted to HBM and server; new fabs not online until 2027+",
+    "estimated_duration": "Micron: tight through FY2028; Samsung (Yonhap via TrendForce): imbalance through 2028; TrendForce (Sep 2026): server DRAM undersupplied in 4Q26 and PC DRAM supply may decline in 2027.",
+    "status": "current_shortage",
+    "evidence": [
+      {
+        "claim": "TrendForce: conventional DRAM contract prices projected +10-15% QoQ in 4Q26 as suppliers prioritize server products, keeping the market undersupplied; PC DRAM supply could decline in 2027.",
+        "source_name": "I-Connect007 (TrendForce release)",
+        "source_url": "https://iconnect007.com/article/150656/ai-server-demand-keeps-memory-prices-up-in-3q26-but-gains-moderate/150653/pcb",
+        "date": "2026-09-30",
+        "evidence_type": "industry_research"
+      },
+      {
+        "claim": "SK hynix Q2 2026: DRAM ASPs up ~30% QoQ and NAND ASPs up mid-50% QoQ.",
+        "source_name": "CNBC",
+        "source_url": "https://www.cnbc.com/2026/07/29/sk-hynix-earnings-profit-revenue-hbm-memory.html",
+        "date": "2026-07-29",
+        "evidence_type": "company_statement"
+      },
+      {
+        "claim": "Analysts (Reuters) expect Samsung conventional DRAM bit shipments to stay largely flat QoQ amid tight inventories.",
+        "source_name": "TrendForce News (citing Reuters)",
+        "source_url": "https://trendforce.com/news/2026/10/08/news-samsung-sees-3q26-operating-profit-soaring-783-to-record-krw-107-4-trillion-on-hbm4-memory-price-gains",
+        "date": "2026-10-08",
+        "evidence_type": "media_report"
+      },
+      {
+        "claim": "FormFactor said constrained memory supply and higher DDR pricing are prompting customers to shift wafer starts toward DDR designs.",
+        "source_name": "MarketBeat (FormFactor Q2 2026 call)",
+        "source_url": "https://www.marketbeat.com/instant-alerts/formfactor-q2-earnings-call-highlights-2026-07-29/",
+        "date": "2026-07-29",
+        "evidence_type": "company_statement"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "Samsung Electronics", "ticker_if_listed": "005930.KS", "note": "Largest DRAM/NAND maker"},
+      {"company": "SK hynix", "ticker_if_listed": "000660.KS", "note": "DRAM/NAND (incl. Solidigm)"},
+      {"company": "Micron Technology", "ticker_if_listed": "MU", "note": "DRAM/NAND"},
+      {"company": "Kioxia Holdings", "ticker_if_listed": "285A.T", "note": "NAND; not covered in gathered evidence"},
+      {"company": "Sandisk", "ticker_if_listed": "SNDK", "note": "NAND; not covered in gathered evidence"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "TrendForce says the pace of contract price increases is moderating in 4Q26.",
+        "source_name": "I-Connect007 (TrendForce)",
+        "source_url": "https://iconnect007.com/article/150656/ai-server-demand-keeps-memory-prices-up-in-3q26-but-gains-moderate/150653/pcb",
+        "date": "2026-09-30"
+      },
+      {
+        "claim": "TSMC cited consumer and price-sensitive end markets being challenged by rising component prices (demand destruction risk).",
+        "source_name": "The Next Web",
+        "source_url": "https://thenextweb.com/news/tsmc-q3-2026-record-profit-prudent-2027",
+        "date": "2026-10-15"
+      }
+    ],
+    "confidence": "high",
+    "confidence_reason": "All three DRAM makers plus TrendForce agree on undersupply with quantified price moves; risk is demand destruction in PC/mobile and capex-driven oversupply after 2027.",
+    "access_note": "Claims read from WebSearch page extracts; WebFetch unavailable."
+  },
+  {
+    "id": "high_end_mlcc",
+    "name": "High-end MLCCs for AI servers",
+    "layer": "compute",
+    "constrained_item": "High-capacitance, high-reliability MLCCs used in AI server power delivery",
+    "demand_driver": "AI server boards/power modules with far higher MLCC counts",
+    "supply_limit": "Capacity at Murata/SEMCO/Taiyo Yuden; new capacity delayed into 2027 (per Korean press via search extract)",
+    "estimated_duration": "TrendForce (Jul 2026): shortage risk in 2H26; 4Q26 decisive for whether a full-fledged shortage develops. SEMCO LTAs cover supply through 2027.",
+    "status": "projected_shortage",
+    "evidence": [
+      {
+        "claim": "By late June 2026, book-to-bill ratios at Murata, Samsung Electro-Mechanics and Taiyo Yuden rose to 1.30, 1.31 and 1.25; Murata's Q1 2026 orders-to-backlog 1.27 exceeded the 2018-shortage peak of 1.25; shortage risk rising in 2H26.",
+        "source_name": "TrendForce press release",
+        "source_url": "https://www.trendforce.com/presscenter/news/20260706-13136.html",
+        "secondary_url": "https://macaubusiness.com/ai-demand-for-high-end-mlccs-drives-japan-and-korea-suppliers-book-to-bill-ratios-to-post-pandemic-highs-raising-shortage-risks-in-2h26-says-trendforce/",
+        "date": "2026-07-06",
+        "evidence_type": "industry_research"
+      },
+      {
+        "claim": "Samsung Electro-Mechanics raised shipment prices across its entire MLCC portfolio by 30% effective 1 Aug 2026; MLCC price surge intensifying.",
+        "source_name": "TrendForce News",
+        "source_url": "https://www.trendforce.com/news/2026/08/04/news-across-the-board-30-price-hike-mlcc-price-surge-intensifies/",
+        "date": "2026-08-04",
+        "evidence_type": "industry_research"
+      },
+      {
+        "claim": "AI drives MLCC shortage (trade press report).",
+        "source_name": "eeNews Europe",
+        "source_url": "https://www.eenewseurope.com/en/ai-drives-mlcc-shortage/",
+        "date": "2026 (exact date not captured)",
+        "evidence_type": "media_report"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "Murata Manufacturing", "ticker_if_listed": "6981.T", "note": "Book-to-bill 1.30"},
+      {"company": "Samsung Electro-Mechanics", "ticker_if_listed": "009150.KS", "note": "30% price hike Aug 2026; LTAs through 2027"},
+      {"company": "Taiyo Yuden", "ticker_if_listed": "6976.T", "note": "Price hikes in 2026"},
+      {"company": "Yageo", "ticker_if_listed": "2327.TW", "note": "Reported 50% hike only via LinkedIn (unverified)"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "Consumer MLCC demand weak ('weak demand, firm prices'); TrendForce says 4Q26 will determine whether the market transitions into a full-fledged shortage, i.e., not yet confirmed.",
+        "source_name": "TrendForce press release",
+        "source_url": "https://www.trendforce.com/presscenter/news/20260706-13136.html",
+        "date": "2026-07-06"
+      }
+    ],
+    "confidence": "medium",
+    "confidence_reason": "TrendForce data on book-to-bill and a documented across-the-board SEMCO price hike are strong signals, but shortage is AI/high-end specific and not yet confirmed as broad.",
+    "access_note": "Claims read from WebSearch page extracts; WebFetch unavailable."
+  },
+  {
+    "id": "yttrium_scandium",
+    "name": "Yttrium (and scandium) for turbine coatings and semiconductor processes",
+    "layer": "critical_materials",
+    "constrained_item": "Yttrium oxide for thermal barrier coatings (gas turbines, jet engines) and semiconductor equipment coatings; scandium for RF chips",
+    "demand_driver": "Gas turbine build-out for AI power, aerospace, semiconductor fabs",
+    "supply_limit": "China near-sole producer; yttrium under China's April 2025 heavy RE licensing; shipments to US collapsed",
+    "estimated_duration": "No estimate found; tied to China licensing (see rare_earths_magnets). GE Vernova stockpiled into 2025/potentially 2026 (Reuters via Evertiq, Dec 2025).",
+    "status": "current_shortage",
+    "evidence": [
+      {
+        "claim": "Suppliers to US aerospace and chip firms face worsening yttrium and scandium shortages despite the trade truce; China exported 17 t of yttrium products to the US in eight months after controls vs 333 t in the eight months before; prices ~69x a year earlier; two North American coating makers paused production.",
+        "source_name": "Mining.com (Reuters)",
+        "source_url": "https://www.mining.com/web/rare-earth-shortages-worsen-in-us-aerospace-chips-despite-trade-truce/",
+        "secondary_url": "https://www.kitco.com/news/off-the-wire/2026-02-26/rare-earth-shortages-worsen-us-aerospace-chips-despite-trade-truce",
+        "date": "2026-02-26",
+        "evidence_type": "media_report"
+      },
+      {
+        "claim": "GE Vernova boosted yttrium reserves as rare earth pressure intensified; stockpile to support turbine manufacturing into 2025 and potentially 2026, evaluating alternative materials.",
+        "source_name": "Evertiq",
+        "source_url": "https://evertiq.com/news/2025-12-10-ge-vernova-boosts-yttrium-reserves-as-rare-earth-pressure-intensifies",
+        "date": "2025-12-10",
+        "evidence_type": "media_report"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "China Northern Rare Earth", "ticker_if_listed": "600111.SS", "note": "Chinese RE producer; yttrium-specific role not verified in gathered evidence"},
+      {"company": "Lynas Rare Earths", "ticker_if_listed": "LYC.AX", "note": "Ex-China RE producer; yttrium output not verified in gathered evidence"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "Officials and analysts said production of jet engines and chips had not yet been hit as of Feb 2026.",
+        "source_name": "Mining.com (Reuters)",
+        "source_url": "https://www.mining.com/web/rare-earth-shortages-worsen-in-us-aerospace-chips-despite-trade-truce/",
+        "date": "2026-02-26"
+      },
+      {
+        "claim": "GE Vernova holds stockpiles and is qualifying alternatives.",
+        "source_name": "Evertiq",
+        "source_url": "https://evertiq.com/news/2025-12-10-ge-vernova-boosts-yttrium-reserves-as-rare-earth-pressure-intensifies",
+        "date": "2025-12-10"
+      }
+    ],
+    "confidence": "medium",
+    "confidence_reason": "Reuters reporting with customs data is strong, but no 2026 H2 update was found and downstream output impact was not yet evident; price figures inconsistent across sources.",
+    "access_note": "Claims read from WebSearch page extracts; WebFetch unavailable."
+  },
+  {
+    "id": "high_voltage_cable",
+    "name": "High-voltage / HVDC cable",
+    "layer": "grid_power",
+    "constrained_item": "HV and HVDC (525 kV) XLPE land and submarine cable",
+    "demand_driver": "Transmission build-out, offshore wind interconnectors, grid reinforcement for large loads",
+    "supply_limit": "Few non-Chinese suppliers (Prysmian, NKT, Nexans); factory and installation-vessel capacity; 18-24 month training cycles",
+    "estimated_duration": "Broker note (secondary, date unclear): market close to balanced in 2027/28 as planned 2027 capacity additions rose ~90% since early 2025. NKT: healthy supply/demand balance throughout the decade.",
+    "status": "easing",
+    "evidence": [
+      {
+        "claim": "NKT Q1 2026: record-high quarterly order intake took the Transmission order backlog to EUR 13.5bn.",
+        "source_name": "NKT interim report Q1 2026 (ESEF filing)",
+        "source_url": "https://filings.xbrl.org/529900197LKWCEQ0NL18/2026-03-31/ESEF/DK/0/nkt-2026-03-31-en/reports/nkt-2026-03-31-en.xhtml",
+        "date": "2026-05 (period ended 2026-03-31)",
+        "evidence_type": "company_statement"
+      },
+      {
+        "claim": "NKT Q4 2025: high-voltage backlog EUR 10.2bn; expects supply/demand balance to remain healthy throughout the decade.",
+        "source_name": "NKT Q4 2025 webcast presentation",
+        "source_url": "https://investors.nkt.com/files/Financial_reports/2025/nkt-q4-2025--webcast.pdf",
+        "date": "2026-02",
+        "evidence_type": "company_statement"
+      }
+    ],
+    "known_suppliers": [
+      {"company": "Prysmian", "ticker_if_listed": "PRY.MI", "note": "Transmission backlog ~EUR 17bn Q2 2026 per secondary table (unverified)"},
+      {"company": "NKT", "ticker_if_listed": "NKT.CO", "note": "Backlog EUR 13.5bn Q1 2026"},
+      {"company": "Nexans", "ticker_if_listed": "NEX.PA", "note": "Quebec 525 kV plant from 2026 (secondary)"}
+    ],
+    "counter_evidence": [
+      {
+        "claim": "Broker note: planned 2027 capacity additions up ~90% vs early 2025 and market expected close to balanced in 2027/28.",
+        "source_name": "Green Stocks Research (secondary compilation)",
+        "source_url": "https://greenstocksresearch.com/power-cable-companies-energy-transition/",
+        "date": "2026 (exact date not captured)"
+      }
+    ],
+    "confidence": "low",
+    "confidence_reason": "Backlogs are large (primary filings) but suppliers describe a 'healthy' balance and capacity is expanding; direct linkage to AI datacenter delays not evidenced.",
+    "access_note": "Claims read from WebSearch page extracts; WebFetch unavailable. Included as a contrast case; skilled-electrician shortage also reviewed but evidence was mostly secondary/unverified and was not included."
+  }
+]

@@ -1,0 +1,1676 @@
+[
+  {
+    "ticker": "AXTI",
+    "name": "AXT, Inc.",
+    "primary_exchange": "NASDAQ",
+    "other_listings": [],
+    "country_hq": "United States (Fremont, California); manufacturing operations in China via subsidiary Beijing Tongmei Xtal Technology",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "December",
+    "business_summary": "AXT designs, develops and manufactures compound semiconductor substrate wafers (indium phosphide, gallium arsenide, germanium) through its China-based subsidiary Tongmei. It also consolidates raw-material joint ventures that sell materials used in substrate production. Q2 2026 growth was attributed by management to indium phosphide demand from AI data centers.",
+    "main_products": [
+      "Indium phosphide (InP) substrates",
+      "Gallium arsenide (GaAs) substrates",
+      "Germanium (Ge) substrates",
+      "Raw materials sold by consolidated joint ventures"
+    ],
+    "segments": [
+      "Revenue disclosed by product line: indium phosphide, gallium arsenide, germanium substrates, and consolidated raw-material joint ventures (formal reportable-segment structure not verified)"
+    ],
+    "ai_energy_commodity_link": "Measurable: Q2 2026 indium phosphide revenue was a record $30.7M out of total revenue of $47.6M (GaAs $6.6M, Ge $0.272M, raw-material JVs $10.0M), per Q2 2026 results coverage. Company states: growth driven by surging demand for InP used in AI data center optical components, supported by backlog and long-term agreements; capacity target of $60M/quarter InP by year-end 2026 and $130M/quarter by end of 2027 (management statement). Commodity link: China export-control regime (InP added Feb 2025) and indium supply (China ~70% of global output per USGS, cited by Reuters/Kitco).",
+    "confirmed_relationships": [
+      {
+        "counterparty": "Coherent",
+        "relationship": "customer",
+        "detail": "Supply agreement prepayment of $25.4M recorded as upfront cash for future InP wafer shipments (as of June 30, 2026)",
+        "source_url": "https://www.stocktitan.net/sec-filings/AXTI/10-q-axt-inc-quarterly-earnings-report-db714ed7f0c5.html",
+        "source_date": "2026-08",
+        "status": "confirmed_by_filing",
+        "verification": "Seen in search-result summary of the Q2 2026 10-Q (10-Q URL: https://www.sec.gov/Archives/edgar/data/0001051627/000143774926027677/axti20260630_10q.htm); full document not fetched"
+      },
+      {
+        "counterparty": "Casella (as named in search summary)",
+        "relationship": "customer",
+        "detail": "Supply agreement prepayment of $22.3M for future InP wafer shipments",
+        "source_url": "https://www.stocktitan.net/sec-filings/AXTI/10-q-axt-inc-quarterly-earnings-report-db714ed7f0c5.html",
+        "source_date": "2026-08",
+        "status": "confirmed_by_filing",
+        "verification": "Seen in search-result summary of the 10-Q; counterparty name not independently verified"
+      },
+      {
+        "counterparty": "Unnamed customer",
+        "relationship": "customer",
+        "detail": "Subsequent to Q2 2026 quarter-end, a six-year capacity reservation agreement calling for two customer deposits of $43.5M each",
+        "source_url": "https://www.stocktitan.net/sec-filings/AXTI/10-q-axt-inc-quarterly-earnings-report-db714ed7f0c5.html",
+        "source_date": "2026-08",
+        "status": "confirmed_by_filing",
+        "verification": "Search-result summary of 10-Q"
+      },
+      {
+        "counterparty": "Top five customers (unnamed)",
+        "relationship": "customer",
+        "detail": "Top five customers generated 30% of Q2 2026 revenue; no single customer exceeded 10%",
+        "source_url": "https://www.webull.com/news/15341695014478848",
+        "source_date": "2026-07-30",
+        "status": "media_report",
+        "verification": "Earnings call summary via search"
+      }
+    ],
+    "latest_reported_quarter": {
+      "period_label": "Q2 2026",
+      "period_end_date": "2026-06-30",
+      "revenue": 47.6,
+      "revenue_unit": "USD millions",
+      "gaap_net_income": 11.1,
+      "cash_and_equivalents": "Cash, restricted cash and cash equivalents $445.2M; cash, restricted cash and investments total $748.8M",
+      "total_debt": "Short-term loans $84.2M; long-term loans $15.5M (not summed by source)",
+      "guidance_next_quarter": "Q3 2026 revenue of at least $66 million, with potential upside pending export permits; GAAP EPS $0.29-$0.31 (as reported in search summaries of the release)",
+      "source_url": "https://www.businesswire.com/news/home/20260730124233/en/",
+      "source_date": "2026-07-30"
+    },
+    "key_recent_events": [
+      {
+        "date": "2025-12-30",
+        "event": "Closed underwritten public offering priced at $12.25/share raising ~$100M gross including full exercise of underwriters' option (shelf filed Nov 7, 2025)",
+        "source_url": "https://www.businesswire.com/news/home/20251230349400/en/AXT-Announces-Closing-of-Public-Offering-of-Common-Stock-and-Full-Exercise-of-Underwriters-Option-to-Purchase-Additional-Shares"
+      },
+      {
+        "date": "2026-04-22",
+        "event": "Public offering of 8,560,311 shares at $64.25 (~$550M gross) plus 1,284,046-share underwriter option exercised (~$82.5M), ~$632.5M aggregate gross; proceeds primarily to support Tongmei; Northland sole bookrunner",
+        "source_url": "https://www.businesswire.com/news/home/20260424121883/en"
+      },
+      {
+        "date": "2026-07-30",
+        "event": "Record Q2 2026 revenue $47.6M (+77% q/q), GAAP gross margin 44.9%; guided Q3 revenue at least $66M",
+        "source_url": "https://www.businesswire.com/news/home/20260730124233/en/"
+      },
+      {
+        "date": "2026-07-30",
+        "event": "Tongmei IPO effort moved from Shanghai STAR Market to Hong Kong Exchange (per Q2 call coverage)",
+        "source_url": "https://finance.yahoo.com/markets/stocks/articles/axt-inc-axti-q2-2026-050437348.html"
+      },
+      {
+        "date": "2026-08",
+        "event": "10-Q discloses post-quarter six-year capacity reservation agreement with two $43.5M customer deposits",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001051627/000143774926027677/axti20260630_10q.htm"
+      }
+    ],
+    "red_flags": [
+      {
+        "flag": "Export licenses: China added InP to its export-control list in Feb 2025; all Tongmei wafer families require MOFCOM permits; company calls InP export permits its most significant challenge; U.S.-bound permits described as in final review but not issued (424B5)",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001051627/000121390026045643/ea0286792-424b5_axtinc.htm"
+      },
+      {
+        "flag": "Heavy dilution: ~$100M offering (Dec 2025) and ~$632.5M offering (Apr 2026)",
+        "source_url": "https://www.businesswire.com/news/home/20260424121883/en"
+      },
+      {
+        "flag": "Redeemable noncontrolling interest of ~7.28% (~$49M) in Tongmei contingent on Tongmei IPO; investors may request redemption",
+        "source_url": "https://www.stocktitan.net/sec-filings/AXTI/10-k-axt-inc-files-annual-report-ed35d0270da0.html"
+      },
+      {
+        "flag": "Geographic/tariff exposure: all manufacturing in China; North America revenue share fell from ~8% (2024) to ~2% (2025) attributed to U.S. tariffs on China-made wafers (10-K summary)",
+        "source_url": "https://www.stocktitan.net/sec-filings/AXTI/10-k-axt-inc-files-annual-report-ed35d0270da0.html"
+      },
+      {
+        "flag": "Rising bank borrowings: short-term borrowings $84.2M at June 30, 2026 vs $62.8M at year-end 2025",
+        "source_url": "https://www.stocktitan.net/sec-filings/AXTI/10-q-axt-inc-quarterly-earnings-report-db714ed7f0c5.html"
+      }
+    ],
+    "notes_unverified": [
+      "All facts sourced from web-search result summaries; direct page fetch failed in this environment (WebFetch DNS failure, proxy 403 on sec.gov/businesswire). Figures not read from full source documents.",
+      "Q3 2026 guidance (>= $66M revenue, GAAP EPS $0.29-0.31) appeared in one search summary; a second search did not surface it.",
+      "Whether U.S.-bound InP export permits have since been issued is unconfirmed.",
+      "Identity of 'Casella' prepayment counterparty not independently verified.",
+      "FY2025 10-K customer-concentration percentages not retrieved.",
+      "Formal reportable segment definition not verified."
+    ],
+    "data_quality": "full",
+    "research_date": "2026-10-21",
+    "verification_method": "Facts gathered 2026-10-21 via WebSearch result summaries/snippets only. Direct retrieval of source pages (WebFetch and curl to sec.gov, businesswire, globenewswire, company IR sites) failed in this environment (DNS failure / egress proxy 403), so numbers were not read from the full source documents. URLs are those returned by the search engine for the cited content."
+  },
+  {
+    "ticker": "FORM",
+    "name": "FormFactor, Inc.",
+    "primary_exchange": "NASDAQ",
+    "other_listings": [],
+    "country_hq": "United States (Livermore, California)",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "December (52/53-week year ending last Saturday of December; FY2025 ended Dec 27, 2025)",
+    "business_summary": "FormFactor supplies probe cards used to test semiconductor wafers (DRAM including HBM, foundry & logic, flash) and engineering systems such as probe stations, metrology and cryogenic test systems. Q2 2026 growth was tied by the company to High Bandwidth Memory and Co-Packaged Optics demand.",
+    "main_products": [
+      "Probe cards (DRAM/HBM, foundry & logic, flash)",
+      "Engineering probe stations and analytical probes",
+      "Metrology and cryogenic systems",
+      "Co-packaged optics test capabilities (via Keystone Photonics acquisition)"
+    ],
+    "segments": [
+      "Probe Cards",
+      "Systems"
+    ],
+    "ai_energy_commodity_link": "Measurable: SK hynix (major HBM supplier) was 22.9% of FY2025 revenue per FormFactor supplemental financial information (same >10% customer table as 10-K). Company states Q2 2026 sequential growth in Probe Cards and Systems was driven by HBM and Co-Packaged Optics, and that Foundry & Logic demand is particularly strong. FY2025 revenue was a record $785.0M. No direct energy/commodity exposure identified.",
+    "confirmed_relationships": [
+      {
+        "counterparty": "SK hynix",
+        "relationship": "customer",
+        "detail": "22.9% of FY2025 revenue (only >10% customer in FY2025); 18.9% of FY2024",
+        "source_url": "https://investors.formfactor.com/static-files/22ce62a8-fd9d-418b-be4f-e4245e9c3118",
+        "source_date": "2026-02",
+        "status": "company_press_release",
+        "verification": "Search-result summary of company supplemental financial information; 10-K: https://www.sec.gov/Archives/edgar/data/1039399/000103939926000009/form-20251227.htm"
+      },
+      {
+        "counterparty": "Intel",
+        "relationship": "customer",
+        "detail": "12.0% and 12.4% of revenue in Q1 and Q2 2025; below 10% for FY2025; 14.6% of FY2024",
+        "source_url": "https://investors.formfactor.com/static-files/22ce62a8-fd9d-418b-be4f-e4245e9c3118",
+        "source_date": "2026-02",
+        "status": "company_press_release",
+        "verification": "Search-result summary"
+      },
+      {
+        "counterparty": "TSMC",
+        "relationship": "customer",
+        "detail": "10.4% of revenue in Q2 2025 only; below 10% for full-year 2025",
+        "source_url": "https://investors.formfactor.com/static-files/22ce62a8-fd9d-418b-be4f-e4245e9c3118",
+        "source_date": "2026-02",
+        "status": "company_press_release",
+        "verification": "Search-result summary"
+      },
+      {
+        "counterparty": "Keystone Microtech (Taiwan)",
+        "relationship": "partner",
+        "detail": "Expanded multi-year partnership to expand probe card manufacturing/test capacity and regional assembly and service in Taiwan",
+        "source_url": "https://investors.formfactor.com/news-releases/news-release-details/formfactor-inc-reports-2026-second-quarter-results",
+        "source_date": "2026-07-29",
+        "status": "company_press_release",
+        "verification": "Search-result summary"
+      }
+    ],
+    "latest_reported_quarter": {
+      "period_label": "Q2 FY2026",
+      "period_end_date": "2026-06-27",
+      "revenue": 258.2,
+      "revenue_unit": "USD millions",
+      "gaap_net_income": 56.2,
+      "cash_and_equivalents": null,
+      "total_debt": null,
+      "guidance_next_quarter": "Q3 FY2026 (quarter ending Sept 26, 2026): revenue $270M +/- $10M; GAAP EPS $0.75 +/- $0.09; non-GAAP EPS $0.86 +/- $0.09",
+      "source_url": "https://investors.formfactor.com/news-releases/news-release-details/formfactor-inc-reports-2026-second-quarter-results",
+      "source_date": "2026-07-29"
+    },
+    "key_recent_events": [
+      {
+        "date": "2025-12",
+        "event": "Acquired Keystone Photonics to bolster co-packaged optics test capabilities (~$20M cash)",
+        "source_url": "https://www.marketbeat.com/instant-alerts/formfactor-q4-earnings-call-highlights-2026-02-04/?.tsrc=rss"
+      },
+      {
+        "date": "2026-07",
+        "event": "Texas Semiconductor Innovation Fund grant of $24.2M for new Farmers Branch, TX probe card manufacturing facility (600+ jobs; $140-170M 2026 capex)",
+        "source_url": "https://gov.texas.gov/news/post/governor-abbott-announces-texas-semiconductor-innovation-fund-grant-to-formfactor"
+      },
+      {
+        "date": "2026-07-29",
+        "event": "Record Q2 FY2026 revenue $258.2M (+31.9% y/y), exceeded high end of outlook; free cash flow $52.6M",
+        "source_url": "https://investors.formfactor.com/news-releases/news-release-details/formfactor-inc-reports-2026-second-quarter-results"
+      },
+      {
+        "date": "2026-07-28",
+        "event": "Expanded partnership with Keystone Microtech in Taiwan",
+        "source_url": "https://investors.formfactor.com/news-releases/news-release-details/formfactor-inc-reports-2026-second-quarter-results"
+      },
+      {
+        "date": "2026-07-29",
+        "event": "Farmers Branch site on track to come online Q4 2026 and ramp through 2027 (management)",
+        "source_url": "https://quartr.com/events/formfactor-inc-form-q2-2026_ozoY2w6k"
+      }
+    ],
+    "red_flags": [
+      {
+        "flag": "Customer concentration: SK hynix 22.9% of FY2025 revenue; Intel/TSMC intermittently above 10%",
+        "source_url": "https://investors.formfactor.com/static-files/22ce62a8-fd9d-418b-be4f-e4245e9c3118"
+      },
+      {
+        "flag": "China exposure (~7% of FY2025 revenue per third-party aggregator) and export-restriction risk - unverified against 10-K",
+        "source_url": "https://fintool.com/app/research/companies/FORM"
+      },
+      {
+        "flag": "Elevated capex ($140-170M in 2026) for Farmers Branch expansion",
+        "source_url": "https://gov.texas.gov/news/post/governor-abbott-announces-texas-semiconductor-innovation-fund-grant-to-formfactor"
+      }
+    ],
+    "notes_unverified": [
+      "All facts sourced from web-search result summaries; direct page fetch failed in this environment.",
+      "Cash + marketable securities of $345.6M at end of Q2 2026 reported only by a third-party summary (chartmill); not confirmed in the press release, so left null.",
+      "Total debt not found.",
+      "China revenue share (7%) from a secondary aggregator only."
+    ],
+    "data_quality": "partial (cash and debt missing)",
+    "research_date": "2026-10-21",
+    "verification_method": "Facts gathered 2026-10-21 via WebSearch result summaries/snippets only. Direct retrieval of source pages (WebFetch and curl to sec.gov, businesswire, globenewswire, company IR sites) failed in this environment (DNS failure / egress proxy 403), so numbers were not read from the full source documents. URLs are those returned by the search engine for the cited content."
+  },
+  {
+    "ticker": "AAOI",
+    "name": "Applied Optoelectronics, Inc.",
+    "primary_exchange": "NASDAQ",
+    "other_listings": [],
+    "country_hq": "United States (Sugar Land, Texas); manufacturing also in Taiwan and China",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "December",
+    "business_summary": "Applied Optoelectronics is a vertically integrated maker of fiber-optic networking products, including lasers and optical transceivers for data centers and broadband CATV equipment. Q2 2026 was its fifth consecutive record-revenue quarter, driven by data center (800G ramp) and CATV (1.8 GHz products) demand.",
+    "main_products": [
+      "Data center optical transceivers (100G, 400G, 800G, 1.6T)",
+      "CATV broadband amplifiers and nodes (1.8 GHz)",
+      "Lasers and optical components",
+      "Telecom/FTTH optical products"
+    ],
+    "segments": [
+      "End markets reported: Data center, CATV, Telecom, FTTH/Other (formal single vs. multiple reportable segment structure not verified)"
+    ],
+    "ai_energy_commodity_link": "Measurable (FY2025 10-K): Microsoft (hyperscale data center customer) 28.8% of 2025 revenue; Digicomm (CATV) 53.1%. Amazon warrant vests on up to $4B of Amazon purchases. Company states 800G volumes more than doubled q/q in Q2 2026, demand expected to outpace capacity through mid-2027, and targets ~650,000 pieces/month of 800G and 1.6T by end of 2026. Q2 2026 data center vs CATV revenue split not found in sources seen.",
+    "confirmed_relationships": [
+      {
+        "counterparty": "Digicomm",
+        "relationship": "customer",
+        "detail": "53.1%, 34.1% and 11.3% of revenue in 2025, 2024 and 2023 (CATV customer)",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1158114/000143774926005875/aaoi20251231_10k.htm",
+        "source_date": "2026-02",
+        "status": "confirmed_by_filing",
+        "verification": "Search-result excerpt of FY2025 10-K"
+      },
+      {
+        "counterparty": "Microsoft",
+        "relationship": "customer",
+        "detail": "28.8%, 46.6% and 18.4% of revenue in 2025, 2024 and 2023",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1158114/000143774926005875/aaoi20251231_10k.htm",
+        "source_date": "2026-02",
+        "status": "confirmed_by_filing",
+        "verification": "Search-result excerpt of FY2025 10-K"
+      },
+      {
+        "counterparty": "Amazon.com, Inc. (wholly-owned subsidiary)",
+        "relationship": "customer",
+        "detail": "Customer warrant issued Mar 13, 2025 for up to 7,945,399 shares at $23.6956/share; ~1.3M exercisable at issuance, remainder vests on Amazon purchases up to $4B; fair value recorded as reduction of Amazon-related revenue",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1158114/000168316825001580/appliedopto_8k.htm",
+        "source_date": "2025-03-13",
+        "status": "confirmed_by_filing",
+        "verification": "Search-result excerpt of 8-K/10-K"
+      }
+    ],
+    "latest_reported_quarter": {
+      "period_label": "Q2 2026",
+      "period_end_date": "2026-06-30",
+      "revenue": 191.9,
+      "revenue_unit": "USD millions",
+      "gaap_net_income": -22.8,
+      "cash_and_equivalents": "Cash, equivalents and investments $508.8M",
+      "total_debt": "Total loan balance (excluding convertible notes) $58.9M per 10-Q; plus $125.0M 2.75% convertible senior notes due 2030 (issued Dec 2024; outstanding balance at June 30, 2026 not confirmed)",
+      "guidance_next_quarter": "Q3 2026: revenue $255M-$290M; non-GAAP gross margin 29%-30.5%; non-GAAP net income $10.1M-$24.0M",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/0001158114/000168316826006055/aaoi_ex9901.htm",
+      "source_date": "2026-08-06"
+    },
+    "key_recent_events": [
+      {
+        "date": "2026-08-06",
+        "event": "Record Q2 2026 revenue $191.9M (+86% y/y); return to non-GAAP profitability (non-GAAP NI $5.5M); 800G volume more than doubled q/q",
+        "source_url": "https://investors.ao-inc.com/news-releases/news-release-details/applied-optoelectronics-reports-second-quarter-2026-results"
+      },
+      {
+        "date": "2026-08-06",
+        "event": "Management said memory shortages would cost ~$20-25M of Q3 revenue on 100G single-mode transceivers; capacity approaching 200,000 units/month",
+        "source_url": "https://stockanalysis.com/stocks/aaoi/transcripts/662748-q2-2026/"
+      },
+      {
+        "date": "2026-08-21",
+        "event": "New equity distribution (ATM) agreement with Raymond James and Needham for up to $600M of common stock (media report)",
+        "source_url": "https://kalkinemedia.com/us/news/announcements/applied-optoelectronics-initiates-600-million-at-the-market-stock-offering"
+      },
+      {
+        "date": "2026",
+        "event": "Company announced completion of a previously announced at-the-market offering (exact date not confirmed)",
+        "source_url": "https://www.benzinga.com/node/62157083"
+      }
+    ],
+    "red_flags": [
+      {
+        "flag": "Dilution: repeated ATM programs including up to $600M (Aug 2026) plus Amazon warrant for up to 7.9M shares",
+        "source_url": "https://kalkinemedia.com/us/news/announcements/applied-optoelectronics-initiates-600-million-at-the-market-stock-offering"
+      },
+      {
+        "flag": "GAAP net loss of $22.8M in Q2 2026 despite record revenue",
+        "source_url": "https://www.stocktitan.net/news/AAOI/applied-optoelectronics-reports-second-quarter-2026-wjz4h91d9ngj.html"
+      },
+      {
+        "flag": "Extreme customer concentration: Digicomm 53.1% and Microsoft 28.8% of 2025 revenue",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1158114/000143774926005875/aaoi20251231_10k.htm"
+      },
+      {
+        "flag": "Component (memory) shortages cutting Q3 2026 revenue by an estimated $20-25M per management",
+        "source_url": "https://stockanalysis.com/stocks/aaoi/transcripts/662748-q2-2026/"
+      }
+    ],
+    "notes_unverified": [
+      "All facts sourced from web-search result summaries; direct page fetch failed in this environment.",
+      "Amazon share of FY2025 revenue not found.",
+      "Q2 2026 revenue breakdown by end market (data center/CATV/telecom) not found.",
+      "Q3 2026 GAAP guidance not found (only non-GAAP).",
+      "Date of the ATM 'completion' release not confirmed; the $600M ATM is from a media report (Kalkine)."
+    ],
+    "data_quality": "full",
+    "research_date": "2026-10-21",
+    "verification_method": "Facts gathered 2026-10-21 via WebSearch result summaries/snippets only. Direct retrieval of source pages (WebFetch and curl to sec.gov, businesswire, globenewswire, company IR sites) failed in this environment (DNS failure / egress proxy 403), so numbers were not read from the full source documents. URLs are those returned by the search engine for the cited content."
+  },
+  {
+    "ticker": "COHR",
+    "name": "Coherent Corp.",
+    "primary_exchange": "NYSE",
+    "other_listings": [],
+    "country_hq": "United States (Saxonburg, Pennsylvania)",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "June",
+    "business_summary": "Coherent makes optical networking components and transceivers, engineered materials and lasers for datacenter, communications and industrial markets. Effective July 1, 2025 it reorganized into two segments, Datacenter and Communications, and Industrial. Datacenter and Communications was 79% of fiscal Q4 2026 revenue.",
+    "main_products": [
+      "Optical transceivers (800G, 1.6T) and co-packaged optics components",
+      "Indium phosphide lasers/photodetectors and 6-inch InP wafers",
+      "Optical components, subsystems and telecom systems",
+      "Industrial lasers (excimer, solid-state, CO2) and laser systems",
+      "Engineered materials"
+    ],
+    "segments": [
+      "Datacenter and Communications",
+      "Industrial"
+    ],
+    "ai_energy_commodity_link": "Measurable: Datacenter and Communications segment revenue $1.62B in fiscal Q4 2026 = 79% of total revenue of $2.05B (company presentation/coverage). Company states order coverage through calendar 2027 is exceptional and 1.6T transceivers/CPO are ramping. Commodity link: indium phosphide supply; Coherent warned of an InP shortage in May 2026 (Reuters via Kitco), and is a prepaying customer of AXT for InP substrates.",
+    "confirmed_relationships": [
+      {
+        "counterparty": "NVIDIA",
+        "relationship": "partner",
+        "detail": "NVIDIA announced a $2B investment to establish a multiyear partnership spanning supply expansion, R&D and U.S. manufacturing (March 2026)",
+        "source_url": "https://technologymagazine.com/news/nvidia-partner-coherent-expands-texas-ai-semiconductor-fab",
+        "source_date": "2026-03",
+        "status": "media_report",
+        "verification": "Search-result summary"
+      },
+      {
+        "counterparty": "AXT, Inc.",
+        "relationship": "supplier",
+        "detail": "Coherent made a $25.4M supply-agreement prepayment to AXT for future InP wafer shipments (per AXT 10-Q)",
+        "source_url": "https://www.stocktitan.net/sec-filings/AXTI/10-q-axt-inc-quarterly-earnings-report-db714ed7f0c5.html",
+        "source_date": "2026-08",
+        "status": "confirmed_by_filing",
+        "verification": "Search-result summary of AXT 10-Q"
+      },
+      {
+        "counterparty": "Advent International",
+        "relationship": "partner",
+        "detail": "Buyer of Coherent's Aerospace & Defense business for $400M (divestiture counterparty)",
+        "source_url": "https://optics.org/news/coherent-sells-aerospace-and-defense-business-for-400m",
+        "source_date": "2025",
+        "status": "media_report",
+        "verification": "Search-result summary"
+      }
+    ],
+    "latest_reported_quarter": {
+      "period_label": "Q4 FY2026",
+      "period_end_date": "2026-06-30",
+      "revenue": 2050,
+      "revenue_unit": "USD millions (reported as $2.05 billion)",
+      "gaap_net_income": null,
+      "gaap_diluted_eps": 1.19,
+      "cash_and_equivalents": 1162.018,
+      "cash_note": "USD millions per FY2026 10-K balance sheet ($1,162,018 thousand); plus short-term investments $825.0M",
+      "total_debt": "Current portion of long-term debt $7.916M; long-term debt $3,214.308M (10-K; not summed by source)",
+      "guidance_next_quarter": "Q1 FY2027: revenue $2.2B-$2.4B; non-GAAP gross margin 39.5%-41.5%; non-GAAP opex $400M-$420M; non-GAAP tax rate 18%-20%; non-GAAP EPS $1.85-$2.05",
+      "source_url": "https://ir.coherent.com/news-releases/news-release-details/coherent-corp-reports-fourth-quarter-and-full-year-fiscal-2026",
+      "balance_sheet_source_url": "https://www.sec.gov/Archives/edgar/data/0000820318/000082031826000020/iivi-20260630.htm",
+      "source_date": "2026-08-12"
+    },
+    "key_recent_events": [
+      {
+        "date": "2026-03",
+        "event": "NVIDIA announced $2B investment and multiyear partnership with Coherent",
+        "source_url": "https://technologymagazine.com/news/nvidia-partner-coherent-expands-texas-ai-semiconductor-fab"
+      },
+      {
+        "date": "2026-06",
+        "event": "CHIPS Act letter of intent for $50M for Sherman, Texas InP site (plan to double production space and quadruple wafer output)",
+        "source_url": "https://www.boerse-global.de/coherent-aktie-50-millionen-dollar-foerderung/800382"
+      },
+      {
+        "date": "2026-08-12",
+        "event": "Record Q4 FY2026 revenue $2.05B (+34% y/y); FY2026 pro forma revenue $7.12B (+28%); Q1 FY27 guide $2.2-2.4B",
+        "source_url": "https://ir.coherent.com/news-releases/news-release-details/coherent-corp-reports-fourth-quarter-and-full-year-fiscal-2026"
+      },
+      {
+        "date": "FY2026",
+        "event": "Sale of Aerospace & Defense business to Advent International for $400M (described as completed in FY2026 10-K summary); proceeds to debt reduction",
+        "source_url": "https://optics.org/news/coherent-sells-aerospace-and-defense-business-for-400m"
+      },
+      {
+        "date": "2026-06-30",
+        "event": "Series B redeemable convertible preferred stock no longer outstanding at June 30, 2026 (215,000 shares, $2.48B carrying value at June 30, 2025)",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0000820318/000082031826000020/iivi-20260630.htm"
+      }
+    ],
+    "red_flags": [
+      {
+        "flag": "Leverage: ~$3.2B long-term debt at June 30, 2026 (10-K)",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0000820318/000082031826000020/iivi-20260630.htm"
+      },
+      {
+        "flag": "InP supply risk tied to China export controls; Coherent warned of an InP shortage in May 2026 (Reuters via Kitco)",
+        "source_url": "https://www.kitco.com/news/off-the-wire/2026-06-11/chinas-control-over-indium-phosphide-exports-threatens-ai-data-centre"
+      },
+      {
+        "flag": "Restructuring: ~$62M FY2026 restructuring charges from site closures/workforce reductions (10-K summary, third party)",
+        "source_url": "https://www.autobound.ai/companies/coherent/10-k"
+      },
+      {
+        "flag": "Share count/dilution: elimination of Series B convertible preferred and NVIDIA investment structure (equity?) - mechanism not verified",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0000820318/000082031826000020/iivi-20260630.htm"
+      }
+    ],
+    "notes_unverified": [
+      "All facts sourced from web-search result summaries; direct page fetch failed in this environment.",
+      "Q4 FY2026 GAAP net income in dollars not confirmed (a search summary suggested ~$241M attributable to Coherent but flagged table formatting as unclear); only GAAP diluted EPS $1.19 confirmed.",
+      "Customer concentration (10%+ customers) not found.",
+      "Form of NVIDIA $2B investment (common equity vs other) not confirmed.",
+      "Whether Series B preferred was converted (dilutive) or redeemed in cash not confirmed.",
+      "Closing date of A&D sale to Advent not confirmed."
+    ],
+    "data_quality": "full",
+    "research_date": "2026-10-21",
+    "verification_method": "Facts gathered 2026-10-21 via WebSearch result summaries/snippets only. Direct retrieval of source pages (WebFetch and curl to sec.gov, businesswire, globenewswire, company IR sites) failed in this environment (DNS failure / egress proxy 403), so numbers were not read from the full source documents. URLs are those returned by the search engine for the cited content."
+  },
+  {
+    "ticker": "FN",
+    "name": "Fabrinet",
+    "primary_exchange": "NYSE",
+    "other_listings": [],
+    "country_hq": "Cayman Islands (incorporated); principal manufacturing in Thailand (Chonburi/Pathum Thani) - see notes",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "June (52/53-week year ending last Friday of June; FY2026 ended June 26, 2026)",
+    "business_summary": "Fabrinet provides precision optical, electro-optical and electronic contract manufacturing services to OEMs, primarily in Thailand. Its largest end markets are data center optical/interconnect products and communications infrastructure, with additional automotive, industrial laser and other business.",
+    "main_products": [
+      "Contract manufacturing of optical transceivers and components (data center)",
+      "Optical/telecom communications infrastructure products",
+      "Automotive, industrial laser, medical and sensor products (EMS)"
+    ],
+    "segments": [
+      "Revenue reported by end market per media coverage: Data center; Communications infrastructure; Automotive, industrial and other (formal reportable segment structure not verified)"
+    ],
+    "ai_energy_commodity_link": "Measurable (FY2026 10-K): NVIDIA 16.3% and Amazon 10.5% of FY2026 revenue; NVIDIA was 27.6% in FY2025. Media coverage (Zhitong via Webull) reports data center exceeded 50% of Q4 FY2026 revenue for the first time, with communications infrastructure $413M (31%) and automotive/industrial/other $234M (18%) - not verified against the filing. Company states Building 10 (~2M sq ft) will add capacity by early 2027.",
+    "confirmed_relationships": [
+      {
+        "counterparty": "Cisco Systems",
+        "relationship": "customer",
+        "detail": "19.9% of FY2026 revenue; 18.2% of FY2025",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001408710/000140871026000028/fn-20260626.htm",
+        "source_date": "2026-08",
+        "status": "confirmed_by_filing",
+        "verification": "Search-result excerpt of FY2026 10-K"
+      },
+      {
+        "counterparty": "NVIDIA",
+        "relationship": "customer",
+        "detail": "16.3% of FY2026 revenue; 27.6% of FY2025",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001408710/000140871026000028/fn-20260626.htm",
+        "source_date": "2026-08",
+        "status": "confirmed_by_filing",
+        "verification": "Search-result excerpt of FY2026 10-K"
+      },
+      {
+        "counterparty": "Nokia",
+        "relationship": "customer",
+        "detail": "10.7% of FY2026 revenue",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001408710/000140871026000028/fn-20260626.htm",
+        "source_date": "2026-08",
+        "status": "confirmed_by_filing",
+        "verification": "Search-result excerpt of FY2026 10-K"
+      },
+      {
+        "counterparty": "Amazon.com, Inc. (affiliate)",
+        "relationship": "customer",
+        "detail": "10.5% of FY2026 revenue; warrant issued Mar 12, 2025 for up to 381,922 ordinary shares at $208.4826/share, vesting with Amazon payments under commercial agreement, expires Mar 12, 2032",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1408710/000140871025000010/fn-20250312.htm",
+        "source_date": "2025-03-12",
+        "status": "confirmed_by_filing",
+        "verification": "Search-result excerpt of 8-K and FY2026 10-K"
+      }
+    ],
+    "latest_reported_quarter": {
+      "period_label": "Q4 FY2026",
+      "period_end_date": "2026-06-26",
+      "revenue": 1315.8,
+      "revenue_unit": "USD millions",
+      "gaap_net_income": 139.3,
+      "cash_and_equivalents": 346.7,
+      "cash_note": "Cash $346.7M plus short-term investments $528.3M = $875.1M as stated",
+      "total_debt": 0,
+      "total_debt_note": "FY2026 10-K states the company had no outstanding debt",
+      "guidance_next_quarter": "Q1 FY2027: revenue $1.375B-$1.425B; GAAP diluted EPS $3.39-$3.54; non-GAAP diluted EPS $4.10-$4.25 (~36.3M diluted shares)",
+      "source_url": "https://www.globenewswire.com/news-release/2026/08/17/3346479/0/en/fabrinet-announces-fourth-quarter-and-fiscal-year-2026-financial-results.html",
+      "source_date": "2026-08-17"
+    },
+    "key_recent_events": [
+      {
+        "date": "2026-08-17",
+        "event": "Record Q4 FY2026 revenue $1,315.8M (+45% y/y); FY2026 revenue $4.64B vs $3.42B; GAAP FY NI $473.0M",
+        "source_url": "https://www.globenewswire.com/news-release/2026/08/17/3346479/0/en/fabrinet-announces-fourth-quarter-and-fiscal-year-2026-financial-results.html"
+      },
+      {
+        "date": "2026-08-17",
+        "event": "Building 10 (Chonburi) on track for completion by early 2027, ~2M sq ft; total expected cost ~$132.5M with ~$39.7M remaining",
+        "source_url": "https://www.nasdaq.com/articles/fabrinet-q4-earnings-call-highlights"
+      },
+      {
+        "date": "2026-08",
+        "event": "FY2026 10-K: four 10%+ customers (Cisco, NVIDIA, Nokia, Amazon) vs two in FY2025; NVIDIA share fell to 16.3% from 27.6%",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001408710/000140871026000028/fn-20260626.htm"
+      },
+      {
+        "date": "2026-08-17",
+        "event": "Cash and short-term investments fell ~$70M q/q to ~$876M; FY2026 free cash flow ~$4M due to capex",
+        "source_url": "https://www.marketbeat.com/instant-alerts/fabrinet-q4-earnings-call-highlights-2026-08-17/"
+      }
+    ],
+    "red_flags": [
+      {
+        "flag": "Customer concentration: four customers ~57% of FY2026 revenue (Cisco 19.9%, NVIDIA 16.3%, Nokia 10.7%, Amazon 10.5%)",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001408710/000140871026000028/fn-20260626.htm"
+      },
+      {
+        "flag": "NVIDIA share drop (27.6% to 16.3%) as NVIDIA diversifies 800G sourcing to multiple suppliers (media)",
+        "source_url": "https://www.webull.com/news/15424022183625728"
+      },
+      {
+        "flag": "Free cash flow compression (~$4M FY2026) from capacity capex",
+        "source_url": "https://www.marketbeat.com/instant-alerts/fabrinet-q4-earnings-call-highlights-2026-08-17/"
+      },
+      {
+        "flag": "Amazon warrant (up to 381,922 shares) is a modest dilution / contra-revenue item",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1408710/000140871025000010/fn-20250312.htm"
+      }
+    ],
+    "notes_unverified": [
+      "All facts sourced from web-search result summaries; direct page fetch failed in this environment.",
+      "End-market revenue split (data center >50%, comms infrastructure $413M, auto/industrial $234M) is from a Zhitong/Webull media report, not verified against the filing.",
+      "Formal HQ address and reportable segment structure not verified.",
+      "Q4 FY2026 GAAP diluted EPS: release basic EPS $3.89; third-party cites diluted $3.83 - not confirmed."
+    ],
+    "data_quality": "full",
+    "research_date": "2026-10-21",
+    "verification_method": "Facts gathered 2026-10-21 via WebSearch result summaries/snippets only. Direct retrieval of source pages (WebFetch and curl to sec.gov, businesswire, globenewswire, company IR sites) failed in this environment (DNS failure / egress proxy 403), so numbers were not read from the full source documents. URLs are those returned by the search engine for the cited content."
+  },
+  {
+    "ticker": "RMBS",
+    "name": "Rambus Inc.",
+    "primary_exchange": "NASDAQ",
+    "other_listings": [],
+    "country_hq": "United States (San Jose, California)",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "December",
+    "business_summary": "Rambus sells memory interface chips (e.g., DDR5 RCD, MRCD/MDB, PMIC for server DIMMs), licenses its memory and interface patent portfolio, and sells digital/security silicon IP such as HBM controllers. Revenue is reported as product, royalties, and contract and other revenue; management attributed record Q2 2026 results to memory interface chip and AI-related demand.",
+    "main_products": [
+      "DDR5 server memory interface chips (RCD, MRCD, MDB)",
+      "Server PMICs",
+      "Patent licenses (royalties)",
+      "Silicon IP: HBM4/HBM4E memory controllers, interface and security IP"
+    ],
+    "segments": [
+      "Revenue categories reported: Product; Royalties; Contract and other (formal reportable segment structure not verified)"
+    ],
+    "ai_energy_commodity_link": "Measurable: Q2 2026 product revenue $99.2M of $207.4M total (memory interface chips for servers, which are used in AI/datacenter servers); royalties $84.2M. Royalties were 40% of FY2025 revenue (10-K). Company states demand for memory interface chips and AI-related products drove results; markets HBM4E controller IP for AI accelerators. No direct energy/commodity exposure identified.",
+    "confirmed_relationships": [
+      {
+        "counterparty": "Top five customers (unnamed)",
+        "relationship": "customer",
+        "detail": "Top five customers were 66% of 2025 revenue (62% in 2024 and 2023)",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/917273/000119312526057101/rmbs-20251231.htm",
+        "source_date": "2026-02",
+        "status": "confirmed_by_filing",
+        "verification": "Search-result excerpt of FY2025 10-K"
+      },
+      {
+        "counterparty": "Patent licensees named in 10-K: AMD, Amlogic, Broadcom, CXMT, IBM, Infineon, Kioxia, Marvell, MediaTek, Micron, Nanya, Nuvoton, NVIDIA, Phison, Qualcomm, Samsung, Silicon Motion, SK hynix, Socionext, STMicroelectronics, Toshiba, Western Digital, Winbond",
+        "relationship": "customer",
+        "detail": "Listed as licensees of Rambus patents (no per-licensee revenue share disclosed in excerpt)",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/917273/000119312526057101/rmbs-20251231.htm",
+        "source_date": "2026-02",
+        "status": "confirmed_by_filing",
+        "verification": "Search-result excerpt of FY2025 10-K"
+      }
+    ],
+    "latest_reported_quarter": {
+      "period_label": "Q2 2026",
+      "period_end_date": "2026-06-30",
+      "revenue": 207.4,
+      "revenue_unit": "USD millions",
+      "gaap_net_income": 67.6,
+      "cash_and_equivalents": 87.7,
+      "cash_note": "Cash and cash equivalents $87.72M plus marketable securities $737.23M",
+      "total_debt": null,
+      "guidance_next_quarter": "Q3 2026: total revenue $210M-$216M (product $110M-$116M; royalties $69M-$75M; contract and other $25M-$31M); an aggregator reports GAAP diluted EPS guidance $0.59-$0.67 (not confirmed in release excerpt)",
+      "source_url": "https://investor.rambus.com/press-releases/press-release-details/2026/Rambus-Reports-Second-Quarter-2026-Financial-Results/default.aspx",
+      "source_date": "2026-07-27"
+    },
+    "key_recent_events": [
+      {
+        "date": "2026-03-05",
+        "event": "Launched HBM4E memory controller IP (16 Gbps/pin, 4.1 TB/s per device) - media report",
+        "source_url": "https://stockhub.kr/en/news/news_9d82f4c49da1"
+      },
+      {
+        "date": "2026-07-27",
+        "event": "Record Q2 2026 revenue $207.4M, above $192-198M guidance; GAAP NI $67.6M; operating cash flow $61.2M",
+        "source_url": "https://investor.rambus.com/press-releases/press-release-details/2026/Rambus-Reports-Second-Quarter-2026-Financial-Results/default.aspx"
+      },
+      {
+        "date": "2026-08-05",
+        "event": "$100M accelerated share repurchase with Mizuho (initial delivery ~796,000 shares), expected complete by end of Q3 2026",
+        "source_url": "https://www.businesswire.com/news/home/20260805283969/en/"
+      }
+    ],
+    "red_flags": [
+      {
+        "flag": "Customer concentration: top five customers 66% of 2025 revenue",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/917273/000119312526057101/rmbs-20251231.htm"
+      },
+      {
+        "flag": "Royalty guidance for Q3 2026 ($69-75M) below Q2 actual ($84.2M), implying lumpy licensing revenue",
+        "source_url": "https://investor.rambus.com/press-releases/press-release-details/2026/Rambus-Reports-Second-Quarter-2026-Financial-Results/default.aspx"
+      }
+    ],
+    "notes_unverified": [
+      "All facts sourced from web-search result summaries; direct page fetch failed in this environment.",
+      "Total debt not found (believed to have little or no debt, not confirmed).",
+      "Names/percentages of individual 10%+ customers not retrieved.",
+      "Q3 2026 GAAP EPS guidance $0.59-0.67 from aggregator only."
+    ],
+    "data_quality": "full (debt missing)",
+    "research_date": "2026-10-21",
+    "verification_method": "Facts gathered 2026-10-21 via WebSearch result summaries/snippets only. Direct retrieval of source pages (WebFetch and curl to sec.gov, businesswire, globenewswire, company IR sites) failed in this environment (DNS failure / egress proxy 403), so numbers were not read from the full source documents. URLs are those returned by the search engine for the cited content."
+  },
+  {
+    "ticker": "AMKR",
+    "name": "Amkor Technology, Inc.",
+    "primary_exchange": "NASDAQ",
+    "other_listings": [],
+    "country_hq": "United States (Tempe, Arizona); major operations in Korea, Taiwan, China, Japan, Malaysia, Philippines, Vietnam, Portugal",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "December",
+    "business_summary": "Amkor is an outsourced semiconductor packaging and test (OSAT) provider. It reports sales split between Advanced and Mainstream packaging products and by end market (Communications, Computing, Automotive/industrial/other, Consumer). It is building a U.S. advanced packaging and test campus in Peoria, Arizona.",
+    "main_products": [
+      "Advanced packaging (flip chip, wafer-level, high-density fan-out, system-in-package, 2.5D)",
+      "Mainstream packaging (wirebond/leadframe)",
+      "Test services"
+    ],
+    "segments": [
+      "Sales disclosed as Advanced products and Mainstream products, and by end market: Communications, Computing, Automotive industrial and other, Consumer (formal reportable segment structure not verified)"
+    ],
+    "ai_energy_commodity_link": "Measurable: Q2 2026 Computing end market 22% of sales (record), Advanced products $1,557M of $1,898M net sales. Company states it advanced key customer programs in AI and HPC and is expanding advanced packaging capacity. AI-specific revenue not disclosed. No direct energy/commodity exposure identified.",
+    "confirmed_relationships": [
+      {
+        "counterparty": "Apple",
+        "relationship": "customer",
+        "detail": "29.8% of 2025 net sales per 10-K as cited by third-party site; Apple has stated Amkor will package Apple silicon at the Arizona site",
+        "source_url": "https://policyrisk.com/world/company/AMKR",
+        "source_date": "2026",
+        "status": "media_report",
+        "verification": "Third-party site quoting 10-K; not verified against filing"
+      },
+      {
+        "counterparty": "Qualcomm",
+        "relationship": "customer",
+        "detail": "11.1% of 2025 net sales per 10-K as cited by third-party site; top ten customers 72% of 2025 net sales",
+        "source_url": "https://policyrisk.com/world/company/AMKR",
+        "source_date": "2026",
+        "status": "media_report",
+        "verification": "Third-party site quoting 10-K"
+      },
+      {
+        "counterparty": "TSMC",
+        "relationship": "partner",
+        "detail": "Apple-TSMC-Amkor arrangement for U.S. (Arizona) chip packaging supply chain",
+        "source_url": "https://www.eetasia.com/?p=55574",
+        "source_date": "2024-2025",
+        "status": "media_report",
+        "verification": "Search-result headline/summary"
+      }
+    ],
+    "latest_reported_quarter": {
+      "period_label": "Q2 2026",
+      "period_end_date": "2026-06-30",
+      "revenue": 1898,
+      "revenue_unit": "USD millions",
+      "gaap_net_income": 174,
+      "cash_and_equivalents": "Total cash and short-term investments $2.5B",
+      "total_debt": "$2.5B",
+      "guidance_next_quarter": "Q3 2026: net sales $1.95B-$2.05B; gross margin 18.5%-19.5%; net income $180M-$205M; diluted EPS $0.72-$0.82; FY2026 capex ~$2.5B-$3.0B",
+      "source_url": "https://ir.amkor.com/news-releases/news-release-details/amkor-technology-reports-financial-results-second-quarter-2026",
+      "source_date": "2026-07-27"
+    },
+    "key_recent_events": [
+      {
+        "date": "2025-09",
+        "event": "Issued $500M senior notes due 2033 to refinance debt and for general corporate purposes",
+        "source_url": "https://www.roic.ai/quote/AMKR"
+      },
+      {
+        "date": "2026-05-28",
+        "event": "Acquired additional 67-acre parcel adjacent to 104-acre Peoria, Arizona campus",
+        "source_url": "https://evertiq.com/design/2026-05-28-amkor-acquires-additional-land-in-arizona-to-expand-advanced-packaging-campus"
+      },
+      {
+        "date": "2026-07-27",
+        "event": "Record Q2 2026 net sales $1.90B (+26% y/y); record Computing and Automotive & Industrial revenue",
+        "source_url": "https://ir.amkor.com/news-releases/news-release-details/amkor-technology-reports-financial-results-second-quarter-2026"
+      },
+      {
+        "date": "2026-09-08",
+        "event": "Arizona phase 2 (~60,000 m2 cleanroom) raises planned Arizona investment to ~$12B, citing customer commitments exceeding phase 1 capacity",
+        "source_url": "https://amkortech.gcs-web.com/node/24366"
+      }
+    ],
+    "red_flags": [
+      {
+        "flag": "Customer concentration: Apple ~29.8%, Qualcomm ~11.1%, top ten 72% of 2025 net sales (third-party citing 10-K)",
+        "source_url": "https://policyrisk.com/world/company/AMKR"
+      },
+      {
+        "flag": "Heavy capex ($2.5-3.0B in 2026) and Arizona program now ~$12B; CHIPS award (up to $407M) has milestone/clawback covenants",
+        "source_url": "https://policyrisk.com/world/company/AMKR"
+      },
+      {
+        "flag": "Thin gross margins (Q3 2026 guide 18.5%-19.5%); communications revenue expected down high-single digits q/q in Q3 (SiP migration, memory supply constraints)",
+        "source_url": "https://www.webull.com/news/15303749284471808"
+      }
+    ],
+    "notes_unverified": [
+      "All facts sourced from web-search result summaries; direct page fetch failed in this environment.",
+      "Apple/Qualcomm percentages are from a third-party site citing the 10-K, not read in the filing.",
+      "Status of CHIPS Act disbursements in 2026 not confirmed.",
+      "Arizona production start: early 2028 per one report; earlier reports said 2027."
+    ],
+    "data_quality": "full",
+    "research_date": "2026-10-21",
+    "verification_method": "Facts gathered 2026-10-21 via WebSearch result summaries/snippets only. Direct retrieval of source pages (WebFetch and curl to sec.gov, businesswire, globenewswire, company IR sites) failed in this environment (DNS failure / egress proxy 403), so numbers were not read from the full source documents. URLs are those returned by the search engine for the cited content."
+  },
+  {
+    "ticker": "AEHR",
+    "name": "Aehr Test Systems",
+    "primary_exchange": "NASDAQ",
+    "other_listings": [],
+    "country_hq": "United States (Fremont, California)",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "Changed: FY2026 ended May 29, 2026; transition period to June 26, 2026; FY2027 ends June 25, 2027 (June year-end going forward)",
+    "business_summary": "Aehr Test Systems supplies wafer-level and packaged-part test and burn-in equipment (FOX-P systems, WaferPak contactors, Sonoma systems) for semiconductors. Historically focused on silicon carbide for EVs, its Q4 FY2026 revenue was more than 80% from AI processors and silicon photonics burn-in.",
+    "main_products": [
+      "FOX-XP / FOX-NP wafer-level test and burn-in systems",
+      "WaferPak full-wafer contactors and DiePak carriers",
+      "Sonoma packaged-part burn-in systems (AI processors)"
+    ],
+    "segments": [
+      "Single business (semiconductor test and burn-in equipment) - formal segment disclosure not verified"
+    ],
+    "ai_energy_commodity_link": "Measurable: AI processors and silicon photonics burn-in were more than 80% of Q4 FY2026 revenue vs 56% in the prior-year quarter (company release). Company states hyperscale data center deployments drive silicon photonics screening demand; record bookings of $60.7M and effective backlog ~$100.6M; FY2027 revenue guidance $130M-$150M.",
+    "confirmed_relationships": [
+      {
+        "counterparty": "Three unnamed customers",
+        "relationship": "customer",
+        "detail": "Each represented more than 10% of Q4 FY2026 revenue",
+        "source_url": "https://www.aehr.com/2026/07/aehr-test-systems-reports-fiscal-2026-fourth-quarter-and-full-year-financial-results-with-record-quarterly-bookings-and-100-million-effective-backlog/",
+        "source_date": "2026-07-14",
+        "status": "company_press_release",
+        "verification": "Search-result summary"
+      },
+      {
+        "counterparty": "Two unnamed customers",
+        "relationship": "customer",
+        "detail": "~39% and ~15% of FY2025 net sales; top five customers ~77% of FY2025 (93% FY2024)",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1040470/000165495425008553/aehr_10k.htm",
+        "source_date": "2025-07",
+        "status": "confirmed_by_filing",
+        "verification": "Search-result excerpt of FY2025 10-K"
+      }
+    ],
+    "latest_reported_quarter": {
+      "period_label": "Q4 FY2026",
+      "period_end_date": "2026-05-29",
+      "revenue": 18.8,
+      "revenue_unit": "USD millions",
+      "gaap_net_income": 1.4,
+      "cash_and_equivalents": null,
+      "cash_and_equivalents_unverified": "$116.5M per third-party (Chartmill) summary of the release; not confirmed",
+      "total_debt": null,
+      "guidance_next_quarter": "No quarterly guidance found; FY2027 revenue guidance $130M-$150M. Q1 FY2027 (quarter ended Sept 25, 2026) results scheduled for Nov 2, 2026",
+      "source_url": "https://www.aehr.com/2026/07/aehr-test-systems-reports-fiscal-2026-fourth-quarter-and-full-year-financial-results-with-record-quarterly-bookings-and-100-million-effective-backlog/",
+      "source_date": "2026-07-14"
+    },
+    "key_recent_events": [
+      {
+        "date": "2026-04-08",
+        "event": "Entered $60M at-the-market equity program with William Blair and Craig-Hallum (commissions up to 3%)",
+        "source_url": "https://www.boardroomalpha.com/sec/aehr-8-k-2026-04-08-0001654954-26-003355"
+      },
+      {
+        "date": "2026-04-17",
+        "event": "8-K: ATM fully utilized, ~$60.0M gross proceeds (earlier $40M ATM also fully utilized at ~$35.38 avg per Q3 call)",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001040470/000165495426003746/aehr_8k.htm"
+      },
+      {
+        "date": "2026-07-14",
+        "event": "Q4 FY2026: record bookings $60.7M, backlog $80.6M at May 29 (effective ~$100.6M); FY2027 revenue guide $130-150M",
+        "source_url": "https://www.aehr.com/2026/07/aehr-test-systems-reports-fiscal-2026-fourth-quarter-and-full-year-financial-results-with-record-quarterly-bookings-and-100-million-effective-backlog/"
+      },
+      {
+        "date": "2026-10-09",
+        "event": "Scheduled Q1 FY2027 results for Nov 2, 2026, reflecting fiscal-year shift",
+        "source_url": "https://marketchameleon.com/articles/b/2026/10/9/aehr-november-2-2026-q1-fy2027-earnings-call-fiscal-year-shift"
+      }
+    ],
+    "red_flags": [
+      {
+        "flag": "Dilution: two fully-utilized ATM programs (~$40M and ~$60M) in FY2026",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001040470/000165495426003746/aehr_8k.htm"
+      },
+      {
+        "flag": "Customer concentration: top five ~77% of FY2025 net sales; three 10%+ customers in Q4 FY2026",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1040470/000165495425008553/aehr_10k.htm"
+      },
+      {
+        "flag": "FY2026 revenue fell to $50.0M from $59.0M with GAAP net loss $(7.1)M; FY2027 guide implies large step-up dependent on backlog conversion",
+        "source_url": "https://www.aehr.com/2026/07/aehr-test-systems-reports-fiscal-2026-fourth-quarter-and-full-year-financial-results-with-record-quarterly-bookings-and-100-million-effective-backlog/"
+      },
+      {
+        "flag": "Fiscal-year change creates a short transition period (May 30-June 26, 2026), complicating comparisons",
+        "source_url": "https://marketchameleon.com/articles/b/2026/10/9/aehr-november-2-2026-q1-fy2027-earnings-call-fiscal-year-shift"
+      }
+    ],
+    "notes_unverified": [
+      "All facts sourced from web-search result summaries; direct page fetch failed in this environment.",
+      "Quarter-end cash of $116.5M only from a third-party summary.",
+      "FY2026 customer concentration (top five ~70%; 26%/14%/11%) from a secondary aggregator only.",
+      "Customer names not confirmed."
+    ],
+    "data_quality": "partial (cash unverified, no debt figure)",
+    "research_date": "2026-10-21",
+    "verification_method": "Facts gathered 2026-10-21 via WebSearch result summaries/snippets only. Direct retrieval of source pages (WebFetch and curl to sec.gov, businesswire, globenewswire, company IR sites) failed in this environment (DNS failure / egress proxy 403), so numbers were not read from the full source documents. URLs are those returned by the search engine for the cited content."
+  },
+  {
+    "ticker": "POWL",
+    "name": "Powell Industries, Inc.",
+    "primary_exchange": "NASDAQ",
+    "other_listings": [],
+    "country_hq": "United States (Houston, Texas)",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "September",
+    "business_summary": "Powell designs and manufactures custom engineered electrical distribution and control equipment, including power control rooms/E-Houses, medium- and low-voltage switchgear, motor control centers and bus duct, plus field services. Its markets include oil & gas, petrochemical, electric utility, and commercial & other industrial (including data centers).",
+    "main_products": [
+      "Power control rooms / E-Houses",
+      "ANSI/IEC medium- and low-voltage switchgear",
+      "MV/LV motor control centers",
+      "Bus duct, utility transfer switches, DC switchgear",
+      "SCADA remote terminal units (Remsdaq)",
+      "Field services"
+    ],
+    "segments": [
+      "Not verified in sources seen (see notes); revenue disclosed by end market: Oil & Gas, Petrochemical, Electric Utility, Commercial & Other Industrial, Traction/Transit"
+    ],
+    "ai_energy_commodity_link": "Measurable: Q3 FY2026 largest order was a data center order valued above $400M for behind-the-meter on-site generation assets; orders $934M (book-to-bill 3.0x), record backlog $2.4B. Commercial & Other Industrial revenue +54% y/y, Electric Utility +18%, Petrochemical -49% (company release). Energy link: LNG (~$60M) and petrochemical (~$75M) mega orders; oil & gas historically core end market.",
+    "confirmed_relationships": [
+      {
+        "counterparty": "Unnamed data center customer",
+        "relationship": "customer",
+        "detail": "Order valued above $400M for behind-the-meter on-site generation assets (Q3 FY2026)",
+        "source_url": "https://powellindustriesinc.gcs-web.com/news-releases/news-release-details/powell-industries-announces-third-quarter-fiscal-2026-results",
+        "source_date": "2026-08-03",
+        "status": "company_press_release",
+        "verification": "Search-result summary"
+      },
+      {
+        "counterparty": "Unnamed petrochemical and LNG customers",
+        "relationship": "customer",
+        "detail": "Petrochemical order ~$75M and LNG order ~$60M in Q3 FY2026",
+        "source_url": "https://powellindustriesinc.gcs-web.com/news-releases/news-release-details/powell-industries-announces-third-quarter-fiscal-2026-results",
+        "source_date": "2026-08-03",
+        "status": "company_press_release",
+        "verification": "Search-result summary"
+      }
+    ],
+    "latest_reported_quarter": {
+      "period_label": "Q3 FY2026",
+      "period_end_date": "2026-06-30",
+      "revenue": 312,
+      "revenue_unit": "USD millions (10-Q shows $311.7M)",
+      "gaap_net_income": 52.2,
+      "cash_and_equivalents": "Cash and short-term investments $634M",
+      "total_debt": 0,
+      "total_debt_note": "Company reported zero debt",
+      "guidance_next_quarter": null,
+      "source_url": "https://powellindustriesinc.gcs-web.com/news-releases/news-release-details/powell-industries-announces-third-quarter-fiscal-2026-results",
+      "source_date": "2026-08-03"
+    },
+    "key_recent_events": [
+      {
+        "date": "2025 (fiscal Q4 FY2025)",
+        "event": "Acquired U.K.-based Remsdaq Limited (SCADA remote terminal units); reported price ~$18.4M per secondary summary",
+        "source_url": "https://powellindustriesinc.gcs-web.com/node/15511/html"
+      },
+      {
+        "date": "2025-11",
+        "event": "FY2025 results: revenue $1.1B (+9%), net income $181M ($14.86/diluted share), backlog $1.4B at Sept 30, 2025",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/80420/000008042025000152/powl-20250930.htm"
+      },
+      {
+        "date": "2026-08-03",
+        "event": "Q3 FY2026: record orders $934M (+158%), record backlog $2.4B, including >$400M data center behind-the-meter generation order",
+        "source_url": "https://powellindustriesinc.gcs-web.com/news-releases/news-release-details/powell-industries-announces-third-quarter-fiscal-2026-results"
+      }
+    ],
+    "red_flags": [
+      {
+        "flag": "Order lumpiness / single-order concentration: one data center order >$400M represents a large share of $934M quarterly orders",
+        "source_url": "https://powellindustriesinc.gcs-web.com/news-releases/news-release-details/powell-industries-announces-third-quarter-fiscal-2026-results"
+      },
+      {
+        "flag": "Petrochemical revenue down 49% y/y in Q3 FY2026",
+        "source_url": "https://powellindustriesinc.gcs-web.com/news-releases/news-release-details/powell-industries-announces-third-quarter-fiscal-2026-results"
+      }
+    ],
+    "notes_unverified": [
+      "All facts sourced from web-search result summaries; direct page fetch failed in this environment.",
+      "Reportable segment names not confirmed (historically believed to be 'Electrical Power Products' and 'Industrial Real Estate', but search could not confirm).",
+      "Customer concentration disclosures not found.",
+      "Company does not appear to give quarterly guidance; none found.",
+      "Release date: Nasdaq-hosted release dated 2026-08-03; call transcript dated 2026-08-10 - exact release date not cross-checked."
+    ],
+    "data_quality": "full",
+    "research_date": "2026-10-21",
+    "verification_method": "Facts gathered 2026-10-21 via WebSearch result summaries/snippets only. Direct retrieval of source pages (WebFetch and curl to sec.gov, businesswire, globenewswire, company IR sites) failed in this environment (DNS failure / egress proxy 403), so numbers were not read from the full source documents. URLs are those returned by the search engine for the cited content."
+  },
+  {
+    "ticker": "HPS.A",
+    "name": "Hammond Power Solutions Inc.",
+    "primary_exchange": "TSX",
+    "other_listings": [
+      "OTC (HMDPF) - per Yahoo Finance quote page"
+    ],
+    "country_hq": "Canada (Guelph, Ontario)",
+    "reporting_currency": "CAD",
+    "fiscal_year_end": "December",
+    "business_summary": "Hammond Power Solutions designs and manufactures dry-type and cast resin transformers, power quality products and related magnetics for electrical distribution, sold across the U.S., Mexico, Canada and internationally. In June 2026 it acquired AEG Power Solutions (Europe/Asia, ~C$326M 2025 revenue), adding power-conversion and UPS-type products.",
+    "main_products": [
+      "Dry-type distribution and custom transformers",
+      "Cast resin transformers",
+      "Power quality products (harmonic mitigation, reactors)",
+      "Magnetics",
+      "AEG Power Solutions products (acquired June 2026)"
+    ],
+    "segments": [
+      "Sales reported by geography: U.S. & Mexico; Canada; International (formal segment structure not verified)"
+    ],
+    "ai_energy_commodity_link": "Measurable: Q2 2026 U.S. & Mexico sales C$272.7M (+73.0% y/y) of total C$325M; backlog +96.9% y/y primarily due to large project orders driven by data centre activity (company release). One call summary states data centers are now more than 30% of revenue (not confirmed in release). Commodity link: transformer input costs (copper, electrical steel) - not quantified in sources seen.",
+    "confirmed_relationships": [
+      {
+        "counterparty": "AEG Power Solutions",
+        "relationship": "partner",
+        "detail": "Acquired (completed June 29, 2026) in all-cash deal valued ~C$365M including assumption/repayment of bank debt",
+        "source_url": "https://asia.hammondpowersolutions.com/news/2026/june/hps-completes-acquisition-of-aeg-power-solutions",
+        "source_date": "2026-06-29",
+        "status": "company_press_release",
+        "verification": "Search-result summary"
+      },
+      {
+        "counterparty": "J.P. Morgan, National Bank of Canada, Royal Bank of Canada",
+        "relationship": "partner",
+        "detail": "New syndicated secured credit facility: up to US$300M term debt to fund AEG acquisition and up to US$150M revolver, expiring Q3 2030",
+        "source_url": "https://asia.hammondpowersolutions.com/news/2026/june/hps-completes-acquisition-of-aeg-power-solutions",
+        "source_date": "2026-06-29",
+        "status": "company_press_release",
+        "verification": "Search-result summary"
+      }
+    ],
+    "latest_reported_quarter": {
+      "period_label": "Q2 2026",
+      "period_end_date": null,
+      "period_end_note": "Quarter ended late June 2026 (exact date not confirmed)",
+      "revenue": 325,
+      "revenue_unit": "CAD millions",
+      "gaap_net_income": null,
+      "eps_basic": 0.79,
+      "adjusted_eps": 2.76,
+      "cash_and_equivalents": null,
+      "total_debt": null,
+      "guidance_next_quarter": "No numeric guidance found; company said Q3 will include a full quarter of AEG results plus remaining closing costs and associated debt",
+      "source_url": "https://www.globenewswire.com/news-release/2026/07/30/3336509/0/en/hammond-power-solutions-reports-second-quarter-2026-financial-results.html",
+      "source_date": "2026-07-30"
+    },
+    "key_recent_events": [
+      {
+        "date": "2026-06-29",
+        "event": "Completed acquisition of AEG Power Solutions for ~C$365M, funded by new secured credit facility (US$300M term + US$150M revolver)",
+        "source_url": "https://asia.hammondpowersolutions.com/news/2026/june/hps-completes-acquisition-of-aeg-power-solutions"
+      },
+      {
+        "date": "2026-07-30",
+        "event": "Record Q2 2026 sales C$325M (+44.7% y/y); adjusted EBITDA C$53.2M (+59.4%); backlog +96.9% y/y on data centre orders",
+        "source_url": "https://www.globenewswire.com/news-release/2026/07/30/3336509/0/en/hammond-power-solutions-reports-second-quarter-2026-financial-results.html"
+      },
+      {
+        "date": "2026-07-30",
+        "event": "Canada sales fell 23.7% y/y (timing of large custom projects); backlog declined sequentially from Q1",
+        "source_url": "https://finance.yahoo.com/markets/stocks/articles/hammond-power-solutions-reports-second-211500499.html"
+      }
+    ],
+    "red_flags": [
+      {
+        "flag": "New leverage: up to US$300M acquisition term debt for AEG (previously low-debt balance sheet)",
+        "source_url": "https://asia.hammondpowersolutions.com/news/2026/june/hps-completes-acquisition-of-aeg-power-solutions"
+      },
+      {
+        "flag": "YTD 2026 net earnings fell 26.9% to C$28.96M (higher share-based comp, SG&A, C$4.99M acquisition costs) despite sales growth",
+        "source_url": "https://www.globenewswire.com/news-release/2026/07/30/3336509/0/en/Hammond-Power-Solutions-Reports-Q2-2026-Financial-Results.html"
+      },
+      {
+        "flag": "Sequential backlog decline from Q1 2026 and dependence on large data-centre project orders",
+        "source_url": "https://www.globenewswire.com/news-release/2026/07/30/3336509/0/en/hammond-power-solutions-reports-second-quarter-2026-financial-results.html"
+      }
+    ],
+    "notes_unverified": [
+      "All facts sourced from web-search result summaries; direct page fetch failed in this environment.",
+      "Q2 2026 net earnings: Quartr summary says C$9.4M - not confirmed in release, left null.",
+      "Cash and total debt at Q2 2026 quarter-end not found (AEG closed June 29, after/at quarter end).",
+      "Data centers >30% of revenue is from a call summary only.",
+      "Exact quarter-end date not confirmed; SEDAR filings not accessed."
+    ],
+    "data_quality": "partial (net income, cash, debt missing)",
+    "research_date": "2026-10-21",
+    "verification_method": "Facts gathered 2026-10-21 via WebSearch result summaries/snippets only. Direct retrieval of source pages (WebFetch and curl to sec.gov, businesswire, globenewswire, company IR sites) failed in this environment (DNS failure / egress proxy 403), so numbers were not read from the full source documents. URLs are those returned by the search engine for the cited content."
+  },
+  {
+    "ticker": "NVT",
+    "name": "nVent Electric plc",
+    "primary_exchange": "NYSE",
+    "other_listings": [],
+    "country_hq": "United Kingdom (London; releases datelined London) - Irish-incorporated plc",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "December",
+    "business_summary": "nVent makes electrical connection and protection products, including enclosures, data center liquid cooling systems, power distribution and electrical fastening/grounding products. Q2 2026 sales grew 53% (47% organic) with significant data center growth; it agreed in Aug 2026 to acquire Maverick Power, a maker of data center switchgear and modular power systems.",
+    "main_products": [
+      "Enclosures and electronics protection",
+      "Data center liquid cooling (CDUs, rear-door heat exchangers, manifolds)",
+      "Power distribution / power connections",
+      "Electrical fastening, grounding and bonding products"
+    ],
+    "segments": [
+      "Systems Protection",
+      "Electrical Connections"
+    ],
+    "ai_energy_commodity_link": "Measurable/company-stated: nVent expects more than $2B of 2026 data-center sales and cites a ~$2.5B (data center) backlog (Q2 2026 materials/coverage); new products contributed more than 30 points of Q2 sales growth. Expanding liquid-cooling manufacturing (Blaine 2, MN, 160,000 sq ft, production 1H 2027). Pending Maverick Power acquisition (~$700M est. 2026 revenue) adds data center switchgear. Utility/infrastructure (power) end markets also referenced; ~$100M incremental tariff impact expected in 2026.",
+    "confirmed_relationships": [
+      {
+        "counterparty": "Maverick Power (McKinney, Texas)",
+        "relationship": "partner",
+        "detail": "Definitive agreement to acquire for $1.75B plus up to $550M cash earnout (2027-2028 metrics); ~11.5x 2026E adj. EBITDA; funded by cash and new debt; expected close Q4 2026",
+        "source_url": "https://www.bnnbloomberg.ca/business/company-news/2026/08/24/nvent-electric-to-buy-maverick-power-for-us175-billion-to-expand-data-center-offerings/",
+        "source_date": "2026-08-24",
+        "status": "company_press_release",
+        "verification": "Search-result summary of GlobeNewswire release"
+      }
+    ],
+    "latest_reported_quarter": {
+      "period_label": "Q2 2026",
+      "period_end_date": "2026-06-30",
+      "revenue": 1471,
+      "revenue_unit": "USD millions (release headline '$1.5 billion'; $1.471B per Benzinga)",
+      "gaap_net_income": null,
+      "gaap_diluted_eps": 1.32,
+      "cash_and_equivalents": null,
+      "total_debt": 1500.0,
+      "total_debt_note": "USD millions per 10-Q debt note ($200.0M variable + $1,300.0M fixed), excluding unamortized costs",
+      "guidance_next_quarter": "Q3 2026: reported sales growth 32%-35%; GAAP EPS $1.18-$1.21; adjusted EPS $1.35-$1.38. FY2026 raised: reported sales growth 37%-39%, organic 32%-34%, GAAP EPS $4.29-$4.39, adjusted EPS $5.00-$5.10",
+      "source_url": "https://s22.q4cdn.com/268397047/files/content_files/Q2-2026-NVT-Press-Release.pdf",
+      "debt_source_url": "https://www.sec.gov/Archives/edgar/data/0001720635/000162828026051428/nvt-20260630.htm",
+      "source_date": "2026-07-31"
+    },
+    "key_recent_events": [
+      {
+        "date": "2026-07-31",
+        "event": "Q2 2026 sales +53% (organic +47%); raised FY2026 guidance (adj. EPS to $5.00-$5.10 from $4.45-$4.55)",
+        "source_url": "https://s22.q4cdn.com/268397047/files/content_files/Q2-2026-NVT-Press-Release.pdf"
+      },
+      {
+        "date": "2026-07-31",
+        "event": "Announced Blaine 2 (Minnesota) 160,000 sq ft liquid cooling manufacturing expansion, production expected 1H 2027; 2026 capex ~ $130M",
+        "source_url": "https://www.chartmill.com/news/external/64799/can-capacity-expansion-support-nvent-electric-s-next-growth-phase"
+      },
+      {
+        "date": "2026-08-24",
+        "event": "Agreed to acquire Maverick Power for $1.75B + up to $550M earnout; close expected Q4 2026",
+        "source_url": "https://www.foley.com/news/2026/08/foley-represents-nvent-electric-in-1-75-billion-acquisition-of-maverick-power/"
+      }
+    ],
+    "red_flags": [
+      {
+        "flag": "Acquisition leverage: Maverick deal funded with cash and new debt on top of $1.5B existing debt; up to $550M contingent consideration",
+        "source_url": "https://www.bnnbloomberg.ca/business/company-news/2026/08/24/nvent-electric-to-buy-maverick-power-for-us175-billion-to-expand-data-center-offerings/"
+      },
+      {
+        "flag": "Tariffs: ~ $100M incremental 2026 tariff impact expected",
+        "source_url": "https://www.benzinga.com/markets/earnings/26/07/60845239"
+      },
+      {
+        "flag": "Capacity investments expected to limit 2H 2026 incremental margins to mid-20% range (media)",
+        "source_url": "https://www.marketbeat.com/instant-alerts/nvent-electric-nysenvt-updates-q3-2026-earnings-guidance-2026-07-31/"
+      }
+    ],
+    "notes_unverified": [
+      "All facts sourced from web-search result summaries; direct page fetch failed in this environment.",
+      "Q2 2026 GAAP net income: MarketScreener cites $215.9M but its EPS figure conflicts with the release; left null.",
+      "Cash at June 30, 2026: aggregator (roic.ai) lists $256M cash+ST investments - not confirmed.",
+      "Segment names (Systems Protection, Electrical Connections) from prior knowledge of 2025 re-segmentation; not re-verified in this search.",
+      "Data center share of total sales not disclosed in sources seen.",
+      "Q3 2026 results not yet reported as of research date (expected late Oct)."
+    ],
+    "data_quality": "full (net income dollar figure and cash missing)",
+    "research_date": "2026-10-21",
+    "verification_method": "Facts gathered 2026-10-21 via WebSearch result summaries/snippets only. Direct retrieval of source pages (WebFetch and curl to sec.gov, businesswire, globenewswire, company IR sites) failed in this environment (DNS failure / egress proxy 403), so numbers were not read from the full source documents. URLs are those returned by the search engine for the cited content."
+  },
+  {
+    "ticker": "BWXT",
+    "name": "BWX Technologies, Inc.",
+    "primary_exchange": "NYSE",
+    "other_listings": [],
+    "country_hq": "United States (Lynchburg, Virginia)",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "December",
+    "business_summary": "BWXT manufactures naval nuclear reactor components and fuel for the U.S. Navy, processes special nuclear materials for the U.S. Government, and supplies commercial nuclear components, fuel, field services and engineering (including Kinectrics). In July 2026 it agreed to sell its medical isotope business to Nordic Capital and completed the acquisition of Precision Components Group.",
+    "main_products": [
+      "Naval nuclear propulsion reactors and components",
+      "Special nuclear materials processing / nuclear fuel",
+      "Commercial nuclear components (e.g., steam generators), fuel handling and field services",
+      "Advanced/microreactor development",
+      "Medical isotopes (being divested)"
+    ],
+    "segments": [
+      "Government Operations",
+      "Commercial Operations"
+    ],
+    "ai_energy_commodity_link": "Measurable (FY2025): Government Operations revenue $2,350.1M and Commercial Operations $853.1M of $3,198.4M consolidated; Commercial grew 63% y/y; U.S. Government ~68% of 2025 consolidated revenue (10-K). Energy link: commercial nuclear power components, fuel and services (nuclear new-build/refurbishment demand). Q2 2026 Government Operations growth from naval propulsion and special materials, partially offset by lower advanced nuclear volumes. No company statement directly tying revenue to AI datacenters was seen.",
+    "confirmed_relationships": [
+      {
+        "counterparty": "U.S. Government",
+        "relationship": "customer",
+        "detail": "~68%, 76% and 75% of consolidated revenues in 2025, 2024 and 2023; no other customer >10%",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1486957/000148695726000007/bwxt-20251231.htm",
+        "source_date": "2026-02",
+        "status": "confirmed_by_filing",
+        "verification": "Search-result excerpt of FY2025 10-K"
+      },
+      {
+        "counterparty": "Nordic Capital",
+        "relationship": "partner",
+        "detail": "Buyer of BWXT medical business (BWXT Medical + Kinectrics medical isotope business) in transaction valued up to $800M; BWXT retains minority interest and continues isotope/radiochemical supply; close expected 2026 or Q1 2027",
+        "source_url": "https://www.bwxt.com/bwxt-selling-medical-business-to-nordic-capital-in-transaction-valued-at-up-to-800-million/",
+        "source_date": "2026-07-31",
+        "status": "company_press_release",
+        "verification": "Search-result summary"
+      },
+      {
+        "counterparty": "Precision Components Group, LLC (Precision Custom Components; DC Fabricators)",
+        "relationship": "partner",
+        "detail": "Acquisition agreed Apr 20, 2026 and completed Jul 1, 2026; purchase price not disclosed in filing excerpt",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001486957/000148695726000042/bwxt_63026x10qdocument.htm",
+        "source_date": "2026-08",
+        "status": "confirmed_by_filing",
+        "verification": "Search-result excerpt of Q2 2026 10-Q"
+      }
+    ],
+    "latest_reported_quarter": {
+      "period_label": "Q2 2026",
+      "period_end_date": "2026-06-30",
+      "revenue": 901.6,
+      "revenue_unit": "USD millions",
+      "gaap_net_income": 89.1,
+      "gaap_net_income_note": "Net income attributable to BWXT $89.0M per filing summary; GAAP diluted EPS $0.97",
+      "cash_and_equivalents": null,
+      "total_debt": null,
+      "total_debt_note": "Release table shows long-term debt of $713.3M vs $672.0M but the period labels were not visible in the snippet",
+      "guidance_next_quarter": "No quarterly guidance; FY2026 raised: revenue ~ $3.8B (prior >$3.75B), adjusted EBITDA $662M-$672M, non-GAAP EPS $4.70-$4.80, free cash flow $345M-$360M",
+      "source_url": "https://www.businesswire.com/news/home/20260803655700/en/BWX-Technologies-Reports-Second-Quarter-2026-Results",
+      "source_date": "2026-08-03"
+    },
+    "key_recent_events": [
+      {
+        "date": "2026-02-23",
+        "event": "FY2025 results: revenue $3,198.4M; initiated 2026 guidance",
+        "source_url": "https://www.businesswire.com/news/home/20260223918392/en/BWX-Technologies-Reports-Fourth-Quarter-and-Full-Year-2025-Results-Initiates-2026-Guidance"
+      },
+      {
+        "date": "2026-04-20",
+        "event": "Agreed to acquire Precision Components Group (heavy manufacturing footprint); closed July 1, 2026",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001486957/000148695726000042/bwxt_63026x10qdocument.htm"
+      },
+      {
+        "date": "2026-07-31",
+        "event": "Agreed to sell medical business to Nordic Capital (value up to $800M)",
+        "source_url": "https://www.bwxt.com/bwxt-selling-medical-business-to-nordic-capital-in-transaction-valued-at-up-to-800-million/"
+      },
+      {
+        "date": "2026-08-03",
+        "event": "Q2 2026 revenue $901.6M (vs $764.0M), net income $89.1M, FCF $115.0M; raised FY2026 EBITDA/EPS/FCF guidance",
+        "source_url": "https://www.businesswire.com/news/home/20260803655700/en/BWX-Technologies-Reports-Second-Quarter-2026-Results"
+      },
+      {
+        "date": "2026-08",
+        "event": "Filed a Form 10-Q/A for the June 30, 2026 quarter (reason not verified)",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001486957/000148695726000044/bwxt-20260630.htm"
+      }
+    ],
+    "red_flags": [
+      {
+        "flag": "Government concentration: U.S. Government ~68% of 2025 revenue (appropriations/contract risk)",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1486957/000148695726000007/bwxt-20251231.htm"
+      },
+      {
+        "flag": "Amended quarterly report (10-Q/A) filed for Q2 2026 - reason not verified; should be reviewed",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001486957/000148695726000044/bwxt-20260630.htm"
+      },
+      {
+        "flag": "Lower advanced nuclear volumes in Q2 2026 Government Operations",
+        "source_url": "https://www.businesswire.com/news/home/20260803655700/en/BWX-Technologies-Reports-Second-Quarter-2026-Results"
+      }
+    ],
+    "notes_unverified": [
+      "All facts sourced from web-search result summaries; direct page fetch failed in this environment.",
+      "Cash at June 30, 2026 not found.",
+      "Backlog of $8.4B from a secondary filing summary (StockTitan) only.",
+      "No search was possible on DOE uranium enrichment / HALEU or naval contract awards in 2026 (search budget exhausted).",
+      "PCG purchase price not disclosed in excerpt seen."
+    ],
+    "data_quality": "full (cash/debt missing)",
+    "research_date": "2026-10-21",
+    "verification_method": "Facts gathered 2026-10-21 via WebSearch result summaries/snippets only. Direct retrieval of source pages (WebFetch and curl to sec.gov, businesswire, globenewswire, company IR sites) failed in this environment (DNS failure / egress proxy 403), so numbers were not read from the full source documents. URLs are those returned by the search engine for the cited content."
+  },
+  {
+    "ticker": "BE",
+    "name": "Bloom Energy Corporation",
+    "primary_exchange": "NYSE",
+    "other_listings": [],
+    "country_hq": "United States (San Jose, California)",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "December",
+    "business_summary": "Bloom Energy makes solid-oxide fuel cell 'Energy Server' systems that generate on-site electricity from natural gas, biogas or hydrogen, and also sells solid-oxide electrolyzers. It sells to commercial, industrial, utility and data center customers.",
+    "business_summary_verified": false,
+    "main_products": [
+      "Solid-oxide fuel cell Energy Servers (on-site power)",
+      "Solid-oxide electrolyzers (hydrogen)",
+      "Service and power purchase arrangements"
+    ],
+    "segments": [
+      "Not verified"
+    ],
+    "ai_energy_commodity_link": "Not measured this session. Expected exposure: behind-the-meter power for AI data centers; natural gas as fuel input. No disclosed data-center revenue share was seen.",
+    "confirmed_relationships": [],
+    "latest_reported_quarter": {
+      "period_label": null,
+      "period_end_date": null,
+      "revenue": null,
+      "revenue_unit": null,
+      "gaap_net_income": null,
+      "cash_and_equivalents": null,
+      "total_debt": null,
+      "guidance_next_quarter": null,
+      "source_url": null,
+      "source_date": null
+    },
+    "key_recent_events": [],
+    "red_flags": [],
+    "notes_unverified": [
+      "NOT RESEARCHED: the shared web-search budget for this turn (200 calls across all agents) was exhausted before this company was reached, and WebFetch/curl could not reach any source host (DNS failure / proxy 403). No figures, customers or URLs were verified for this company.",
+      "Identity fields and business description are from model background knowledge (training cutoff ~mid-2026) and were NOT verified this session.",
+      "UNVERIFIED LEAD (background knowledge, verify before use): AEP agreement for up to 1 GW of fuel cells (announced ~Nov 2024)",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Oracle collaboration to power OCI data centers (~Jul 2025)",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Brookfield Asset Management up-to-$5B AI infrastructure partnership (~Oct 2025)",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Equinix and SK ecoplant are long-standing customers/partners",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Convertible note issuance(s) in 2025 - amounts/terms not verified",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Q2 2026 results (likely reported late Jul 2026) not retrieved"
+    ],
+    "data_quality": "none (skeleton only)",
+    "research_date": "2026-10-21",
+    "verification_method": "Facts gathered 2026-10-21 via WebSearch result summaries/snippets only. Direct retrieval of source pages (WebFetch and curl to sec.gov, businesswire, globenewswire, company IR sites) failed in this environment (DNS failure / egress proxy 403), so numbers were not read from the full source documents. URLs are those returned by the search engine for the cited content."
+  },
+  {
+    "ticker": "ERO",
+    "name": "Ero Copper Corp.",
+    "primary_exchange": "TSX",
+    "other_listings": [
+      "NYSE (ERO)"
+    ],
+    "country_hq": "Canada (Vancouver, British Columbia); operations in Brazil",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "December",
+    "business_summary": "Ero Copper is a copper-focused miner with operations in Brazil: the Caraiba copper operations (Bahia), the Tucuma copper operation (Para) and the Xavantina gold mine (Mato Grosso).",
+    "business_summary_verified": false,
+    "main_products": [
+      "Copper concentrate",
+      "Gold (dore)"
+    ],
+    "segments": [
+      "Not verified (believed to report by operation: Caraiba, Tucuma, Xavantina)"
+    ],
+    "ai_energy_commodity_link": "Not measured this session. Expected exposure: copper price (electrification/data-center/grid demand driver) and BRL/USD FX.",
+    "confirmed_relationships": [],
+    "latest_reported_quarter": {
+      "period_label": null,
+      "period_end_date": null,
+      "revenue": null,
+      "revenue_unit": null,
+      "gaap_net_income": null,
+      "cash_and_equivalents": null,
+      "total_debt": null,
+      "guidance_next_quarter": null,
+      "source_url": null,
+      "source_date": null
+    },
+    "key_recent_events": [],
+    "red_flags": [],
+    "notes_unverified": [
+      "NOT RESEARCHED: the shared web-search budget for this turn (200 calls across all agents) was exhausted before this company was reached, and WebFetch/curl could not reach any source host (DNS failure / proxy 403). No figures, customers or URLs were verified for this company.",
+      "Identity fields and business description are from model background knowledge (training cutoff ~mid-2026) and were NOT verified this session.",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Tucuma copper operation ramp-up during 2025",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Furnas copper project earn-in agreement with Vale Base Metals",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Q2 2026 results (likely early Aug 2026) not retrieved"
+    ],
+    "data_quality": "none (skeleton only)",
+    "research_date": "2026-10-21",
+    "verification_method": "Facts gathered 2026-10-21 via WebSearch result summaries/snippets only. Direct retrieval of source pages (WebFetch and curl to sec.gov, businesswire, globenewswire, company IR sites) failed in this environment (DNS failure / egress proxy 403), so numbers were not read from the full source documents. URLs are those returned by the search engine for the cited content."
+  },
+  {
+    "ticker": "IVN",
+    "name": "Ivanhoe Mines Ltd.",
+    "primary_exchange": "TSX",
+    "other_listings": [
+      "OTCQX (IVPAF)"
+    ],
+    "country_hq": "Canada (Vancouver, British Columbia); assets in DRC and South Africa",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "December",
+    "business_summary": "Ivanhoe Mines develops and operates mines in Africa, principally the Kamoa-Kakula copper complex in the DRC (joint venture with Zijin Mining and the DRC government), the Platreef PGM-nickel-copper project in South Africa, and the Kipushi zinc mine in the DRC.",
+    "business_summary_verified": false,
+    "main_products": [
+      "Copper concentrate and blister/anode copper (Kamoa-Kakula)",
+      "Platinum-group metals, nickel, copper (Platreef)",
+      "Zinc concentrate (Kipushi)"
+    ],
+    "segments": [
+      "Not verified"
+    ],
+    "ai_energy_commodity_link": "Not measured this session. Expected exposure: copper price (grid/data-center/electrification demand), PGM and zinc prices; DRC power supply constraints.",
+    "confirmed_relationships": [],
+    "latest_reported_quarter": {
+      "period_label": null,
+      "period_end_date": null,
+      "revenue": null,
+      "revenue_unit": null,
+      "gaap_net_income": null,
+      "cash_and_equivalents": null,
+      "total_debt": null,
+      "guidance_next_quarter": null,
+      "source_url": null,
+      "source_date": null
+    },
+    "key_recent_events": [],
+    "red_flags": [],
+    "notes_unverified": [
+      "NOT RESEARCHED: the shared web-search budget for this turn (200 calls across all agents) was exhausted before this company was reached, and WebFetch/curl could not reach any source host (DNS failure / proxy 403). No figures, customers or URLs were verified for this company.",
+      "Identity fields and business description are from model background knowledge (training cutoff ~mid-2026) and were NOT verified this session.",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Kamoa-Kakula JV partner Zijin Mining; DRC government holds 20% (ownership split not verified)",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Seismic events at Kakula in May 2025 halted underground mining and led to reduced 2025 production guidance",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Kamoa-Kakula on-site direct-to-blister smelter commissioning around late 2025",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Platreef Phase 1 start-up around late 2025",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Q2 2026 results not retrieved"
+    ],
+    "data_quality": "none (skeleton only)",
+    "research_date": "2026-10-21",
+    "verification_method": "Facts gathered 2026-10-21 via WebSearch result summaries/snippets only. Direct retrieval of source pages (WebFetch and curl to sec.gov, businesswire, globenewswire, company IR sites) failed in this environment (DNS failure / egress proxy 403), so numbers were not read from the full source documents. URLs are those returned by the search engine for the cited content."
+  },
+  {
+    "ticker": "CCJ",
+    "name": "Cameco Corporation",
+    "primary_exchange": "TSX (CCO)",
+    "other_listings": [
+      "NYSE (CCJ)"
+    ],
+    "country_hq": "Canada (Saskatoon, Saskatchewan)",
+    "reporting_currency": "CAD",
+    "fiscal_year_end": "December",
+    "business_summary": "Cameco is a uranium producer and nuclear fuel services provider, with mining in northern Saskatchewan (McArthur River/Key Lake, Cigar Lake) and Kazakhstan (Inkai JV), conversion/fuel manufacturing in Ontario, and a 49% interest in Westinghouse Electric alongside Brookfield.",
+    "business_summary_verified": false,
+    "main_products": [
+      "Uranium concentrate (U3O8)",
+      "Conversion services (UF6, UO2)",
+      "Fuel fabrication",
+      "Westinghouse nuclear reactor technology and services (49% equity interest)"
+    ],
+    "segments": [
+      "Not verified (believed: Uranium; Fuel Services; Westinghouse equity investment)"
+    ],
+    "ai_energy_commodity_link": "Not measured this session. Expected exposure: uranium price and long-term utility contracting; nuclear power demand including data-center-driven power demand narratives.",
+    "confirmed_relationships": [],
+    "latest_reported_quarter": {
+      "period_label": null,
+      "period_end_date": null,
+      "revenue": null,
+      "revenue_unit": null,
+      "gaap_net_income": null,
+      "cash_and_equivalents": null,
+      "total_debt": null,
+      "guidance_next_quarter": null,
+      "source_url": null,
+      "source_date": null
+    },
+    "key_recent_events": [],
+    "red_flags": [],
+    "notes_unverified": [
+      "NOT RESEARCHED: the shared web-search budget for this turn (200 calls across all agents) was exhausted before this company was reached, and WebFetch/curl could not reach any source host (DNS failure / proxy 403). No figures, customers or URLs were verified for this company.",
+      "Identity fields and business description are from model background knowledge (training cutoff ~mid-2026) and were NOT verified this session.",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Joint venture Inkai with Kazatomprom (Kazakhstan)",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Westinghouse ownership: Brookfield 51% / Cameco 49%",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Oct 2025 strategic partnership between U.S. Government, Westinghouse, Brookfield and Cameco for new Westinghouse reactors (reported ~$80B) - terms not verified",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Q2 2026 results not retrieved; Q3 2026 likely due early Nov 2026"
+    ],
+    "data_quality": "none (skeleton only)",
+    "research_date": "2026-10-21",
+    "verification_method": "Facts gathered 2026-10-21 via WebSearch result summaries/snippets only. Direct retrieval of source pages (WebFetch and curl to sec.gov, businesswire, globenewswire, company IR sites) failed in this environment (DNS failure / egress proxy 403), so numbers were not read from the full source documents. URLs are those returned by the search engine for the cited content."
+  },
+  {
+    "ticker": "UUUU",
+    "name": "Energy Fuels Inc.",
+    "primary_exchange": "NYSE American (UUUU)",
+    "other_listings": [
+      "TSX (EFR)"
+    ],
+    "country_hq": "United States (Lakewood, Colorado)",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "December",
+    "business_summary": "Energy Fuels mines and processes uranium in the U.S., operating the White Mesa Mill in Utah, and is developing rare earth element (NdPr) separation and heavy mineral sands projects; it also produces vanadium.",
+    "business_summary_verified": false,
+    "main_products": [
+      "Uranium (U3O8)",
+      "Rare earth oxides (NdPr)",
+      "Heavy mineral sands (ilmenite, rutile, zircon, monazite)",
+      "Vanadium (V2O5)"
+    ],
+    "segments": [
+      "Not verified"
+    ],
+    "ai_energy_commodity_link": "Not measured this session. Expected exposure: uranium price/utility contracts; rare earth (NdPr) prices; critical-mineral policy.",
+    "confirmed_relationships": [],
+    "latest_reported_quarter": {
+      "period_label": null,
+      "period_end_date": null,
+      "revenue": null,
+      "revenue_unit": null,
+      "gaap_net_income": null,
+      "cash_and_equivalents": null,
+      "total_debt": null,
+      "guidance_next_quarter": null,
+      "source_url": null,
+      "source_date": null
+    },
+    "key_recent_events": [],
+    "red_flags": [],
+    "notes_unverified": [
+      "NOT RESEARCHED: the shared web-search budget for this turn (200 calls across all agents) was exhausted before this company was reached, and WebFetch/curl could not reach any source host (DNS failure / proxy 403). No figures, customers or URLs were verified for this company.",
+      "Identity fields and business description are from model background knowledge (training cutoff ~mid-2026) and were NOT verified this session.",
+      "UNVERIFIED LEAD (background knowledge, verify before use): White Mesa Mill (Utah) is the company's processing hub; Pinyon Plain uranium mine (Arizona)",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Acquired Base Resources (Kwale, Kenya; Toliara, Madagascar) around Oct 2024",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Donald heavy mineral sands JV with Astron (Australia)",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Possible 2025 convertible note issuance - not verified",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Q2 2026 results not retrieved"
+    ],
+    "data_quality": "none (skeleton only)",
+    "research_date": "2026-10-21",
+    "verification_method": "Facts gathered 2026-10-21 via WebSearch result summaries/snippets only. Direct retrieval of source pages (WebFetch and curl to sec.gov, businesswire, globenewswire, company IR sites) failed in this environment (DNS failure / egress proxy 403), so numbers were not read from the full source documents. URLs are those returned by the search engine for the cited content."
+  },
+  {
+    "ticker": "IREN",
+    "name": "IREN Limited",
+    "primary_exchange": "NASDAQ",
+    "other_listings": [],
+    "country_hq": "Australia (Sydney)",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "June",
+    "business_summary": "IREN (formerly Iris Energy) operates data centers powered largely by renewable energy, running Bitcoin mining and a growing GPU-based AI cloud services business, with sites in Texas and British Columbia.",
+    "business_summary_verified": false,
+    "main_products": [
+      "Bitcoin mining (self-mining)",
+      "AI cloud services (NVIDIA GPU capacity)",
+      "Data center capacity (Childress, Sweetwater TX; British Columbia)"
+    ],
+    "segments": [
+      "Not verified (believed: Bitcoin mining; AI cloud services)"
+    ],
+    "ai_energy_commodity_link": "Not measured this session. Expected exposure: AI GPU cloud contracts, Bitcoin price/hashprice, and power costs (grid power in Texas/BC).",
+    "confirmed_relationships": [],
+    "latest_reported_quarter": {
+      "period_label": null,
+      "period_end_date": null,
+      "revenue": null,
+      "revenue_unit": null,
+      "gaap_net_income": null,
+      "cash_and_equivalents": null,
+      "total_debt": null,
+      "guidance_next_quarter": null,
+      "source_url": null,
+      "source_date": null
+    },
+    "key_recent_events": [],
+    "red_flags": [],
+    "notes_unverified": [
+      "NOT RESEARCHED: the shared web-search budget for this turn (200 calls across all agents) was exhausted before this company was reached, and WebFetch/curl could not reach any source host (DNS failure / proxy 403). No figures, customers or URLs were verified for this company.",
+      "Identity fields and business description are from model background knowledge (training cutoff ~mid-2026) and were NOT verified this session.",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Multi-year AI cloud contract with Microsoft announced ~Nov 2025 (reported ~$9.7B) with associated Dell GPU purchases - not verified",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Multiple convertible note offerings in 2025 - not verified",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Fiscal Q4/FY2026 (June 2026) results likely reported Aug 2026 - not retrieved; fiscal Q1 FY2027 likely due early Nov 2026"
+    ],
+    "data_quality": "none (skeleton only)",
+    "research_date": "2026-10-21",
+    "verification_method": "Facts gathered 2026-10-21 via WebSearch result summaries/snippets only. Direct retrieval of source pages (WebFetch and curl to sec.gov, businesswire, globenewswire, company IR sites) failed in this environment (DNS failure / egress proxy 403), so numbers were not read from the full source documents. URLs are those returned by the search engine for the cited content."
+  },
+  {
+    "ticker": "CIEN",
+    "name": "Ciena Corporation",
+    "primary_exchange": "NYSE",
+    "other_listings": [],
+    "country_hq": "United States (Hanover, Maryland)",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "October/November (52/53-week year ending Saturday nearest Oct 31)",
+    "business_summary": "Ciena supplies optical networking systems (coherent optics/WaveLogic, packet-optical platforms, pluggable transceivers), routing/switching, and network automation software and services to service providers, cloud/hyperscale operators and enterprises.",
+    "business_summary_verified": false,
+    "main_products": [
+      "Coherent optical transport systems and WaveLogic modules",
+      "Pluggable coherent optics",
+      "Routing and switching platforms",
+      "Blue Planet automation software",
+      "Global services"
+    ],
+    "segments": [
+      "Not verified (believed: Networking Platforms; Platform Software and Services; Blue Planet Automation Software and Services; Global Services)"
+    ],
+    "ai_energy_commodity_link": "Not measured this session. Expected exposure: hyperscale/cloud provider spending on data center interconnect and AI backbone networks.",
+    "confirmed_relationships": [],
+    "latest_reported_quarter": {
+      "period_label": null,
+      "period_end_date": null,
+      "revenue": null,
+      "revenue_unit": null,
+      "gaap_net_income": null,
+      "cash_and_equivalents": null,
+      "total_debt": null,
+      "guidance_next_quarter": null,
+      "source_url": null,
+      "source_date": null
+    },
+    "key_recent_events": [],
+    "red_flags": [],
+    "notes_unverified": [
+      "NOT RESEARCHED: the shared web-search budget for this turn (200 calls across all agents) was exhausted before this company was reached, and WebFetch/curl could not reach any source host (DNS failure / proxy 403). No figures, customers or URLs were verified for this company.",
+      "Identity fields and business description are from model background knowledge (training cutoff ~mid-2026) and were NOT verified this session.",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Acquisition of Nubis Communications (~2025) - not verified",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Fiscal Q3 2026 (quarter ended ~Aug 1, 2026) results likely reported early Sept 2026 - not retrieved"
+    ],
+    "data_quality": "none (skeleton only)",
+    "research_date": "2026-10-21",
+    "verification_method": "Facts gathered 2026-10-21 via WebSearch result summaries/snippets only. Direct retrieval of source pages (WebFetch and curl to sec.gov, businesswire, globenewswire, company IR sites) failed in this environment (DNS failure / egress proxy 403), so numbers were not read from the full source documents. URLs are those returned by the search engine for the cited content."
+  },
+  {
+    "ticker": "CIFR",
+    "name": "Cipher Mining Inc.",
+    "primary_exchange": "NASDAQ",
+    "other_listings": [],
+    "country_hq": "United States (New York, New York)",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "December",
+    "business_summary": "Cipher Mining develops and operates industrial-scale data centers in Texas for Bitcoin mining and has been converting/developing sites for high-performance computing (HPC/AI) hosting under long-term leases.",
+    "business_summary_verified": false,
+    "main_products": [
+      "Bitcoin mining",
+      "HPC/AI data center leases and capacity"
+    ],
+    "segments": [
+      "Not verified"
+    ],
+    "ai_energy_commodity_link": "Not measured this session. Expected exposure: HPC/AI data center lease revenue, Bitcoin price/hashprice, ERCOT power prices.",
+    "confirmed_relationships": [],
+    "latest_reported_quarter": {
+      "period_label": null,
+      "period_end_date": null,
+      "revenue": null,
+      "revenue_unit": null,
+      "gaap_net_income": null,
+      "cash_and_equivalents": null,
+      "total_debt": null,
+      "guidance_next_quarter": null,
+      "source_url": null,
+      "source_date": null
+    },
+    "key_recent_events": [],
+    "red_flags": [],
+    "notes_unverified": [
+      "NOT RESEARCHED: the shared web-search budget for this turn (200 calls across all agents) was exhausted before this company was reached, and WebFetch/curl could not reach any source host (DNS failure / proxy 403). No figures, customers or URLs were verified for this company.",
+      "Identity fields and business description are from model background knowledge (training cutoff ~mid-2026) and were NOT verified this session.",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Possible 2026 rebrand/name change - COULD NOT VERIFY current name/ticker (search budget exhausted)",
+      "UNVERIFIED LEAD (background knowledge, verify before use): ~Sep 2025: 10-year HPC lease with Fluidstack at Barber Lake, with Google backstop and Google warrants for an equity stake - not verified",
+      "UNVERIFIED LEAD (background knowledge, verify before use): ~Nov 2025: 15-year lease with Amazon Web Services (reported ~$5.5B) - not verified",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Sites: Odessa, Bear and Chief JVs, Barber Lake (Texas) - not verified",
+      "UNVERIFIED LEAD (background knowledge, verify before use): Q2 2026 results not retrieved"
+    ],
+    "data_quality": "none (skeleton only)",
+    "research_date": "2026-10-21",
+    "verification_method": "Facts gathered 2026-10-21 via WebSearch result summaries/snippets only. Direct retrieval of source pages (WebFetch and curl to sec.gov, businesswire, globenewswire, company IR sites) failed in this environment (DNS failure / egress proxy 403), so numbers were not read from the full source documents. URLs are those returned by the search engine for the cited content."
+  }
+]

@@ -1,0 +1,30 @@
+# Registro de cuellos de botella — mapeo a nodos del mapa.
+# La evidencia (fuentes, fechas, contra-evidencia) vive en data/research/bottlenecks_evidence.json
+# y se actualiza por el agente Industrial Research / Map Curator. La SEVERIDAD no se asigna a mano:
+# se calcula con la regla documentada en qa/bottlenecks.py (estado, confianza, concentración, contra-evidencia).
+# `overrides` permite corregir con justificación explícita (queda registrado).
+version: "0.1.0"
+evidence_file: research/bottlenecks_evidence.json
+mapping:
+  cowos_advanced_packaging: [cowos_packaging, tsv_hybrid_bonding, silicon_interposer]
+  hbm_memory: [hbm, tsv_hybrid_bonding, hbm_test]
+  inp_substrates_eml_lasers: [compound_substrates, eml_lasers, cw_lasers, indium, mocvd_epitaxy]
+  optical_transceivers_800g_1_6t: [optical_transceivers, optical_contract_mfg, dsp_optical, silicon_photonics]
+  power_and_distribution_transformers: [large_power_transformers, distribution_transformers, electrical_steel]
+  switchgear_medium_voltage: [dc_switchgear_lv_mv, hv_switchgear, substations_ehouses]
+  gas_turbines: [gas_turbines, turbine_castings_forgings, aeroderivative_recip]
+  us_grid_interconnection_transmission: [grid_interconnection, td_epc, skilled_labor]
+  uranium_conversion_enrichment: [conversion, enrichment, haleu, uranium_mining, uranium]
+  copper_supply: [copper]
+  gallium_germanium: [gallium, germanium]
+  rare_earths_magnets: [rare_earths]
+  liquid_cooling_thermal: [liquid_cooling_cdu, thermal_materials]
+  probe_cards_semiconductor_test: [probe_cards, hbm_test]
+  datacenter_power_availability: [dc_powered_land, onsite_generation, fuel_cells, ipp_utilities, btc_miners_hpc]
+  t_glass_low_cte_glass_cloth: [low_dk_glass_cloth]
+  abf_substrates: [abf_substrate, abf_film]
+  conventional_dram_nand: [server_dram, dram_wafer_capacity, enterprise_ssd]
+  high_end_mlcc: [mlcc]
+  yttrium_scandium: [yttrium_scandium]
+  high_voltage_cable: [hv_cables]
+overrides: {}

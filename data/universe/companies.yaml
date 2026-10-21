@@ -1,0 +1,288 @@
+# Universo inicial — v0.1 (2026-10-21)
+#
+# Clasificación por FUNCIÓN INDUSTRIAL (nodos del mapa), no por sector bursátil.
+# - `nodes`: nodos del mapa donde la empresa participa; el primero es el principal.
+# - `exposure`: nivel de exposición económica estimada (H/M/L/N) a IA, energía y commodities.
+#   ES UN PRIOR DEL ANALISTA (verification: analyst_prior) hasta que el agente Fundamental lo
+#   cuantifique con segmentos reportados (% de ingresos). No usar como dato.
+# - Market cap, precio, liquidez, CIK: NO se cargan a mano. Se obtienen por API (qa ingest) con fuente y fecha.
+# - `seed: true`: grupo inicial de validación definido por el usuario.
+# - `status: candidate`: especulativa / pre-ingresos; entra al embudo pero con kill-switches más estrictos.
+# - `verify`: dato identificatorio que conviene confirmar (ticker/bolsa) antes de operar.
+# - `ibkr`: accesibilidad esperada vía Interactive Brokers (prior; confirmar en la plataforma).
+version: "0.1.0"
+companies:
+  # ============================================================ COMPUTE / DISEÑO / FOUNDRY
+  - {ticker: NVDA, name: "NVIDIA", exchange: NASDAQ, country: US, currency: USD, nodes: [gpu, switch_asics, dpu_nic], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: AMD, name: "Advanced Micro Devices", exchange: NASDAQ, country: US, currency: USD, nodes: [gpu, server_cpu], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: AVGO, name: "Broadcom", exchange: NASDAQ, country: US, currency: USD, nodes: [custom_asic, switch_asics, serdes_ip, eml_lasers, cpo], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: MRVL, name: "Marvell Technology", exchange: NASDAQ, country: US, currency: USD, nodes: [custom_asic, dsp_optical, aec_cables, silicon_photonics], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: INTC, name: "Intel", exchange: NASDAQ, country: US, currency: USD, nodes: [server_cpu, leading_edge_foundry, osat], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: ARM, name: "Arm Holdings", exchange: NASDAQ, country: GB, currency: USD, nodes: [server_cpu, serdes_ip], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: ALAB, name: "Astera Labs", exchange: NASDAQ, country: US, currency: USD, nodes: [retimers, aec_cables, switch_asics], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: CRDO, name: "Credo Technology", exchange: NASDAQ, country: US, currency: USD, nodes: [aec_cables, dsp_optical, retimers], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: RMBS, name: "Rambus", exchange: NASDAQ, country: US, currency: USD, nodes: [memory_interface_chips, serdes_ip], exposure: {ai: M, energy: N, commodities: N}, seed: true}
+  - {ticker: SNPS, name: "Synopsys", exchange: NASDAQ, country: US, currency: USD, nodes: [eda_ip, serdes_ip], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: CDNS, name: "Cadence Design Systems", exchange: NASDAQ, country: US, currency: USD, nodes: [eda_ip], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: "3661.TW", name: "Alchip Technologies", exchange: TWSE, country: TW, currency: TWD, nodes: [asic_design_services], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: "3443.TW", name: "Global Unichip (GUC)", exchange: TWSE, country: TW, currency: TWD, nodes: [asic_design_services], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: MTSI, name: "MACOM Technology Solutions", exchange: NASDAQ, country: US, currency: USD, nodes: [photodetectors, lpo_lro, cw_lasers], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: SMTC, name: "Semtech", exchange: NASDAQ, country: US, currency: USD, nodes: [lpo_lro, aec_cables], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: TSM, name: "Taiwan Semiconductor Manufacturing (ADR)", exchange: NYSE, country: TW, currency: USD, nodes: [leading_edge_foundry, cowos_packaging], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: GFS, name: "GlobalFoundries", exchange: NASDAQ, country: US, currency: USD, nodes: [mature_node_foundry, silicon_photonics], exposure: {ai: L, energy: L, commodities: N}}
+  - {ticker: TSEM, name: "Tower Semiconductor", exchange: NASDAQ, country: IL, currency: USD, nodes: [silicon_photonics, mature_node_foundry], exposure: {ai: M, energy: L, commodities: N}}
+  - {ticker: MPWR, name: "Monolithic Power Systems", exchange: NASDAQ, country: US, currency: USD, nodes: [power_conversion_server], exposure: {ai: M, energy: L, commodities: N}}
+  - {ticker: VICR, name: "Vicor", exchange: NASDAQ, country: US, currency: USD, nodes: [power_conversion_server, hvdc_800v], exposure: {ai: M, energy: L, commodities: N}}
+
+  # ============================================================ MEMORIA / STORAGE
+  - {ticker: MU, name: "Micron Technology", exchange: NASDAQ, country: US, currency: USD, nodes: [hbm, server_dram, enterprise_ssd], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: "000660.KS", name: "SK hynix", exchange: KRX, country: KR, currency: KRW, nodes: [hbm, server_dram, enterprise_ssd], exposure: {ai: H, energy: N, commodities: N}, ibkr: limited}
+  - {ticker: "005930.KS", name: "Samsung Electronics", exchange: KRX, country: KR, currency: KRW, nodes: [hbm, server_dram, leading_edge_foundry], exposure: {ai: M, energy: N, commodities: N}, ibkr: limited}
+  - {ticker: SNDK, name: "Sandisk", exchange: NASDAQ, country: US, currency: USD, nodes: [enterprise_ssd], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: WDC, name: "Western Digital", exchange: NASDAQ, country: US, currency: USD, nodes: [hdd_nearline], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: STX, name: "Seagate Technology", exchange: NASDAQ, country: IE, currency: USD, nodes: [hdd_nearline], exposure: {ai: M, energy: N, commodities: N}}
+
+  # ============================================================ PACKAGING / SUSTRATOS / TEST
+  - {ticker: AMKR, name: "Amkor Technology", exchange: NASDAQ, country: US, currency: USD, nodes: [osat, cowos_packaging], exposure: {ai: M, energy: N, commodities: N}, seed: true}
+  - {ticker: ASX, name: "ASE Technology Holding (ADR)", exchange: NYSE, country: TW, currency: USD, nodes: [osat, cowos_packaging, system_level_test], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: BESI, name: "BE Semiconductor Industries", exchange: EURONEXT, country: NL, currency: EUR, yahoo: BESI.AS, nodes: [tsv_hybrid_bonding, packaging_equipment], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: "042700.KS", name: "Hanmi Semiconductor", exchange: KRX, country: KR, currency: KRW, nodes: [tsv_hybrid_bonding], exposure: {ai: H, energy: N, commodities: N}, ibkr: limited}
+  - {ticker: "0522.HK", name: "ASMPT", exchange: HKEX, country: HK, currency: HKD, nodes: [tsv_hybrid_bonding, packaging_equipment], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: KLIC, name: "Kulicke & Soffa", exchange: NASDAQ, country: SG, currency: USD, nodes: [packaging_equipment, tsv_hybrid_bonding], exposure: {ai: L, energy: N, commodities: N}}
+  - {ticker: "6146.T", name: "Disco Corp", exchange: TSE, country: JP, currency: JPY, nodes: [packaging_equipment], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: ONTO, name: "Onto Innovation", exchange: NYSE, country: US, currency: USD, nodes: [process_control], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: CAMT, name: "Camtek", exchange: NASDAQ, country: IL, currency: USD, nodes: [process_control], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: FORM, name: "FormFactor", exchange: NASDAQ, country: US, currency: USD, nodes: [probe_cards, hbm_test], exposure: {ai: M, energy: N, commodities: N}, seed: true}
+  - {ticker: "6223.TWO", name: "MPI Corporation", exchange: TPEX, country: TW, currency: TWD, nodes: [probe_cards], exposure: {ai: H, energy: N, commodities: N}, verify: "confirmar bolsa (TPEx) y símbolo", ibkr: unknown}
+  - {ticker: "6515.TW", name: "WinWay Technology", exchange: TWSE, country: TW, currency: TWD, nodes: [test_sockets], exposure: {ai: H, energy: N, commodities: N}, verify: "confirmar símbolo", ibkr: unknown}
+  - {ticker: TER, name: "Teradyne", exchange: NASDAQ, country: US, currency: USD, nodes: [ate_testers, system_level_test], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: "6857.T", name: "Advantest", exchange: TSE, country: JP, currency: JPY, nodes: [ate_testers, hbm_test], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: AEHR, name: "Aehr Test Systems", exchange: NASDAQ, country: US, currency: USD, nodes: [burn_in_wafer_level], exposure: {ai: M, energy: M, commodities: N}, seed: true, tags: [small_cap]}
+  - {ticker: COHU, name: "Cohu", exchange: NASDAQ, country: US, currency: USD, nodes: [system_level_test, test_sockets], exposure: {ai: L, energy: N, commodities: N}}
+  - {ticker: "4062.T", name: "Ibiden", exchange: TSE, country: JP, currency: JPY, nodes: [abf_substrate], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: "3037.TW", name: "Unimicron Technology", exchange: TWSE, country: TW, currency: TWD, nodes: [abf_substrate, high_layer_pcb], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: "8046.TW", name: "Nan Ya Printed Circuit Board", exchange: TWSE, country: TW, currency: TWD, nodes: [abf_substrate], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: "2802.T", name: "Ajinomoto", exchange: TSE, country: JP, currency: JPY, nodes: [abf_film], exposure: {ai: L, energy: N, commodities: N}, notes: "ABF es una fracción pequeña de un conglomerado alimenticio: exposición diluida"}
+  - {ticker: "3110.T", name: "Nitto Boseki (Nittobo)", exchange: TSE, country: JP, currency: JPY, nodes: [low_dk_glass_cloth], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: "4004.T", name: "Resonac Holdings", exchange: TSE, country: JP, currency: JPY, nodes: [ccl_laminates, abf_substrate], exposure: {ai: M, energy: N, commodities: L}}
+  - {ticker: "2383.TW", name: "Elite Material", exchange: TWSE, country: TW, currency: TWD, nodes: [ccl_laminates], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: "2368.TW", name: "Gold Circuit Electronics", exchange: TWSE, country: TW, currency: TWD, nodes: [high_layer_pcb], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: TTMI, name: "TTM Technologies", exchange: NASDAQ, country: US, currency: USD, nodes: [high_layer_pcb], exposure: {ai: M, energy: N, commodities: N}}
+
+  # ============================================================ EQUIPOS Y MATERIALES (SEMICAP)
+  - {ticker: ASML, name: "ASML Holding", exchange: NASDAQ, country: NL, currency: USD, nodes: [euv_litho], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: AMAT, name: "Applied Materials", exchange: NASDAQ, country: US, currency: USD, nodes: [deposition_etch, process_control], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: LRCX, name: "Lam Research", exchange: NASDAQ, country: US, currency: USD, nodes: [deposition_etch], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: KLAC, name: "KLA Corp", exchange: NASDAQ, country: US, currency: USD, nodes: [process_control], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: "8035.T", name: "Tokyo Electron", exchange: TSE, country: JP, currency: JPY, nodes: [deposition_etch], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: "6920.T", name: "Lasertec", exchange: TSE, country: JP, currency: JPY, nodes: [process_control], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: NVMI, name: "Nova Ltd", exchange: NASDAQ, country: IL, currency: USD, nodes: [process_control], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: ACMR, name: "ACM Research", exchange: NASDAQ, country: US, currency: USD, nodes: [deposition_etch], exposure: {ai: L, energy: N, commodities: N}}
+  - {ticker: MKSI, name: "MKS Inc", exchange: NASDAQ, country: US, currency: USD, nodes: [wfe_subsystems], exposure: {ai: L, energy: N, commodities: N}}
+  - {ticker: AEIS, name: "Advanced Energy Industries", exchange: NASDAQ, country: US, currency: USD, nodes: [wfe_subsystems, power_conversion_server], exposure: {ai: M, energy: L, commodities: N}}
+  - {ticker: UCTT, name: "Ultra Clean Holdings", exchange: NASDAQ, country: US, currency: USD, nodes: [wfe_subsystems, precision_machining], exposure: {ai: L, energy: N, commodities: N}}
+  - {ticker: ICHR, name: "Ichor Holdings", exchange: NASDAQ, country: US, currency: USD, nodes: [wfe_subsystems], exposure: {ai: L, energy: N, commodities: N}, tags: [small_cap]}
+  - {ticker: ENTG, name: "Entegris", exchange: NASDAQ, country: US, currency: USD, nodes: [ultrapure_chemicals], exposure: {ai: L, energy: N, commodities: N}}
+  - {ticker: "4063.T", name: "Shin-Etsu Chemical", exchange: TSE, country: JP, currency: JPY, nodes: [silicon_wafers, photoresists], exposure: {ai: L, energy: N, commodities: L}}
+  - {ticker: "3436.T", name: "SUMCO", exchange: TSE, country: JP, currency: JPY, nodes: [silicon_wafers], exposure: {ai: L, energy: N, commodities: N}}
+  - {ticker: WAF, name: "Siltronic", exchange: XETRA, country: DE, currency: EUR, yahoo: WAF.DE, nodes: [silicon_wafers], exposure: {ai: L, energy: N, commodities: N}}
+  - {ticker: SOI, name: "Soitec", exchange: EURONEXT, country: FR, currency: EUR, yahoo: SOI.PA, nodes: [silicon_wafers, silicon_photonics], exposure: {ai: L, energy: N, commodities: N}}
+  - {ticker: "4186.T", name: "Tokyo Ohka Kogyo", exchange: TSE, country: JP, currency: JPY, nodes: [photoresists], exposure: {ai: L, energy: N, commodities: N}}
+  - {ticker: AXTI, name: "AXT Inc", exchange: NASDAQ, country: US, currency: USD, nodes: [compound_substrates, gallium, germanium], exposure: {ai: H, energy: N, commodities: M}, seed: true, tags: [small_cap, china_ops]}
+  - {ticker: "5016.T", name: "JX Advanced Metals", exchange: TSE, country: JP, currency: JPY, nodes: [compound_substrates, indium], exposure: {ai: M, energy: N, commodities: M}, verify: "IPO 2025; confirmar segmento InP"}
+  - {ticker: IQE, name: "IQE plc", exchange: LSE, country: GB, currency: GBP, yahoo: IQE.L, nodes: [mocvd_epitaxy, compound_substrates], exposure: {ai: M, energy: N, commodities: N}, tags: [small_cap]}
+  - {ticker: AIXA, name: "Aixtron", exchange: XETRA, country: DE, currency: EUR, yahoo: AIXA.DE, nodes: [mocvd_epitaxy], exposure: {ai: M, energy: M, commodities: N}}
+  - {ticker: VECO, name: "Veeco Instruments", exchange: NASDAQ, country: US, currency: USD, nodes: [mocvd_epitaxy, deposition_etch], exposure: {ai: L, energy: N, commodities: N}, notes: "fusión anunciada con Axcelis (verificar estado)"}
+  - {ticker: LIN, name: "Linde", exchange: NYSE, country: GB, currency: USD, nodes: [specialty_gases, helium], exposure: {ai: L, energy: L, commodities: L}}
+  - {ticker: APD, name: "Air Products", exchange: NYSE, country: US, currency: USD, nodes: [specialty_gases, helium], exposure: {ai: L, energy: L, commodities: L}}
+  - {ticker: WOLF, name: "Wolfspeed", exchange: NYSE, country: US, currency: USD, nodes: [sic_substrates, sic_power], exposure: {ai: L, energy: M, commodities: N}, notes: "reestructuración Chapter 11 en 2025: historial de precios pre/post no comparable", tags: [restructured]}
+
+  # ============================================================ NETWORKING / FOTÓNICA
+  - {ticker: COHR, name: "Coherent Corp", exchange: NYSE, country: US, currency: USD, nodes: [optical_transceivers, eml_lasers, vcsel, sic_substrates, compound_substrates], exposure: {ai: H, energy: L, commodities: N}, seed: true}
+  - {ticker: LITE, name: "Lumentum", exchange: NASDAQ, country: US, currency: USD, nodes: [eml_lasers, cw_lasers, optical_transceivers, cpo], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: AAOI, name: "Applied Optoelectronics", exchange: NASDAQ, country: US, currency: USD, nodes: [optical_transceivers, eml_lasers], exposure: {ai: H, energy: N, commodities: N}, seed: true, tags: [small_cap]}
+  - {ticker: FN, name: "Fabrinet", exchange: NYSE, country: TH, currency: USD, nodes: [optical_contract_mfg], exposure: {ai: H, energy: N, commodities: N}, seed: true}
+  - {ticker: CIEN, name: "Ciena", exchange: NYSE, country: US, currency: USD, nodes: [dci_optical_systems, dsp_optical], exposure: {ai: M, energy: N, commodities: N}, seed: true, tags: [tracked]}
+  - {ticker: "300308.SZ", name: "Zhongji Innolight", exchange: SZSE, country: CN, currency: CNY, nodes: [optical_transceivers], exposure: {ai: H, energy: N, commodities: N}, ibkr: limited}
+  - {ticker: "300502.SZ", name: "Eoptolink Technology", exchange: SZSE, country: CN, currency: CNY, nodes: [optical_transceivers], exposure: {ai: H, energy: N, commodities: N}, ibkr: limited}
+  - {ticker: "300394.SZ", name: "Suzhou TFC Optical Communication", exchange: SZSE, country: CN, currency: CNY, nodes: [fiber_attach, optical_engines], exposure: {ai: H, energy: N, commodities: N}, ibkr: limited}
+  - {ticker: "3081.TWO", name: "LandMark Optoelectronics", exchange: TPEX, country: TW, currency: TWD, nodes: [mocvd_epitaxy, compound_substrates], exposure: {ai: H, energy: N, commodities: N}, verify: "confirmar símbolo y negocio (epi InP)", ibkr: unknown}
+  - {ticker: ANET, name: "Arista Networks", exchange: NYSE, country: US, currency: USD, nodes: [switches_systems], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: CSCO, name: "Cisco Systems", exchange: NASDAQ, country: US, currency: USD, nodes: [switches_systems, dci_optical_systems], exposure: {ai: L, energy: N, commodities: N}}
+  - {ticker: NOK, name: "Nokia (ADR)", exchange: NYSE, country: FI, currency: USD, nodes: [dci_optical_systems], exposure: {ai: L, energy: N, commodities: N}}
+  - {ticker: "2345.TW", name: "Accton Technology", exchange: TWSE, country: TW, currency: TWD, nodes: [switches_systems], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: GLW, name: "Corning", exchange: NYSE, country: US, currency: USD, nodes: [fiber_cable, glass_core_substrate], exposure: {ai: M, energy: L, commodities: N}}
+  - {ticker: "5803.T", name: "Fujikura", exchange: TSE, country: JP, currency: JPY, nodes: [fiber_cable, hv_cables], exposure: {ai: H, energy: M, commodities: L}}
+  - {ticker: "5802.T", name: "Sumitomo Electric Industries", exchange: TSE, country: JP, currency: JPY, nodes: [fiber_cable, hv_cables, eml_lasers], exposure: {ai: L, energy: M, commodities: L}}
+  - {ticker: "5801.T", name: "Furukawa Electric", exchange: TSE, country: JP, currency: JPY, nodes: [fiber_cable, cw_lasers, hv_cables], exposure: {ai: M, energy: M, commodities: L}}
+  - {ticker: APH, name: "Amphenol", exchange: NYSE, country: US, currency: USD, nodes: [copper_backplane, fiber_attach], exposure: {ai: M, energy: L, commodities: N}}
+  - {ticker: TEL, name: "TE Connectivity", exchange: NYSE, country: IE, currency: USD, nodes: [copper_backplane], exposure: {ai: L, energy: L, commodities: N}}
+  - {ticker: VIAV, name: "Viavi Solutions", exchange: NASDAQ, country: US, currency: USD, nodes: [optical_test_equipment], exposure: {ai: L, energy: N, commodities: N}}
+  - {ticker: KEYS, name: "Keysight Technologies", exchange: NYSE, country: US, currency: USD, nodes: [optical_test_equipment], exposure: {ai: L, energy: N, commodities: N}}
+  - {ticker: POET, name: "POET Technologies", exchange: NASDAQ, country: CA, currency: USD, nodes: [optical_engines], exposure: {ai: H, energy: N, commodities: N}, status: candidate, tags: [pre_revenue, speculative]}
+
+  # ============================================================ SERVIDORES / ODM
+  - {ticker: CLS, name: "Celestica", exchange: NYSE, country: CA, currency: USD, nodes: [server_odm, switches_systems], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: "2317.TW", name: "Hon Hai Precision (Foxconn)", exchange: TWSE, country: TW, currency: TWD, nodes: [server_odm], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: "2382.TW", name: "Quanta Computer", exchange: TWSE, country: TW, currency: TWD, nodes: [server_odm], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: "6669.TW", name: "Wiwynn", exchange: TWSE, country: TW, currency: TWD, nodes: [server_odm], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: SMCI, name: "Super Micro Computer", exchange: NASDAQ, country: US, currency: USD, nodes: [server_odm, liquid_cooling_cdu], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: DELL, name: "Dell Technologies", exchange: NYSE, country: US, currency: USD, nodes: [server_odm], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: JBL, name: "Jabil", exchange: NYSE, country: US, currency: USD, nodes: [server_odm, optical_contract_mfg], exposure: {ai: M, energy: L, commodities: N}}
+  - {ticker: SANM, name: "Sanmina", exchange: NASDAQ, country: US, currency: USD, nodes: [server_odm], exposure: {ai: M, energy: L, commodities: N}}
+  - {ticker: "2059.TW", name: "King Slide Works", exchange: TWSE, country: TW, currency: TWD, nodes: [racks_enclosures], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: "2308.TW", name: "Delta Electronics", exchange: TWSE, country: TW, currency: TWD, nodes: [power_conversion_server, liquid_cooling_cdu, ups, hvdc_800v], exposure: {ai: H, energy: M, commodities: N}}
+  - {ticker: "3017.TW", name: "Asia Vital Components", exchange: TWSE, country: TW, currency: TWD, nodes: [liquid_cooling_cdu, thermal_materials], exposure: {ai: H, energy: N, commodities: N}}
+  - {ticker: BELFB, name: "Bel Fuse", exchange: NASDAQ, country: US, currency: USD, nodes: [power_conversion_server, copper_backplane], exposure: {ai: L, energy: L, commodities: N}, tags: [small_cap]}
+
+  # ============================================================ DATACENTER: ENERGÍA INTERNA Y TÉRMICA
+  - {ticker: VRT, name: "Vertiv Holdings", exchange: NYSE, country: US, currency: USD, nodes: [ups, liquid_cooling_cdu, pdu_busway, chillers_hvac, dc_switchgear_lv_mv], exposure: {ai: H, energy: M, commodities: N}}
+  - {ticker: ETN, name: "Eaton", exchange: NYSE, country: IE, currency: USD, nodes: [dc_switchgear_lv_mv, ups, pdu_busway, distribution_transformers], exposure: {ai: M, energy: H, commodities: N}}
+  - {ticker: SU, name: "Schneider Electric", exchange: EURONEXT, country: FR, currency: EUR, yahoo: SU.PA, nodes: [dc_switchgear_lv_mv, ups, liquid_cooling_cdu, grid_automation], exposure: {ai: M, energy: H, commodities: N}}
+  - {ticker: ABBN, name: "ABB", exchange: SIX, country: CH, currency: CHF, yahoo: ABBN.SW, nodes: [dc_switchgear_lv_mv, ups, grid_automation], exposure: {ai: L, energy: H, commodities: N}}
+  - {ticker: SIE, name: "Siemens AG", exchange: XETRA, country: DE, currency: EUR, yahoo: SIE.DE, nodes: [dc_switchgear_lv_mv, grid_automation], exposure: {ai: L, energy: M, commodities: N}}
+  - {ticker: LR, name: "Legrand", exchange: EURONEXT, country: FR, currency: EUR, yahoo: LR.PA, nodes: [pdu_busway, racks_enclosures], exposure: {ai: L, energy: M, commodities: N}}
+  - {ticker: NVT, name: "nVent Electric", exchange: NYSE, country: GB, currency: USD, nodes: [liquid_cooling_cdu, racks_enclosures, substations_ehouses, pdu_busway], exposure: {ai: M, energy: M, commodities: N}, seed: true}
+  - {ticker: MOD, name: "Modine Manufacturing", exchange: NYSE, country: US, currency: USD, nodes: [chillers_hvac, liquid_cooling_cdu], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: AAON, name: "AAON", exchange: NASDAQ, country: US, currency: USD, nodes: [chillers_hvac, liquid_cooling_cdu], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: TT, name: "Trane Technologies", exchange: NYSE, country: IE, currency: USD, nodes: [chillers_hvac, liquid_cooling_cdu], exposure: {ai: L, energy: L, commodities: N}}
+  - {ticker: CARR, name: "Carrier Global", exchange: NYSE, country: US, currency: USD, nodes: [chillers_hvac], exposure: {ai: L, energy: L, commodities: N}}
+  - {ticker: JCI, name: "Johnson Controls", exchange: NYSE, country: IE, currency: USD, nodes: [chillers_hvac], exposure: {ai: L, energy: L, commodities: N}}
+  - {ticker: SPXC, name: "SPX Technologies", exchange: NYSE, country: US, currency: USD, nodes: [chillers_hvac], exposure: {ai: L, energy: L, commodities: N}}
+  - {ticker: FLS, name: "Flowserve", exchange: NYSE, country: US, currency: USD, nodes: [pumps_heat_exchangers], exposure: {ai: L, energy: M, commodities: N}}
+  - {ticker: GHM, name: "Graham Corp", exchange: NYSE, country: US, currency: USD, nodes: [pumps_heat_exchangers, nuclear_components], exposure: {ai: N, energy: M, commodities: N}, tags: [small_cap]}
+  - {ticker: CMI, name: "Cummins", exchange: NYSE, country: US, currency: USD, nodes: [backup_generators, aeroderivative_recip], exposure: {ai: L, energy: M, commodities: N}}
+  - {ticker: GNRC, name: "Generac", exchange: NYSE, country: US, currency: USD, nodes: [backup_generators], exposure: {ai: L, energy: M, commodities: N}}
+  - {ticker: CAT, name: "Caterpillar", exchange: NYSE, country: US, currency: USD, nodes: [backup_generators, aeroderivative_recip], exposure: {ai: L, energy: M, commodities: L}}
+  - {ticker: RR, name: "Rolls-Royce Holdings", exchange: LSE, country: GB, currency: GBP, yahoo: RR.L, nodes: [backup_generators, smr_advanced], exposure: {ai: L, energy: M, commodities: N}}
+  - {ticker: ENS, name: "EnerSys", exchange: NYSE, country: US, currency: USD, nodes: [ups, battery_cells], exposure: {ai: L, energy: M, commodities: N}}
+  - {ticker: EQIX, name: "Equinix", exchange: NASDAQ, country: US, currency: USD, nodes: [dc_reits_colo], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: DLR, name: "Digital Realty", exchange: NYSE, country: US, currency: USD, nodes: [dc_reits_colo], exposure: {ai: M, energy: N, commodities: N}}
+
+  # ============================================================ NEOCLOUDS / MINEROS -> HPC
+  - {ticker: CRWV, name: "CoreWeave", exchange: NASDAQ, country: US, currency: USD, nodes: [neocloud_capex], exposure: {ai: H, energy: M, commodities: N}}
+  - {ticker: NBIS, name: "Nebius Group", exchange: NASDAQ, country: NL, currency: USD, nodes: [neocloud_capex], exposure: {ai: H, energy: L, commodities: N}}
+  - {ticker: IREN, name: "IREN Ltd", exchange: NASDAQ, country: AU, currency: USD, nodes: [btc_miners_hpc, neocloud_capex, dc_powered_land], exposure: {ai: H, energy: H, commodities: N}, seed: true, tags: [tracked]}
+  - {ticker: CIFR, name: "Cipher Mining", exchange: NASDAQ, country: US, currency: USD, nodes: [btc_miners_hpc, dc_powered_land], exposure: {ai: M, energy: H, commodities: N}, seed: true, tags: [tracked], verify: "confirmar nombre/ticker vigente"}
+  - {ticker: WULF, name: "TeraWulf", exchange: NASDAQ, country: US, currency: USD, nodes: [btc_miners_hpc, dc_powered_land], exposure: {ai: M, energy: H, commodities: N}}
+  - {ticker: APLD, name: "Applied Digital", exchange: NASDAQ, country: US, currency: USD, nodes: [dc_powered_land, neocloud_capex], exposure: {ai: H, energy: H, commodities: N}}
+  - {ticker: HUT, name: "Hut 8", exchange: NASDAQ, country: US, currency: USD, nodes: [btc_miners_hpc, dc_powered_land], exposure: {ai: L, energy: H, commodities: N}}
+  - {ticker: CORZ, name: "Core Scientific", exchange: NASDAQ, country: US, currency: USD, nodes: [btc_miners_hpc, dc_powered_land], exposure: {ai: M, energy: H, commodities: N}, verify: "estado de la adquisición por CoreWeave"}
+  - {ticker: GLXY, name: "Galaxy Digital", exchange: NASDAQ, country: US, currency: USD, nodes: [btc_miners_hpc, dc_powered_land], exposure: {ai: L, energy: M, commodities: N}}
+
+  # ============================================================ CONSTRUCCIÓN / EPC / DISTRIBUCIÓN
+  - {ticker: FIX, name: "Comfort Systems USA", exchange: NYSE, country: US, currency: USD, nodes: [dc_construction], exposure: {ai: M, energy: L, commodities: N}}
+  - {ticker: EME, name: "EMCOR Group", exchange: NYSE, country: US, currency: USD, nodes: [dc_construction], exposure: {ai: M, energy: L, commodities: N}}
+  - {ticker: IESC, name: "IES Holdings", exchange: NASDAQ, country: US, currency: USD, nodes: [dc_construction, dc_switchgear_lv_mv], exposure: {ai: M, energy: L, commodities: N}}
+  - {ticker: STRL, name: "Sterling Infrastructure", exchange: NASDAQ, country: US, currency: USD, nodes: [dc_construction], exposure: {ai: M, energy: N, commodities: N}}
+  - {ticker: PWR, name: "Quanta Services", exchange: NYSE, country: US, currency: USD, nodes: [td_epc, dc_construction], exposure: {ai: M, energy: H, commodities: N}}
+  - {ticker: MTZ, name: "MasTec", exchange: NYSE, country: US, currency: USD, nodes: [td_epc], exposure: {ai: L, energy: H, commodities: N}}
+  - {ticker: MYRG, name: "MYR Group", exchange: NASDAQ, country: US, currency: USD, nodes: [td_epc], exposure: {ai: L, energy: H, commodities: N}}
+  - {ticker: PRIM, name: "Primoris Services", exchange: NYSE, country: US, currency: USD, nodes: [td_epc], exposure: {ai: L, energy: H, commodities: N}}
+  - {ticker: AGX, name: "Argan Inc", exchange: NYSE, country: US, currency: USD, nodes: [specialty_engineering, ipp_utilities], exposure: {ai: L, energy: H, commodities: N}, tags: [small_cap]}
+  - {ticker: WCC, name: "WESCO International", exchange: NYSE, country: US, currency: USD, nodes: [industrial_distribution], exposure: {ai: M, energy: M, commodities: L}}
+
+  # ============================================================ RED ELÉCTRICA (T&D)
+  - {ticker: POWL, name: "Powell Industries", exchange: NASDAQ, country: US, currency: USD, nodes: [substations_ehouses, dc_switchgear_lv_mv], exposure: {ai: L, energy: H, commodities: N}, seed: true, tags: [small_cap]}
+  - {ticker: "HPS.A", name: "Hammond Power Solutions", exchange: TSX, country: CA, currency: CAD, yahoo: HPS-A.TO, nodes: [distribution_transformers], exposure: {ai: L, energy: H, commodities: L}, seed: true, tags: [small_cap]}
+  - {ticker: GEV, name: "GE Vernova", exchange: NYSE, country: US, currency: USD, nodes: [gas_turbines, hv_switchgear, large_power_transformers, smr_advanced], exposure: {ai: M, energy: H, commodities: N}}
+  - {ticker: ENR, name: "Siemens Energy", exchange: XETRA, country: DE, currency: EUR, yahoo: ENR.DE, nodes: [gas_turbines, large_power_transformers, hv_switchgear], exposure: {ai: L, energy: H, commodities: N}}
+  - {ticker: "6501.T", name: "Hitachi (Hitachi Energy)", exchange: TSE, country: JP, currency: JPY, nodes: [large_power_transformers, hv_switchgear, hv_cables], exposure: {ai: L, energy: M, commodities: N}}
+  - {ticker: "267260.KS", name: "HD Hyundai Electric", exchange: KRX, country: KR, currency: KRW, nodes: [large_power_transformers, hv_switchgear], exposure: {ai: L, energy: H, commodities: N}, ibkr: limited}
+  - {ticker: "298040.KS", name: "Hyosung Heavy Industries", exchange: KRX, country: KR, currency: KRW, nodes: [large_power_transformers], exposure: {ai: L, energy: H, commodities: N}, ibkr: limited}
+  - {ticker: "010120.KS", name: "LS Electric", exchange: KRX, country: KR, currency: KRW, nodes: [dc_switchgear_lv_mv, distribution_transformers], exposure: {ai: L, energy: H, commodities: N}, ibkr: limited}
+  - {ticker: "1519.TW", name: "Fortune Electric", exchange: TWSE, country: TW, currency: TWD, nodes: [large_power_transformers, hv_switchgear], exposure: {ai: L, energy: H, commodities: N}, verify: "confirmar símbolo", ibkr: unknown}
+  - {ticker: "1503.TW", name: "Shihlin Electric & Engineering", exchange: TWSE, country: TW, currency: TWD, nodes: [distribution_transformers, dc_switchgear_lv_mv], exposure: {ai: L, energy: H, commodities: N}, verify: "confirmar símbolo", ibkr: unknown}
+  - {ticker: WEGE3, name: "WEG S.A.", exchange: B3, country: BR, currency: BRL, yahoo: WEGE3.SA, nodes: [distribution_transformers, large_power_transformers], exposure: {ai: N, energy: H, commodities: N}, ibkr: unknown}
+  - {ticker: HUBB, name: "Hubbell", exchange: NYSE, country: US, currency: USD, nodes: [grid_automation, distribution_transformers], exposure: {ai: L, energy: H, commodities: N}}
+  - {ticker: PRY, name: "Prysmian", exchange: BIT, country: IT, currency: EUR, yahoo: PRY.MI, nodes: [hv_cables, fiber_cable], exposure: {ai: L, energy: H, commodities: L}}
+  - {ticker: NEX, name: "Nexans", exchange: EURONEXT, country: FR, currency: EUR, yahoo: NEX.PA, nodes: [hv_cables], exposure: {ai: N, energy: H, commodities: L}}
+  - {ticker: NKT, name: "NKT A/S", exchange: CPH, country: DK, currency: DKK, yahoo: NKT.CO, nodes: [hv_cables], exposure: {ai: N, energy: H, commodities: L}}
+  - {ticker: CLF, name: "Cleveland-Cliffs", exchange: NYSE, country: US, currency: USD, nodes: [electrical_steel], exposure: {ai: N, energy: L, commodities: H}, notes: "GOES es una fracción pequeña de un negocio siderúrgico cíclico"}
+
+  # ============================================================ GENERACIÓN / NUCLEAR / ALMACENAMIENTO
+  - {ticker: BE, name: "Bloom Energy", exchange: NYSE, country: US, currency: USD, nodes: [fuel_cells, onsite_generation], exposure: {ai: M, energy: H, commodities: N}, seed: true}
+  - {ticker: "7011.T", name: "Mitsubishi Heavy Industries", exchange: TSE, country: JP, currency: JPY, nodes: [gas_turbines, nuclear_components], exposure: {ai: L, energy: H, commodities: N}}
+  - {ticker: "034020.KS", name: "Doosan Enerbility", exchange: KRX, country: KR, currency: KRW, nodes: [gas_turbines, nuclear_components], exposure: {ai: L, energy: H, commodities: N}, ibkr: limited}
+  - {ticker: WRT1V, name: "Wärtsilä", exchange: HEL, country: FI, currency: EUR, yahoo: WRT1V.HE, nodes: [aeroderivative_recip], exposure: {ai: L, energy: H, commodities: N}}
+  - {ticker: HWM, name: "Howmet Aerospace", exchange: NYSE, country: US, currency: USD, nodes: [turbine_castings_forgings], exposure: {ai: N, energy: M, commodities: N}}
+  - {ticker: WWD, name: "Woodward", exchange: NASDAQ, country: US, currency: USD, nodes: [turbine_castings_forgings], exposure: {ai: N, energy: M, commodities: N}}
+  - {ticker: ATI, name: "ATI Inc", exchange: NYSE, country: US, currency: USD, nodes: [superalloys], exposure: {ai: N, energy: M, commodities: M}}
+  - {ticker: CRS, name: "Carpenter Technology", exchange: NYSE, country: US, currency: USD, nodes: [superalloys], exposure: {ai: N, energy: M, commodities: M}}
+  - {ticker: CEG, name: "Constellation Energy", exchange: NASDAQ, country: US, currency: USD, nodes: [nuclear_reactors, ipp_utilities], exposure: {ai: M, energy: H, commodities: N}}
+  - {ticker: VST, name: "Vistra", exchange: NYSE, country: US, currency: USD, nodes: [ipp_utilities, nuclear_reactors], exposure: {ai: M, energy: H, commodities: N}}
+  - {ticker: TLN, name: "Talen Energy", exchange: NASDAQ, country: US, currency: USD, nodes: [ipp_utilities, nuclear_reactors], exposure: {ai: M, energy: H, commodities: N}}
+  - {ticker: NRG, name: "NRG Energy", exchange: NYSE, country: US, currency: USD, nodes: [ipp_utilities], exposure: {ai: L, energy: H, commodities: N}}
+  - {ticker: OKLO, name: "Oklo", exchange: NYSE, country: US, currency: USD, nodes: [smr_advanced], exposure: {ai: M, energy: H, commodities: N}, status: candidate, tags: [pre_revenue, speculative]}
+  - {ticker: SMR, name: "NuScale Power", exchange: NYSE, country: US, currency: USD, nodes: [smr_advanced], exposure: {ai: L, energy: H, commodities: N}, status: candidate, tags: [pre_revenue, speculative]}
+  - {ticker: NNE, name: "NANO Nuclear Energy", exchange: NASDAQ, country: US, currency: USD, nodes: [smr_advanced], exposure: {ai: L, energy: H, commodities: N}, status: candidate, tags: [pre_revenue, speculative]}
+  - {ticker: BWXT, name: "BWX Technologies", exchange: NYSE, country: US, currency: USD, nodes: [nuclear_components, nuclear_fuel_fab, haleu, nuclear_services], exposure: {ai: L, energy: H, commodities: N}, seed: true}
+  - {ticker: CW, name: "Curtiss-Wright", exchange: NYSE, country: US, currency: USD, nodes: [nuclear_components], exposure: {ai: N, energy: M, commodities: N}}
+  - {ticker: MIR, name: "Mirion Technologies", exchange: NYSE, country: US, currency: USD, nodes: [nuclear_services, industrial_instrumentation], exposure: {ai: N, energy: M, commodities: N}}
+  - {ticker: FLNC, name: "Fluence Energy", exchange: NASDAQ, country: US, currency: USD, nodes: [bess], exposure: {ai: L, energy: H, commodities: L}}
+  - {ticker: "ON", name: "onsemi", exchange: NASDAQ, country: US, currency: USD, nodes: [sic_power, mosfet_si_power], exposure: {ai: L, energy: M, commodities: N}}
+  - {ticker: IFX, name: "Infineon Technologies", exchange: XETRA, country: DE, currency: EUR, yahoo: IFX.DE, nodes: [sic_power, gan_power, mosfet_si_power], exposure: {ai: L, energy: M, commodities: N}}
+  - {ticker: STM, name: "STMicroelectronics", exchange: NYSE, country: CH, currency: USD, nodes: [sic_power, mosfet_si_power], exposure: {ai: L, energy: M, commodities: N}}
+  - {ticker: NVTS, name: "Navitas Semiconductor", exchange: NASDAQ, country: US, currency: USD, nodes: [gan_power, sic_power, hvdc_800v], exposure: {ai: M, energy: M, commodities: N}, tags: [small_cap, speculative]}
+  - {ticker: POWI, name: "Power Integrations", exchange: NASDAQ, country: US, currency: USD, nodes: [gan_power], exposure: {ai: L, energy: L, commodities: N}}
+  - {ticker: "6504.T", name: "Fuji Electric", exchange: TSE, country: JP, currency: JPY, nodes: [mosfet_si_power, ups, dc_switchgear_lv_mv], exposure: {ai: L, energy: M, commodities: N}}
+  - {ticker: EQT, name: "EQT Corp", exchange: NYSE, country: US, currency: USD, nodes: [natural_gas_supply], exposure: {ai: L, energy: H, commodities: H}}
+  - {ticker: EXE, name: "Expand Energy", exchange: NASDAQ, country: US, currency: USD, nodes: [natural_gas_supply], exposure: {ai: L, energy: H, commodities: H}}
+  - {ticker: WMB, name: "Williams Companies", exchange: NYSE, country: US, currency: USD, nodes: [natural_gas_supply, onsite_generation], exposure: {ai: L, energy: H, commodities: M}}
+
+  # ============================================================ CICLO DE COMBUSTIBLE NUCLEAR
+  - {ticker: CCJ, name: "Cameco", exchange: NYSE, country: CA, currency: USD, nodes: [uranium_mining, conversion, nuclear_fuel_fab], exposure: {ai: L, energy: H, commodities: H}, seed: true}
+  - {ticker: UUUU, name: "Energy Fuels", exchange: NYSEAMERICAN, country: US, currency: USD, nodes: [uranium_mining, rare_earths], exposure: {ai: N, energy: H, commodities: H}, seed: true}
+  - {ticker: LEU, name: "Centrus Energy", exchange: NYSEAMERICAN, country: US, currency: USD, nodes: [enrichment, haleu], exposure: {ai: L, energy: H, commodities: M}}
+  - {ticker: NXE, name: "NexGen Energy", exchange: NYSE, country: CA, currency: USD, nodes: [uranium_mining], exposure: {ai: N, energy: H, commodities: H}, status: candidate, tags: [pre_revenue]}
+  - {ticker: DNN, name: "Denison Mines", exchange: NYSEAMERICAN, country: CA, currency: USD, nodes: [uranium_mining], exposure: {ai: N, energy: H, commodities: H}, status: candidate, tags: [pre_revenue]}
+  - {ticker: UEC, name: "Uranium Energy Corp", exchange: NYSEAMERICAN, country: US, currency: USD, nodes: [uranium_mining, conversion], exposure: {ai: N, energy: H, commodities: H}}
+  - {ticker: KAP, name: "Kazatomprom (GDR)", exchange: LSE, country: KZ, currency: USD, yahoo: KAP.L, nodes: [uranium_mining], exposure: {ai: N, energy: H, commodities: H}}
+  - {ticker: PDN, name: "Paladin Energy", exchange: ASX, country: AU, currency: AUD, yahoo: PDN.AX, nodes: [uranium_mining], exposure: {ai: N, energy: H, commodities: H}}
+  - {ticker: BOE, name: "Boss Energy", exchange: ASX, country: AU, currency: AUD, yahoo: BOE.AX, nodes: [uranium_mining], exposure: {ai: N, energy: H, commodities: H}}
+  - {ticker: "U.UN", name: "Sprott Physical Uranium Trust", exchange: TSX, country: CA, currency: CAD, yahoo: U-UN.TO, nodes: [uranium], exposure: {ai: N, energy: H, commodities: H}, tags: [physical_trust]}
+  - {ticker: ASPI, name: "ASP Isotopes", exchange: NASDAQ, country: US, currency: USD, nodes: [enrichment, haleu], exposure: {ai: N, energy: M, commodities: L}, status: candidate, tags: [pre_revenue, speculative]}
+
+  # ============================================================ COMMODITIES / MATERIALES CRÍTICOS
+  - {ticker: FCX, name: "Freeport-McMoRan", exchange: NYSE, country: US, currency: USD, nodes: [copper], exposure: {ai: L, energy: L, commodities: H}}
+  - {ticker: SCCO, name: "Southern Copper", exchange: NYSE, country: US, currency: USD, nodes: [copper], exposure: {ai: L, energy: L, commodities: H}}
+  - {ticker: TECK, name: "Teck Resources", exchange: NYSE, country: CA, currency: USD, nodes: [copper, germanium], exposure: {ai: L, energy: L, commodities: H}}
+  - {ticker: BHP, name: "BHP Group (ADR)", exchange: NYSE, country: AU, currency: USD, nodes: [copper], exposure: {ai: N, energy: L, commodities: H}}
+  - {ticker: RIO, name: "Rio Tinto (ADR)", exchange: NYSE, country: GB, currency: USD, nodes: [copper, aluminum, gallium], exposure: {ai: N, energy: L, commodities: H}}
+  - {ticker: GLEN, name: "Glencore", exchange: LSE, country: CH, currency: GBP, yahoo: GLEN.L, nodes: [copper, nickel_cobalt], exposure: {ai: N, energy: L, commodities: H}}
+  - {ticker: ANTO, name: "Antofagasta", exchange: LSE, country: CL, currency: GBP, yahoo: ANTO.L, nodes: [copper], exposure: {ai: N, energy: L, commodities: H}}
+  - {ticker: IVN, name: "Ivanhoe Mines", exchange: TSX, country: CA, currency: CAD, yahoo: IVN.TO, nodes: [copper], exposure: {ai: N, energy: L, commodities: H}, seed: true}
+  - {ticker: ERO, name: "Ero Copper", exchange: NYSE, country: CA, currency: USD, nodes: [copper], exposure: {ai: N, energy: L, commodities: H}, seed: true}
+  - {ticker: HBM, name: "Hudbay Minerals", exchange: NYSE, country: CA, currency: USD, nodes: [copper], exposure: {ai: N, energy: L, commodities: H}}
+  - {ticker: FM, name: "First Quantum Minerals", exchange: TSX, country: CA, currency: CAD, yahoo: FM.TO, nodes: [copper], exposure: {ai: N, energy: L, commodities: H}}
+  - {ticker: LUN, name: "Lundin Mining", exchange: TSX, country: CA, currency: CAD, yahoo: LUN.TO, nodes: [copper], exposure: {ai: N, energy: L, commodities: H}}
+  - {ticker: CS, name: "Capstone Copper", exchange: TSX, country: CA, currency: CAD, yahoo: CS.TO, nodes: [copper], exposure: {ai: N, energy: L, commodities: H}}
+  - {ticker: TGB, name: "Taseko Mines", exchange: NYSEAMERICAN, country: CA, currency: USD, nodes: [copper], exposure: {ai: N, energy: L, commodities: H}, tags: [small_cap]}
+  - {ticker: "2899.HK", name: "Zijin Mining", exchange: HKEX, country: CN, currency: HKD, nodes: [copper], exposure: {ai: N, energy: L, commodities: H}}
+  - {ticker: AA, name: "Alcoa", exchange: NYSE, country: US, currency: USD, nodes: [aluminum, gallium], exposure: {ai: N, energy: L, commodities: H}}
+  - {ticker: CENX, name: "Century Aluminum", exchange: NASDAQ, country: US, currency: USD, nodes: [aluminum], exposure: {ai: N, energy: L, commodities: H}}
+  - {ticker: MP, name: "MP Materials", exchange: NYSE, country: US, currency: USD, nodes: [rare_earths], exposure: {ai: N, energy: M, commodities: H}}
+  - {ticker: LYC, name: "Lynas Rare Earths", exchange: ASX, country: AU, currency: AUD, yahoo: LYC.AX, nodes: [rare_earths], exposure: {ai: N, energy: M, commodities: H}}
+  - {ticker: USAR, name: "USA Rare Earth", exchange: NASDAQ, country: US, currency: USD, nodes: [rare_earths], exposure: {ai: N, energy: L, commodities: H}, status: candidate, tags: [pre_revenue, speculative]}
+  - {ticker: UMI, name: "Umicore", exchange: EURONEXT, country: BE, currency: EUR, yahoo: UMI.BR, nodes: [germanium, battery_cells], exposure: {ai: L, energy: M, commodities: H}}
+  - {ticker: "010130.KS", name: "Korea Zinc", exchange: KRX, country: KR, currency: KRW, nodes: [indium, germanium], exposure: {ai: N, energy: L, commodities: H}, ibkr: limited}
+  - {ticker: SYR, name: "Syrah Resources", exchange: ASX, country: AU, currency: AUD, yahoo: SYR.AX, nodes: [graphite], exposure: {ai: N, energy: M, commodities: H}, tags: [small_cap]}
+  - {ticker: NMG, name: "Nouveau Monde Graphite", exchange: NYSE, country: CA, currency: USD, nodes: [graphite], exposure: {ai: N, energy: M, commodities: H}, status: candidate, tags: [pre_revenue]}
+  - {ticker: ALB, name: "Albemarle", exchange: NYSE, country: US, currency: USD, nodes: [lithium], exposure: {ai: N, energy: M, commodities: H}}
+
+  # ============================================================ AGREGADAS POR RESEARCH DE BOTTLENECKS (2026-10-21)
+  # Proveedores citados en la evidencia de bottlenecks. Identificación leída en resúmenes de buscador:
+  # verification=search_summary hasta confirmar símbolo y negocio.
+  - {ticker: "6981.T", name: "Murata Manufacturing", exchange: TSE, country: JP, currency: JPY, nodes: [mlcc], exposure: {ai: M, energy: L, commodities: N}, verification: search_summary}
+  - {ticker: "009150.KS", name: "Samsung Electro-Mechanics", exchange: KRX, country: KR, currency: KRW, nodes: [mlcc, abf_substrate], exposure: {ai: M, energy: N, commodities: N}, verification: search_summary, ibkr: limited}
+  - {ticker: "6976.T", name: "Taiyo Yuden", exchange: TSE, country: JP, currency: JPY, nodes: [mlcc], exposure: {ai: M, energy: N, commodities: N}, verification: search_summary}
+  - {ticker: "2327.TW", name: "Yageo", exchange: TWSE, country: TW, currency: TWD, nodes: [mlcc], exposure: {ai: M, energy: N, commodities: N}, verification: search_summary}
+  - {ticker: TPRO, name: "Technoprobe", exchange: BIT, country: IT, currency: EUR, yahoo: TPRO.MI, nodes: [probe_cards], exposure: {ai: H, energy: N, commodities: N}, verification: search_summary}
+  - {ticker: "6871.T", name: "Micronics Japan", exchange: TSE, country: JP, currency: JPY, nodes: [probe_cards, hbm_test], exposure: {ai: H, energy: N, commodities: N}, verification: search_summary}
+  - {ticker: ATS, name: "AT&S Austria Technologie & Systemtechnik", exchange: VIE, country: AT, currency: EUR, yahoo: ATS.VI, nodes: [abf_substrate], exposure: {ai: M, energy: N, commodities: N}, verification: search_summary, ibkr: unknown}
+  - {ticker: "285A.T", name: "Kioxia Holdings", exchange: TSE, country: JP, currency: JPY, nodes: [enterprise_ssd], exposure: {ai: M, energy: N, commodities: N}, verification: search_summary}
+  - {ticker: "3324.TW", name: "Auras Technology", exchange: TWSE, country: TW, currency: TWD, nodes: [liquid_cooling_cdu, thermal_materials], exposure: {ai: H, energy: N, commodities: N}, verification: search_summary, verify: "confirmar bolsa (TWSE vs TPEx)"}
+  - {ticker: "1303.TW", name: "Nan Ya Plastics", exchange: TWSE, country: TW, currency: TWD, nodes: [low_dk_glass_cloth, copper_foil], exposure: {ai: L, energy: N, commodities: M}, verification: search_summary}
+  - {ticker: "1802.TW", name: "Taiwan Glass Industry", exchange: TWSE, country: TW, currency: TWD, nodes: [low_dk_glass_cloth], exposure: {ai: L, energy: N, commodities: M}, verification: search_summary}
+  - {ticker: "1815.TW", name: "Fulltech Fiber Glass", exchange: TWSE, country: TW, currency: TWD, nodes: [low_dk_glass_cloth], exposure: {ai: M, energy: N, commodities: N}, verification: search_summary, verify: "confirmar símbolo"}
+  - {ticker: MTLN, name: "Metlen Energy & Metals", exchange: LSE, country: GR, currency: GBP, yahoo: MTLN.L, nodes: [gallium, aluminum], exposure: {ai: N, energy: M, commodities: H}, verification: search_summary, verify: "confirmar listado principal (Atenas/Londres) y símbolo"}

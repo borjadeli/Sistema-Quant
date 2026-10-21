@@ -1,0 +1,410 @@
+# Mapa industrial IA + Energía + Commodities — v0.1
+# Estructura: layer -> segment -> node. Los nodos son funciones económicas (componentes, materiales,
+# capacidades, equipos, servicios), NO sectores bursátiles.
+# `depends_on`: insumos físicos/tecnológicos del nodo (arista insumo -> nodo).
+# `substitutability`: facilidad de sustituir el nodo (low = difícil = más poder de fijación de precios).
+# `concentration`: concentración de la oferta global (prior del analista; verificar con evidencia).
+# Todos los atributos cualitativos son PRIORS del analista hasta que un bottleneck/evidencia los respalde.
+version: "0.1.1"
+updated: "2026-10-21"
+
+layers:
+  - id: demand
+    name: "Demanda de cómputo IA"
+    segments:
+      - id: demand_buyers
+        name: "Compradores de infraestructura IA"
+        nodes:
+          - {id: hyperscaler_capex, name: "Capex de hyperscalers (MSFT, GOOGL, AMZN, META, ORCL)", type: capacity}
+          - {id: neocloud_capex, name: "Neoclouds / GPU clouds (CoreWeave, Nebius, IREN, etc.)", type: capacity}
+          - {id: sovereign_ai, name: "IA soberana y gobiernos", type: capacity}
+          - {id: enterprise_ai, name: "Empresas / on-prem", type: capacity}
+          - {id: frontier_labs, name: "Laboratorios de modelos frontera", type: capacity}
+          - {id: btc_miners_hpc, name: "Mineros de bitcoin reconvertidos a HPC/IA (power + sitios)", type: capacity,
+             depends_on: [dc_powered_land, grid_interconnection]}
+
+  - id: compute
+    name: "Semiconductores de cómputo"
+    segments:
+      - id: compute_chips
+        name: "Chips lógicos"
+        nodes:
+          - {id: gpu, name: "GPUs para datacenter", type: component, concentration: very_high, substitutability: low,
+             depends_on: [leading_edge_foundry, hbm, cowos_packaging, abf_substrate, eda_ip]}
+          - {id: custom_asic, name: "ASICs/XPUs custom (TPU, Trainium, MTIA)", type: component, concentration: high, substitutability: medium,
+             depends_on: [leading_edge_foundry, hbm, cowos_packaging, asic_design_services, serdes_ip]}
+          - {id: server_cpu, name: "CPUs de servidor (x86/ARM)", type: component, concentration: high,
+             depends_on: [leading_edge_foundry, abf_substrate]}
+          - {id: dpu_nic, name: "DPUs / SmartNICs / SuperNICs", type: component,
+             depends_on: [leading_edge_foundry, serdes_ip]}
+      - id: compute_design
+        name: "Diseño e IP"
+        nodes:
+          - {id: eda_ip, name: "EDA y herramientas de diseño", type: service, concentration: very_high, substitutability: low}
+          - {id: serdes_ip, name: "IP de interfaz (SerDes, memoria, PCIe/CXL)", type: technology, concentration: high}
+          - {id: asic_design_services, name: "Servicios de diseño ASIC", type: service, concentration: high}
+          - {id: memory_interface_chips, name: "Chips de interfaz de memoria (RCD, PMIC, SPD, MRDIMM)", type: component,
+             concentration: high, substitutability: low, depends_on: [mature_node_foundry]}
+      - id: compute_foundry
+        name: "Fabricación de obleas"
+        nodes:
+          - {id: leading_edge_foundry, name: "Foundry de nodo avanzado (N3/N2/A16)", type: capacity, concentration: very_high, substitutability: low,
+             depends_on: [euv_litho, deposition_etch, process_control, silicon_wafers, specialty_gases, photoresists, ultrapure_chemicals]}
+          - {id: mature_node_foundry, name: "Foundry de nodos maduros / especialidad", type: capacity, concentration: medium,
+             depends_on: [silicon_wafers, deposition_etch]}
+
+  - id: memory
+    name: "Memoria"
+    segments:
+      - id: memory_dram
+        name: "DRAM y HBM"
+        nodes:
+          - {id: hbm, name: "HBM (High Bandwidth Memory)", type: component, concentration: very_high, substitutability: low,
+             depends_on: [dram_wafer_capacity, tsv_hybrid_bonding, hbm_test, memory_interface_chips]}
+          - {id: dram_wafer_capacity, name: "Capacidad de obleas DRAM", type: capacity, concentration: very_high,
+             depends_on: [euv_litho, deposition_etch, silicon_wafers]}
+          - {id: server_dram, name: "DRAM de servidor (DDR5, MRDIMM, LPDDR)", type: component,
+             depends_on: [dram_wafer_capacity, memory_interface_chips]}
+      - id: memory_storage
+        name: "Almacenamiento"
+        nodes:
+          - {id: enterprise_ssd, name: "SSD empresariales / NAND", type: component}
+          - {id: hdd_nearline, name: "HDD nearline (almacenamiento masivo)", type: component, concentration: very_high}
+
+  - id: packaging_test
+    name: "Advanced packaging, sustratos y test"
+    segments:
+      - id: packaging
+        name: "Encapsulado avanzado"
+        nodes:
+          - {id: cowos_packaging, name: "CoWoS / 2.5D / interposers", type: capacity, concentration: very_high, substitutability: low,
+             depends_on: [silicon_interposer, abf_substrate, packaging_equipment, tsv_hybrid_bonding]}
+          - {id: osat, name: "OSAT (ensamble y test tercerizado)", type: service, concentration: medium,
+             depends_on: [packaging_equipment, abf_substrate]}
+          - {id: chiplets_hybrid, name: "Chiplets e integración heterogénea (UCIe)", type: technology}
+          - {id: tsv_hybrid_bonding, name: "TSV / hybrid bonding / TC bonders", type: equipment, concentration: high, substitutability: low}
+          - {id: packaging_equipment, name: "Equipos de packaging (bonders, dicing, inspección)", type: equipment}
+          - {id: silicon_interposer, name: "Interposer de silicio / puente (LSI)", type: component}
+      - id: substrates
+        name: "Sustratos"
+        nodes:
+          - {id: abf_substrate, name: "Sustratos ABF / IC substrates", type: component, concentration: high, substitutability: low,
+             depends_on: [abf_film, low_dk_glass_cloth, copper_foil]}
+          - {id: abf_film, name: "Film ABF (Ajinomoto build-up film)", type: material, concentration: very_high, substitutability: low}
+          - {id: low_dk_glass_cloth, name: "Tela de vidrio low-Dk / T-glass", type: material, concentration: very_high, substitutability: low}
+          - {id: glass_core_substrate, name: "Sustratos de núcleo de vidrio (emergente)", type: technology}
+          - {id: copper_foil, name: "Lámina de cobre de alto rendimiento (HVLP)", type: material, depends_on: [copper]}
+          - {id: high_layer_pcb, name: "PCBs de alta capa / HDI para servidores y switches", type: component,
+             depends_on: [low_dk_glass_cloth, copper_foil, ccl_laminates]}
+          - {id: ccl_laminates, name: "Laminados CCL de baja pérdida", type: material}
+      - id: test
+        name: "Test y medición"
+        nodes:
+          - {id: probe_cards, name: "Probe cards (wafer sort, HBM, GPU)", type: equipment, concentration: high, substitutability: low}
+          - {id: ate_testers, name: "ATE (testers SoC / memoria)", type: equipment, concentration: very_high}
+          - {id: hbm_test, name: "Test de HBM / KGD (known good die)", type: equipment, depends_on: [probe_cards, ate_testers]}
+          - {id: burn_in_wafer_level, name: "Burn-in y test a nivel oblea", type: equipment, concentration: high}
+          - {id: system_level_test, name: "System-level test / handlers / thermal test", type: equipment}
+          - {id: test_sockets, name: "Sockets y consumibles de test", type: component}
+      - id: passives
+        name: "Componentes pasivos"
+        nodes:
+          - {id: mlcc, name: "MLCCs de alta gama (capacitores cerámicos multicapa para servidores IA)", type: component,
+             concentration: high, substitutability: low, notes: "agregado 2026-10-21 desde research de bottlenecks"}
+
+  - id: semicap
+    name: "Equipos y materiales de fabricación"
+    segments:
+      - id: wfe
+        name: "Equipos de front-end (WFE)"
+        nodes:
+          - {id: euv_litho, name: "Litografía EUV / DUV", type: equipment, concentration: monopoly, substitutability: none}
+          - {id: deposition_etch, name: "Deposición y grabado (CVD/ALD/etch)", type: equipment, concentration: high}
+          - {id: process_control, name: "Metrología e inspección", type: equipment, concentration: high}
+          - {id: wfe_subsystems, name: "Subsistemas WFE (RF power, vacío, flujo, válvulas, piezas)", type: component,
+             concentration: medium, notes: "proveedores de 2do nivel de AMAT/LRCX/TEL"}
+          - {id: cleanroom_fab_build, name: "Construcción de fabs / salas limpias", type: service}
+      - id: semimaterials
+        name: "Materiales de semiconductores"
+        nodes:
+          - {id: silicon_wafers, name: "Obleas de silicio (300mm)", type: material, concentration: high}
+          - {id: compound_substrates, name: "Sustratos compuestos (InP, GaAs, Ge)", type: material, concentration: high, substitutability: low,
+             depends_on: [indium, gallium, germanium]}
+          - {id: sic_substrates, name: "Sustratos de SiC", type: material, concentration: high}
+          - {id: specialty_gases, name: "Gases especiales y de proceso (incl. helio, neón, NF3)", type: material, depends_on: [helium]}
+          - {id: photoresists, name: "Fotoresinas y químicos de litografía", type: material, concentration: very_high}
+          - {id: ultrapure_chemicals, name: "Químicos ultrapuros / CMP slurries", type: material}
+          - {id: high_purity_quartz, name: "Cuarzo de alta pureza / crisoles", type: material, concentration: very_high}
+
+  - id: networking_optical
+    name: "Networking, fotónica e interconexión"
+    segments:
+      - id: optical_modules
+        name: "Módulos ópticos"
+        nodes:
+          - {id: optical_transceivers, name: "Transceptores ópticos 400G/800G/1.6T", type: component, concentration: medium,
+             depends_on: [eml_lasers, cw_lasers, silicon_photonics, dsp_optical, optical_contract_mfg, photodetectors]}
+          - {id: lpo_lro, name: "LPO / LRO (óptica lineal sin DSP)", type: technology, depends_on: [eml_lasers, cw_lasers]}
+          - {id: cpo, name: "Co-packaged optics (CPO)", type: technology, substitutability: medium,
+             depends_on: [silicon_photonics, cw_lasers, fiber_attach, cowos_packaging]}
+          - {id: optical_engines, name: "Optical engines / light engines", type: component, depends_on: [silicon_photonics, cw_lasers]}
+          - {id: optical_contract_mfg, name: "Manufactura óptica por contrato (EMS de precisión)", type: service, concentration: high}
+      - id: photonic_components
+        name: "Componentes fotónicos"
+        nodes:
+          - {id: eml_lasers, name: "Láseres EML (InP) para datacom", type: component, concentration: very_high, substitutability: low,
+             depends_on: [compound_substrates, mocvd_epitaxy]}
+          - {id: cw_lasers, name: "Láseres CW de alta potencia (para SiPh/CPO)", type: component, concentration: high,
+             depends_on: [compound_substrates, mocvd_epitaxy]}
+          - {id: vcsel, name: "VCSELs (GaAs) multimodo", type: component, depends_on: [compound_substrates]}
+          - {id: photodetectors, name: "Fotodetectores", type: component, depends_on: [compound_substrates]}
+          - {id: silicon_photonics, name: "Silicon photonics (PICs)", type: technology, depends_on: [mature_node_foundry]}
+          - {id: mocvd_epitaxy, name: "Epitaxia MOCVD / MBE", type: equipment, concentration: high}
+          - {id: fiber_attach, name: "Fiber attach / conectores / FAUs", type: component}
+          - {id: optical_test_equipment, name: "Equipos de test óptico", type: equipment}
+      - id: electrical_interconnect
+        name: "Interconexión eléctrica y switching"
+        nodes:
+          - {id: dsp_optical, name: "DSPs ópticos PAM4", type: component, concentration: very_high, depends_on: [leading_edge_foundry]}
+          - {id: retimers, name: "Retimers PCIe/CXL/Ethernet", type: component, concentration: high, depends_on: [leading_edge_foundry, serdes_ip]}
+          - {id: aec_cables, name: "Active electrical cables (AEC)", type: component, concentration: high, depends_on: [retimers, copper]}
+          - {id: copper_backplane, name: "Cobre pasivo / backplanes / conectores de alta velocidad", type: component, depends_on: [copper]}
+          - {id: switch_asics, name: "Switch ASICs Ethernet/InfiniBand", type: component, concentration: very_high, depends_on: [leading_edge_foundry, serdes_ip]}
+          - {id: switches_systems, name: "Switches y routers de datacenter", type: component, depends_on: [switch_asics, optical_transceivers]}
+          - {id: dci_optical_systems, name: "Sistemas ópticos DCI / coherentes / long-haul", type: component,
+             depends_on: [dsp_optical, eml_lasers]}
+          - {id: fiber_cable, name: "Fibra óptica y cableado estructurado", type: component, concentration: medium}
+
+  - id: datacenter
+    name: "Datacenters: edificio, energía interna y térmica"
+    segments:
+      - id: dc_build
+        name: "Sitio y construcción"
+        nodes:
+          - {id: dc_powered_land, name: "Terreno con potencia contratada (powered land/shells)", type: capacity, substitutability: low,
+             depends_on: [grid_interconnection, onsite_generation]}
+          - {id: dc_construction, name: "Construcción y EPC de datacenters", type: service, depends_on: [skilled_labor]}
+          - {id: dc_reits_colo, name: "Colocation / REITs de datacenter", type: capacity}
+          - {id: server_odm, name: "Integración de racks/servidores (ODM/OEM)", type: service, depends_on: [gpu, custom_asic, server_dram]}
+      - id: dc_power
+        name: "Distribución eléctrica interna"
+        nodes:
+          - {id: dc_switchgear_lv_mv, name: "Switchgear BT/MT y tableros para datacenter", type: equipment, depends_on: [copper, electrical_steel]}
+          - {id: ups, name: "UPS y baterías de respaldo", type: equipment, depends_on: [battery_cells]}
+          - {id: pdu_busway, name: "PDUs, busway, power shelves", type: equipment, depends_on: [copper]}
+          - {id: hvdc_800v, name: "Arquitectura 800V DC / solid-state transformers (emergente)", type: technology,
+             depends_on: [sic_power, gan_power]}
+          - {id: backup_generators, name: "Generadores de respaldo diésel/gas", type: equipment, concentration: high}
+          - {id: power_conversion_server, name: "Fuentes de servidor / VRMs / módulos de potencia", type: component,
+             depends_on: [sic_power, gan_power, mosfet_si_power]}
+      - id: dc_thermal
+        name: "Térmica"
+        nodes:
+          - {id: liquid_cooling_cdu, name: "Liquid cooling: CDUs, manifolds, cold plates", type: equipment, substitutability: medium}
+          - {id: immersion_cooling, name: "Inmersión", type: technology}
+          - {id: chillers_hvac, name: "Chillers, torres de enfriamiento, HVAC industrial", type: equipment}
+          - {id: pumps_heat_exchangers, name: "Bombas, válvulas e intercambiadores de calor", type: component}
+          - {id: racks_enclosures, name: "Racks, gabinetes y contención", type: component}
+          - {id: thermal_materials, name: "Materiales térmicos (TIM, vapor chambers)", type: material}
+
+  - id: grid
+    name: "Transmisión y distribución eléctrica"
+    segments:
+      - id: td_equipment
+        name: "Equipos de red"
+        nodes:
+          - {id: large_power_transformers, name: "Transformadores de potencia (LPT)", type: equipment, concentration: high, substitutability: low,
+             depends_on: [electrical_steel, copper, skilled_labor]}
+          - {id: distribution_transformers, name: "Transformadores de distribución y especiales", type: equipment,
+             depends_on: [electrical_steel, copper]}
+          - {id: hv_switchgear, name: "Switchgear AT / GIS / interruptores", type: equipment, concentration: high, depends_on: [sf6_alternatives, copper]}
+          - {id: substations_ehouses, name: "Subestaciones, e-houses y salas eléctricas modulares", type: equipment,
+             depends_on: [hv_switchgear, dc_switchgear_lv_mv, distribution_transformers]}
+          - {id: hv_cables, name: "Cables de alta tensión / HVDC / submarinos", type: equipment, concentration: high, depends_on: [copper, aluminum]}
+          - {id: grid_automation, name: "Automatización, protección y medición de red", type: equipment}
+          - {id: electrical_steel, name: "Acero eléctrico de grano orientado (GOES)", type: material, concentration: very_high, substitutability: low}
+          - {id: sf6_alternatives, name: "Gases aislantes / alternativas a SF6", type: material}
+      - id: td_services
+        name: "Construcción y servicios de red"
+        nodes:
+          - {id: grid_interconnection, name: "Interconexión a la red (colas, estudios)", type: capacity, substitutability: low}
+          - {id: td_epc, name: "EPC de T&D / contratistas eléctricos", type: service, depends_on: [skilled_labor]}
+          - {id: skilled_labor, name: "Mano de obra calificada (electricistas, linieros)", type: capacity, substitutability: low}
+
+  - id: generation
+    name: "Generación y almacenamiento"
+    segments:
+      - id: thermal_gen
+        name: "Generación térmica / despachable"
+        nodes:
+          - {id: gas_turbines, name: "Turbinas de gas de gran escala", type: equipment, concentration: very_high, substitutability: low,
+             depends_on: [turbine_castings_forgings, superalloys]}
+          - {id: aeroderivative_recip, name: "Aeroderivadas y motores reciprocantes", type: equipment, depends_on: [turbine_castings_forgings]}
+          - {id: turbine_castings_forgings, name: "Fundiciones/forjados de precisión (álabes, discos)", type: component, concentration: very_high}
+          - {id: superalloys, name: "Superaleaciones (níquel, cobalto, renio)", type: material, concentration: high}
+          - {id: natural_gas_supply, name: "Gas natural (producción y midstream)", type: material}
+          - {id: fuel_cells, name: "Celdas de combustible (SOFC) on-site", type: equipment, depends_on: [natural_gas_supply]}
+          - {id: onsite_generation, name: "Generación behind-the-meter / microgrids", type: capacity,
+             depends_on: [gas_turbines, aeroderivative_recip, fuel_cells, bess]}
+          - {id: ipp_utilities, name: "Utilities e IPPs (PPAs con datacenters)", type: capacity,
+             depends_on: [gas_turbines, nuclear_reactors, grid_interconnection]}
+      - id: nuclear_gen
+        name: "Nuclear"
+        nodes:
+          - {id: nuclear_reactors, name: "Flota nuclear existente (reinicios, uprates, PPAs)", type: capacity, depends_on: [nuclear_fuel_fab]}
+          - {id: smr_advanced, name: "SMRs y reactores avanzados", type: technology, depends_on: [haleu, nuclear_components]}
+          - {id: nuclear_components, name: "Componentes nucleares (vasijas, generadores de vapor, naval)", type: component, concentration: very_high}
+          - {id: nuclear_services, name: "Servicios nucleares (mantenimiento, ingeniería)", type: service}
+      - id: storage_power_semis
+        name: "Almacenamiento y electrónica de potencia"
+        nodes:
+          - {id: bess, name: "Almacenamiento en baterías (BESS)", type: equipment, depends_on: [battery_cells, power_conversion_grid]}
+          - {id: battery_cells, name: "Celdas de baterías (LFP/NMC)", type: component, depends_on: [lithium, graphite]}
+          - {id: power_conversion_grid, name: "Inversores / conversión de potencia", type: equipment, depends_on: [sic_power, mosfet_si_power]}
+          - {id: sic_power, name: "Semiconductores de potencia SiC", type: component, depends_on: [sic_substrates]}
+          - {id: gan_power, name: "Semiconductores de potencia GaN", type: component, depends_on: [gallium]}
+          - {id: mosfet_si_power, name: "MOSFET/IGBT de silicio y controladores de potencia", type: component}
+
+  - id: nuclear_fuel
+    name: "Ciclo de combustible nuclear"
+    segments:
+      - id: fuel_cycle
+        name: "Ciclo de combustible"
+        nodes:
+          - {id: uranium_mining, name: "Minería de uranio (U3O8)", type: material, depends_on: [uranium]}
+          - {id: conversion, name: "Conversión (UF6)", type: capacity, concentration: very_high, substitutability: low, depends_on: [uranium_mining]}
+          - {id: enrichment, name: "Enriquecimiento (SWU)", type: capacity, concentration: very_high, substitutability: low, depends_on: [conversion]}
+          - {id: haleu, name: "HALEU (uranio de bajo enriquecimiento de alto ensayo)", type: material, concentration: very_high, depends_on: [enrichment]}
+          - {id: nuclear_fuel_fab, name: "Fabricación de combustible", type: capacity, depends_on: [enrichment]}
+
+  - id: critical_materials
+    name: "Commodities y materiales críticos"
+    segments:
+      - id: base_metals
+        name: "Metales base"
+        nodes:
+          - {id: copper, name: "Cobre", type: material, notes: "demanda IA es fracción minoritaria; drivers principales: red, EV, construcción"}
+          - {id: aluminum, name: "Aluminio", type: material}
+          - {id: nickel_cobalt, name: "Níquel y cobalto", type: material}
+      - id: minor_metals
+        name: "Metales menores y críticos"
+        nodes:
+          - {id: gallium, name: "Galio", type: material, concentration: very_high, notes: "China domina refinación primaria"}
+          - {id: germanium, name: "Germanio", type: material, concentration: very_high}
+          - {id: indium, name: "Indio", type: material, concentration: high}
+          - {id: rare_earths, name: "Tierras raras (NdPr, Dy, Tb) e imanes", type: material, concentration: very_high}
+          - {id: tungsten, name: "Tungsteno", type: material, concentration: very_high}
+          - {id: helium, name: "Helio", type: material, concentration: high}
+          - {id: lithium, name: "Litio", type: material}
+          - {id: graphite, name: "Grafito (natural/sintético)", type: material, concentration: very_high}
+          - {id: vanadium, name: "Vanadio", type: material}
+          - {id: yttrium_scandium, name: "Itrio y escandio (recubrimientos, TBC de turbinas, láseres)", type: material,
+             concentration: very_high, substitutability: low, notes: "agregado 2026-10-21 desde research de bottlenecks"}
+      - id: energy_materials
+        name: "Materiales energéticos"
+        nodes:
+          - {id: uranium, name: "Uranio", type: material}
+
+  - id: industrial_services
+    name: "Proveedores industriales especializados"
+    segments:
+      - id: specialty_industrial
+        name: "Industria especializada"
+        nodes:
+          - {id: precision_machining, name: "Mecanizado de precisión y fabricación por contrato", type: service}
+          - {id: industrial_instrumentation, name: "Instrumentación y control industrial", type: equipment}
+          - {id: specialty_engineering, name: "Ingeniería y servicios técnicos especializados", type: service}
+          - {id: industrial_distribution, name: "Distribución de material eléctrico/industrial", type: service}
+
+# Dependencias adicionales entre nodos (además de depends_on).
+extra_edges:
+  # Ventas a la demanda final (producto -> comprador). Permiten trazar el camino de exposición.
+  - {source: gpu, target: hyperscaler_capex, relation: sold_to}
+  - {source: gpu, target: neocloud_capex, relation: sold_to}
+  - {source: gpu, target: sovereign_ai, relation: sold_to}
+  - {source: custom_asic, target: hyperscaler_capex, relation: sold_to}
+  - {source: server_odm, target: hyperscaler_capex, relation: sold_to}
+  - {source: server_odm, target: enterprise_ai, relation: sold_to}
+  - {source: dc_reits_colo, target: hyperscaler_capex, relation: sold_to}
+  - {source: dc_reits_colo, target: neocloud_capex, relation: sold_to}
+  - {source: dc_powered_land, target: hyperscaler_capex, relation: sold_to}
+  - {source: dc_powered_land, target: neocloud_capex, relation: sold_to}
+  - {source: btc_miners_hpc, target: neocloud_capex, relation: sold_to}
+  - {source: hyperscaler_capex, target: frontier_labs, relation: sold_to}
+  - {source: dci_optical_systems, target: hyperscaler_capex, relation: sold_to}
+  - {source: enterprise_ssd, target: server_odm, relation: input_to}
+  - {source: hdd_nearline, target: dc_reits_colo, relation: input_to}
+  - {source: server_cpu, target: server_odm, relation: input_to}
+  - {source: dpu_nic, target: server_odm, relation: input_to}
+  - {source: server_dram, target: server_odm, relation: input_to}
+  - {source: high_layer_pcb, target: server_odm, relation: input_to}
+  - {source: high_layer_pcb, target: switches_systems, relation: input_to}
+  - {source: power_conversion_server, target: server_odm, relation: input_to}
+  - {source: racks_enclosures, target: server_odm, relation: input_to}
+  - {source: thermal_materials, target: liquid_cooling_cdu, relation: input_to}
+  - {source: pumps_heat_exchangers, target: liquid_cooling_cdu, relation: input_to}
+  - {source: liquid_cooling_cdu, target: dc_reits_colo, relation: input_to}
+  - {source: immersion_cooling, target: dc_reits_colo, relation: input_to}
+  - {source: chillers_hvac, target: dc_reits_colo, relation: input_to}
+  - {source: ups, target: dc_reits_colo, relation: input_to}
+  - {source: pdu_busway, target: dc_reits_colo, relation: input_to}
+  - {source: hvdc_800v, target: dc_reits_colo, relation: input_to}
+  - {source: dc_switchgear_lv_mv, target: dc_reits_colo, relation: input_to}
+  - {source: backup_generators, target: dc_reits_colo, relation: input_to}
+  - {source: dc_construction, target: dc_reits_colo, relation: input_to}
+  - {source: dc_powered_land, target: dc_reits_colo, relation: input_to}
+  - {source: switches_systems, target: dc_reits_colo, relation: input_to}
+  - {source: fiber_cable, target: dc_reits_colo, relation: input_to}
+  - {source: aec_cables, target: server_odm, relation: input_to}
+  - {source: copper_backplane, target: server_odm, relation: input_to}
+  - {source: retimers, target: server_odm, relation: input_to}
+  - {source: optical_engines, target: cpo, relation: input_to}
+  - {source: lpo_lro, target: switches_systems, relation: input_to}
+  - {source: cpo, target: switches_systems, relation: input_to}
+  - {source: vcsel, target: optical_transceivers, relation: input_to}
+  - {source: optical_test_equipment, target: optical_transceivers, relation: input_to}
+  - {source: fiber_attach, target: optical_transceivers, relation: input_to}
+  - {source: burn_in_wafer_level, target: silicon_photonics, relation: input_to}
+  - {source: burn_in_wafer_level, target: sic_power, relation: input_to}
+  - {source: system_level_test, target: gpu, relation: input_to}
+  - {source: test_sockets, target: system_level_test, relation: input_to}
+  - {source: probe_cards, target: gpu, relation: input_to}
+  - {source: ate_testers, target: gpu, relation: input_to}
+  - {source: osat, target: gpu, relation: input_to}
+  - {source: chiplets_hybrid, target: custom_asic, relation: input_to}
+  - {source: glass_core_substrate, target: abf_substrate, relation: substitute_for}
+  - {source: wfe_subsystems, target: deposition_etch, relation: input_to}
+  - {source: wfe_subsystems, target: euv_litho, relation: input_to}
+  - {source: process_control, target: dram_wafer_capacity, relation: input_to}
+  - {source: high_purity_quartz, target: silicon_wafers, relation: input_to}
+  - {source: cleanroom_fab_build, target: leading_edge_foundry, relation: input_to}
+  - {source: precision_machining, target: wfe_subsystems, relation: input_to}
+  - {source: tungsten, target: deposition_etch, relation: input_to}
+  - {source: large_power_transformers, target: grid_interconnection, relation: input_to}
+  - {source: substations_ehouses, target: grid_interconnection, relation: input_to}
+  - {source: substations_ehouses, target: dc_powered_land, relation: input_to}
+  - {source: hv_cables, target: grid_interconnection, relation: input_to}
+  - {source: grid_automation, target: grid_interconnection, relation: input_to}
+  - {source: td_epc, target: grid_interconnection, relation: input_to}
+  - {source: ipp_utilities, target: dc_powered_land, relation: input_to}
+  - {source: onsite_generation, target: dc_powered_land, relation: input_to}
+  - {source: bess, target: onsite_generation, relation: input_to}
+  - {source: natural_gas_supply, target: ipp_utilities, relation: input_to}
+  - {source: smr_advanced, target: onsite_generation, relation: input_to}
+  - {source: nuclear_components, target: nuclear_reactors, relation: input_to}
+  - {source: nuclear_services, target: nuclear_reactors, relation: input_to}
+  - {source: rare_earths, target: backup_generators, relation: input_to}
+  - {source: rare_earths, target: gas_turbines, relation: input_to}
+  - {source: nickel_cobalt, target: superalloys, relation: input_to}
+  - {source: vanadium, target: bess, relation: input_to}
+  - {source: aluminum, target: racks_enclosures, relation: input_to}
+  - {source: copper, target: copper_backplane, relation: input_to}
+  - {source: copper, target: large_power_transformers, relation: input_to}
+  - {source: gallium, target: compound_substrates, relation: input_to}
+  - {source: industrial_distribution, target: dc_construction, relation: input_to}
+  - {source: specialty_engineering, target: td_epc, relation: input_to}
+  - {source: industrial_instrumentation, target: ipp_utilities, relation: input_to}
+  - {source: mlcc, target: server_odm, relation: input_to}
+  - {source: mlcc, target: power_conversion_server, relation: input_to}
+  - {source: yttrium_scandium, target: deposition_etch, relation: input_to}
+  - {source: yttrium_scandium, target: gas_turbines, relation: input_to}
