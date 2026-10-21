@@ -38,7 +38,7 @@ Lo que pedís (que el modelo elija, compre y venda como AI Finance Labs, y vos l
 | Datos oficiales | SEC EDGAR XBRL (companyfacts) | Fuente oficial, gratuita, point-in-time (`filed`) |
 | Mercado/opciones | yfinance (reemplazable) | Gratis y global, pero no oficial: queda etiquetado y se exige frescura |
 | Dashboard | Streamlit + Plotly | Una app interactiva sin frontend separado |
-| Tests | pytest | 51 tests: datos, valuación, scoring, opciones, cartera, agentes y pipeline |
+| Tests | pytest | 52 tests: datos, valuación, scoring, opciones, cartera, agentes y pipeline |
 
 **Sustituibilidad (regla 13).** Proveedores de datos detrás de interfaces (`providers/base.py`). Para LLM, cualquier
 objeto con `.complete()`. Modelo, effort y búsqueda se configuran por capa en `config/settings.yaml`.

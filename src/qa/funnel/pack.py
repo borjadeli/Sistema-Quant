@@ -118,13 +118,39 @@ def company_pack(s: Session, c: Company, m: IndustryMap, registry: dict[str, Bot
     return pack
 
 
+VOLATILE_KEYS = {"market", "valuation", "price_time", "returns", "expected_return", "prob_loss", "prob_permanent_loss",
+                 "upside_downside_ratio", "price0", "score", "current_portfolio_weights", "cash_weight"}
+
+
 def hash_view(pack: dict, move_pct: float = 15.0) -> dict:
     """Vista estable del pack para decidir reutilización: el precio entra en 'buckets' logarítmicos de
-    `move_pct`%, así un análisis se reutiliza salvo cambio material (nuevo filing, evento o movimiento > move_pct)."""
+    `move_pct`%, así un análisis se reutiliza salvo cambio material (nuevo filing, evento o movimiento > move_pct).
+    Se quitan recursivamente los campos que dependen del precio del día."""
+    def find_price(x):  # noqa: ANN001, ANN202
+        if isinstance(x, dict):
+            m = x.get("market")
+            if isinstance(m, dict) and m.get("price"):
+                return m["price"]
+            for v in x.values():
+                p = find_price(v)
+                if p:
+                    return p
+        elif isinstance(x, list):
+            for v in x:
+                p = find_price(v)
+                if p:
+                    return p
+        return None
+
+    def strip(x):  # noqa: ANN001, ANN202
+        if isinstance(x, dict):
+            return {k: strip(v) for k, v in x.items() if k not in VOLATILE_KEYS}
+        if isinstance(x, list):
+            return [strip(v) for v in x]
+        return x
+
     v = json.loads(json.dumps(pack, default=str))
-    price = (v.get("market") or {}).get("price")
-    bucket = round(math.log(price) / math.log(1 + move_pct / 100)) if price and price > 0 else None
-    for k in ("market", "valuation"):
-        v.pop(k, None)
-    v["price_bucket"] = bucket
-    return v
+    price = find_price(v)
+    out = strip(v)
+    out["price_bucket"] = round(math.log(price) / math.log(1 + move_pct / 100)) if price and price > 0 else None
+    return out

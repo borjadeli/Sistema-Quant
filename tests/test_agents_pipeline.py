@@ -58,3 +58,13 @@ def test_demo_end_to_end(db_url):
     assert not engine.ALLOW_SYNTHETIC_FOR_DEMO          # flag restaurado
     agents_called = {x["agent"] for x in r["agent_log"]}
     assert {"triage", "fundamental", "valuation", "bear", "valuation_rebuttal", "auditor", "portfolio_manager"} <= agents_called
+
+
+def test_hash_view_ignores_small_price_moves():
+    from qa.funnel.pack import hash_view
+    from qa.provenance import stable_hash
+    a = {"company": {"id": "X"}, "market": {"price": 100.0, "as_of": "t1"}, "nested": {"data_pack": {"market": {"price": 100.0}}}}
+    b = {"company": {"id": "X"}, "market": {"price": 103.0, "as_of": "t2"}, "nested": {"data_pack": {"market": {"price": 103.0}}}}
+    c = {"company": {"id": "X"}, "market": {"price": 140.0, "as_of": "t3"}, "nested": {"data_pack": {"market": {"price": 140.0}}}}
+    assert stable_hash(hash_view(a)) == stable_hash(hash_view(b))
+    assert stable_hash(hash_view(a)) != stable_hash(hash_view(c))
