@@ -1,5 +1,4 @@
 """AnthropicLLM con un cliente falso: verifica el request sin gastar API."""
-import json
 from types import SimpleNamespace as NS
 
 import pytest

@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from datetime import date
 
-from qa.agents.base import AGENTS, system_prompt, user_message
+from qa.agents.base import AGENTS, system_prompt
 from qa.agents.llm import estimate_cost
 from qa.config import settings
 

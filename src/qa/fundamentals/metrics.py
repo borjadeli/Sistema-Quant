@@ -5,7 +5,6 @@ Si falta un insumo, la métrica es None y se registra en `missing`: nunca se rel
 """
 from __future__ import annotations
 
-from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 

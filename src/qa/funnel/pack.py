@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import math
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session

@@ -15,11 +15,9 @@ from __future__ import annotations
 
 import json
 import logging
-import math
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
-from sqlalchemy import select
 
 from qa.agents import schemas as S
 from qa.agents.base import AgentResult, RunContext, run_agent
@@ -34,8 +32,8 @@ from qa.portfolio import ledger
 from qa.portfolio.construction import PositionMeta, enforce_constraints
 from qa.scoring.engine import (FactorScore, ScoreCard, combine, edge_proxy, score_bottleneck,
                                score_financial_quality, score_valuation)
-from qa.universe.model import LEVEL_VALUE, Company, Universe
-from qa.valuation.core import MarketInputs, ScenarioAssumptions, ScenarioSet, compute_multiples, run_scenarios
+from qa.universe.model import Company, Universe
+from qa.valuation.core import MarketInputs, ScenarioSet, compute_multiples, run_scenarios
 
 log = logging.getLogger(__name__)
 TIERS = ("L0", "L1", "L2", "L3", "committee")
