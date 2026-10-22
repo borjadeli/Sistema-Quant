@@ -24,6 +24,10 @@ def _yf():
     return yf
 
 
+# Monedas cotizadas en subunidades: (moneda mayor, factor)
+MINOR_UNITS = {"GBp": ("GBP", 0.01), "GBX": ("GBP", 0.01), "ZAc": ("ZAR", 0.01), "ILA": ("ILS", 0.01)}
+
+
 class YahooProvider:
     name = "yahoo"
 
@@ -32,9 +36,15 @@ class YahooProvider:
 
     # ------------------------------------------------------------------ precios
     def history(self, symbol: str, start: date, end: date | None = None) -> pd.DataFrame:
+        """OHLCV en la unidad MAYOR de la moneda (GBp/ZAc/ILA -> GBP/ZAR/ILS). df.attrs['currency'] la indica."""
         yf = _yf()
         try:
-            df = yf.Ticker(symbol).history(start=start, end=end, auto_adjust=False)
+            t = yf.Ticker(symbol)
+            df = t.history(start=start, end=end, auto_adjust=False)
+            try:
+                raw_ccy = t.fast_info.get("currency")
+            except Exception:  # noqa: BLE001
+                raw_ccy = None
         except Exception as e:  # yfinance lanza excepciones heterogéneas
             raise ProviderUnavailable(f"yahoo history {symbol}: {e}") from e
         if df is None or df.empty:
@@ -42,7 +52,14 @@ class YahooProvider:
         df = df.rename(columns={"Open": "open", "High": "high", "Low": "low", "Close": "close",
                                 "Adj Close": "adj_close", "Volume": "volume"})
         df.index = pd.to_datetime(df.index).tz_localize(None).date
-        return df[[c for c in ["open", "high", "low", "close", "adj_close", "volume"] if c in df.columns]]
+        df = df[[c for c in ["open", "high", "low", "close", "adj_close", "volume"] if c in df.columns]].copy()
+        ccy, scale = MINOR_UNITS.get(raw_ccy, (raw_ccy, 1.0))
+        if scale != 1.0:
+            for c in ("open", "high", "low", "close", "adj_close"):
+                if c in df.columns:
+                    df[c] = df[c] * scale
+        df.attrs["currency"] = ccy
+        return df
 
     def fx_to_usd(self, currency: str) -> float:
         """Tipo de cambio spot moneda->USD (Yahoo). GBp (peniques) se maneja aparte."""
@@ -69,10 +86,9 @@ class YahooProvider:
             raise ProviderUnavailable(f"yahoo snapshot {sym}: {e}") from e
         hist = self.history(sym, start=date.today() - pd.Timedelta(days=40))
         tail = hist.tail(20)
-        scale = 0.01 if currency == "GBp" else 1.0            # LSE cotiza en peniques
-        ccy = "GBP" if currency == "GBp" else currency
+        ccy, scale = MINOR_UNITS.get(currency, (currency, 1.0))   # LSE cotiza en peniques
         fx = self.fx_to_usd(ccy)
-        adv = float((tail["close"] * tail["volume"]).mean()) * scale * fx if len(tail) else None
+        adv = float((tail["close"] * tail["volume"]).mean()) * fx if len(tail) else None   # history ya en moneda mayor
         return MarketSnapshotData(
             company_id=company.id, as_of=datetime.now(timezone.utc), price=price * scale, currency=ccy,
             shares_outstanding=float(shares) if shares else None,

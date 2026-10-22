@@ -25,7 +25,13 @@ UNSUPPORTED_SCHEMA_KEYS = {"minimum", "maximum", "exclusiveMinimum", "exclusiveM
 
 
 class LLMError(RuntimeError):
-    pass
+    """Error de llamada. Si el proveedor ya facturó tokens, el costo viaja en la excepción (no se pierde)."""
+
+    def __init__(self, msg: str, *, cost_usd: float = 0.0, input_tokens: int = 0, output_tokens: int = 0,
+                 web_searches: int = 0):
+        super().__init__(msg)
+        self.cost_usd, self.input_tokens, self.output_tokens, self.web_searches = (
+            cost_usd, input_tokens, output_tokens, web_searches)
 
 
 class LLMRefusal(LLMError):
@@ -50,12 +56,37 @@ class LLMClient(Protocol):
 
 
 def price_tokens(model: str, input_tokens: int, output_tokens: int, web_searches: int = 0,
-                 cache_read: int = 0) -> float:
+                 cache_read: int = 0, cache_write: int = 0) -> float:
+    """USD de una llamada. Precios por modelo en settings (incluye lectura/escritura de caché)."""
     p = settings()["llm"]["pricing_usd_per_mtok"].get(model)
     if p is None:
         raise LLMError(f"sin precio configurado para {model} (config/settings.yaml)")
-    return (input_tokens * p["input"] + output_tokens * p["output"] + cache_read * p["input"] * 0.1) / 1e6 \
+    read = p.get("cache_read", p["input"] * 0.1)
+    write = p.get("cache_write", p["input"] * 1.25)
+    return (input_tokens * p["input"] + output_tokens * p["output"] + cache_read * read + cache_write * write) / 1e6 \
         + web_searches * WEB_SEARCH_USD_PER_REQUEST
+
+
+def usage_cost(usage: Any, model: str) -> tuple[float, int, int, int]:
+    """Costo de un `usage` de la API. Si hay `iterations` (fallback server-side), cada intento se cobra
+    al precio de SU modelo y se suman todos (también el intento rechazado)."""
+    stu = getattr(usage, "server_tool_use", None)
+    searches = (getattr(stu, "web_search_requests", 0) or 0) if stu else 0
+    its = getattr(usage, "iterations", None) or []
+    parts = its if its else [usage]
+    cost = 0.0
+    tin = tout = 0
+    for i, it in enumerate(parts):
+        m = getattr(it, "model", None) or model
+        ti, to = getattr(it, "input_tokens", 0) or 0, getattr(it, "output_tokens", 0) or 0
+        cr = getattr(it, "cache_read_input_tokens", 0) or 0
+        cw = getattr(it, "cache_creation_input_tokens", 0) or 0
+        try:
+            cost += price_tokens(m, ti, to, searches if i == 0 else 0, cr, cw)
+        except LLMError:
+            cost += price_tokens(model, ti, to, searches if i == 0 else 0, cr, cw)   # modelo sin precio: usa el pedido
+        tin, tout = tin + ti, tout + to
+    return cost, tin, tout, searches
 
 
 def estimate_cost(model: str, prompt_chars: int, max_tokens: int, web_search_uses: int) -> float:
@@ -120,25 +151,26 @@ class AnthropicLLM:
             betas.append("server-side-fallback-2026-07-01")
             kwargs["fallbacks"] = "default"
         messages: list[dict] = [{"role": "user", "content": user}]
-        tot_in = tot_out = searches = cache_read = 0
+        tot_in = tot_out = searches = 0
+        cost = 0.0
         sources: list[str] = []
         final = None
+
+        def fail(cls: type[LLMError], msg: str) -> LLMError:  # el costo ya facturado viaja en la excepción
+            return cls(msg, cost_usd=cost, input_tokens=tot_in, output_tokens=tot_out, web_searches=searches)
+
         for _ in range(self.max_pause_turns + 1):
             try:
                 with self.client.beta.messages.stream(messages=messages, betas=betas, **kwargs) as stream:
                     final = stream.get_final_message()
             except anthropic.RateLimitError as e:
-                raise LLMError(f"rate limit: {e}") from e
+                raise fail(LLMError, f"rate limit: {e}") from e
             except anthropic.APIStatusError as e:
-                raise LLMError(f"API {e.status_code}: {e.message}") from e
+                raise fail(LLMError, f"API {e.status_code}: {e.message}") from e
             except anthropic.APIConnectionError as e:
-                raise LLMError(f"conexión: {e}") from e
-            u = final.usage
-            tot_in += u.input_tokens or 0
-            tot_out += u.output_tokens or 0
-            cache_read += getattr(u, "cache_read_input_tokens", 0) or 0
-            stu = getattr(u, "server_tool_use", None)
-            searches += (getattr(stu, "web_search_requests", 0) or 0) if stu else 0
+                raise fail(LLMError, f"conexión: {e}") from e
+            c, ti, to, ns = usage_cost(final.usage, model)
+            cost, tot_in, tot_out, searches = cost + c, tot_in + ti, tot_out + to, searches + ns
             for block in final.content:
                 if getattr(block, "type", "") == "web_search_tool_result" and isinstance(block.content, list):
                     sources += [r.url for r in block.content if getattr(r, "url", None)]
@@ -146,18 +178,19 @@ class AnthropicLLM:
                 messages = messages + [{"role": "assistant", "content": final.content}]
                 continue
             break
-        cost = price_tokens(model, tot_in, tot_out, searches, cache_read)
         if final.stop_reason == "refusal":
-            raise LLMRefusal(f"{agent}: rechazo ({getattr(final.stop_details, 'category', None)})")
+            raise fail(LLMRefusal, f"{agent}: rechazo ({getattr(final.stop_details, 'category', None)})")
         if final.stop_reason == "max_tokens":
-            raise LLMError(f"{agent}: max_tokens alcanzado — subir max_tokens del tier")
+            raise fail(LLMError, f"{agent}: max_tokens alcanzado — subir max_tokens del tier")
+        if final.stop_reason == "pause_turn":
+            raise fail(LLMError, f"{agent}: excedió {self.max_pause_turns} continuaciones (pause_turn)")
         text = next((b.text for b in reversed(final.content) if getattr(b, "type", "") == "text"), None)
         if text is None:
-            raise LLMError(f"{agent}: respuesta sin bloque de texto")
+            raise fail(LLMError, f"{agent}: respuesta sin bloque de texto")
         try:
             data = json.loads(text)
         except json.JSONDecodeError as e:
-            raise LLMError(f"{agent}: JSON inválido: {e}") from e
+            raise fail(LLMError, f"{agent}: JSON inválido: {e}") from e
         return LLMResponse(data=data, model=getattr(final, "model", model), input_tokens=tot_in, output_tokens=tot_out,
                            web_searches=searches, cost_usd=cost, web_sources=sorted(set(sources)),
                            stop_reason=final.stop_reason)

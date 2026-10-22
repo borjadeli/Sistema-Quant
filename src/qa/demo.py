@@ -100,6 +100,27 @@ def scripted_responses() -> dict:
     }
 
 
+def _demo_feed(s) -> None:  # noqa: ANN001
+    """Eventos y propuestas SINTÉTICOS para poder ver el Research Feed en la demo."""
+    from qa.db.schema import FeedEvent, MapChangeProposal
+    today = date.today()
+    s.add_all([
+        FeedEvent(event_date=today, company_id="TEST_ALPHA", event_type="earnings", title="DEMO: resultados trimestrales",
+                  detail="Evento sintético de demostración", verification="synthetic_test_data", impact="unknown",
+                  triggers_review=True),
+        FeedEvent(event_date=today, company_id="TEST_SLOW", event_type="price_move",
+                  title="DEMO: movimiento de precio +18%", verification="synthetic_test_data", impact="unknown",
+                  triggers_review=True),
+        FeedEvent(event_date=today, bottleneck_id="inp_substrates_eml_lasers", event_type="capacity",
+                  title="DEMO: anuncio de expansión de capacidad", verification="synthetic_test_data", impact="unknown"),
+        MapChangeProposal(change_type="add_company", status="pending", rationale="DEMO: candidata sintética",
+                          payload={"name": "DEMO Corp (sintética)", "ticker": None, "exchange": None,
+                                   "map_nodes": ["eml_lasers"], "role": "DEMO", "estimated_exposure": "unknown"},
+                          evidence=[{"claim": "DEMO", "source_url": None, "source_date": None,
+                                     "verification": "hypothesis"}]),
+    ])
+
+
 def run_demo(db_url: str = DEMO_DB) -> dict:
     m = load_map()
     fx = json.loads((FIXTURES_DIR / "synthetic_companies.json").read_text(encoding="utf-8"))
@@ -121,13 +142,14 @@ def run_demo(db_url: str = DEMO_DB) -> dict:
                                                      market_cap=mk["price"] * mk["shares"],
                                                      market_cap_usd=mk["price"] * mk["shares"],
                                                      adv_usd_20d=mk["adv_usd_20d"], source="synthetic_fixture"))
+        _demo_feed(s)
         s.flush()
         ctx = RunContext(session=s, llm=ScriptedLLM(scripted_responses()), budget=Budget(per_run_usd=5, monthly_usd=50),
                          decision_date=date.today(), reuse=False)
         from qa.scoring import engine
         engine.ALLOW_SYNTHETIC_FOR_DEMO = True
         try:
-            rep = Pipeline(ctx, m, u, reg, portfolio_name=DEMO_PORTFOLIO).run()
+            rep = Pipeline(ctx, m, u, reg, portfolio_name=DEMO_PORTFOLIO, mode="demo_synthetic").run()
         finally:
             engine.ALLOW_SYNTHETIC_FOR_DEMO = False
         return rep.__dict__

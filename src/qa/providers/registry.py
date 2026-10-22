@@ -30,8 +30,15 @@ class IngestReport:
         (self.failed if err else self.ok).setdefault(cid, []).append(f"{step}: {err}" if err else step)
 
 
+_PROVIDERS: list | None = None
+
+
 def fundamentals_providers() -> list:
-    return [FUNDAMENTALS[n]() for n in settings()["providers"]["fundamentals"] if n in FUNDAMENTALS]
+    """Instancias únicas por proceso (el CSV manual se parsea una vez por ingesta, no por empresa)."""
+    global _PROVIDERS
+    if _PROVIDERS is None:
+        _PROVIDERS = [FUNDAMENTALS[n]() for n in settings()["providers"]["fundamentals"] if n in FUNDAMENTALS]
+    return _PROVIDERS
 
 
 def price_provider():
@@ -48,13 +55,15 @@ def ingest_company(s: Session, c: Company, report: IngestReport, history_days: i
             report.add(c.id, f"fundamentals[{prov.name}]={len(pts)}")
         except ProviderUnavailable as e:
             report.add(c.id, f"fundamentals[{prov.name}]", str(e))
+        except (ValueError, KeyError) as e:      # datos mal formados de UN proveedor no abortan la ingesta
+            report.add(c.id, f"fundamentals[{prov.name}]", f"datos inválidos: {e}")
     pp = price_provider()
     try:
         snap = pp.snapshot(c)
         repo.save_snapshot(s, snap)
         report.add(c.id, f"snapshot[{pp.name}]")
         df = pp.history(c.yahoo_symbol, start=date.today() - timedelta(days=history_days))
-        repo.save_prices(s, c.yahoo_symbol, df, pp.name, snap.currency)
+        repo.save_prices(s, c.yahoo_symbol, df, pp.name, df.attrs.get("currency") or snap.currency)
         report.add(c.id, f"prices[{pp.name}]={len(df)}")
     except ProviderUnavailable as e:
         report.add(c.id, f"market[{pp.name}]", str(e))

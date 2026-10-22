@@ -1731,7 +1731,7 @@
     },
     {
      "metric": "diluted_shares",
-     "value": 106090000.0,
+     "value": 114577200.0,
      "period_end": "2024-03-31",
      "period_type": "Q",
      "known_at": "2024-05-10"
@@ -1759,7 +1759,7 @@
     },
     {
      "metric": "cash",
-     "value": -1116000.0,
+     "value": 38559000.0,
      "period_end": "2024-03-31",
      "period_type": "instant",
      "known_at": "2024-05-10"
@@ -1773,14 +1773,14 @@
     },
     {
      "metric": "equity",
-     "value": 538884000.0,
+     "value": 578559000.0,
      "period_end": "2024-03-31",
      "period_type": "instant",
      "known_at": "2024-05-10"
     },
     {
      "metric": "current_assets",
-     "value": 25334000.0,
+     "value": 65009000.0,
      "period_end": "2024-03-31",
      "period_type": "instant",
      "known_at": "2024-05-10"
@@ -1850,7 +1850,7 @@
     },
     {
      "metric": "diluted_shares",
-     "value": 109272700.0,
+     "value": 127455677.28,
      "period_end": "2024-06-30",
      "period_type": "Q",
      "known_at": "2024-08-09"
@@ -1878,7 +1878,7 @@
     },
     {
      "metric": "cash",
-     "value": -27883400.0,
+     "value": 57417850.0,
      "period_end": "2024-06-30",
      "period_type": "instant",
      "known_at": "2024-08-09"
@@ -1892,14 +1892,14 @@
     },
     {
      "metric": "equity",
-     "value": 512116600.0,
+     "value": 597417850.0,
      "period_end": "2024-06-30",
      "period_type": "instant",
      "known_at": "2024-08-09"
     },
     {
      "metric": "current_assets",
-     "value": 2534100.0,
+     "value": 87835350.0,
      "period_end": "2024-06-30",
      "period_type": "instant",
      "known_at": "2024-08-09"
@@ -1969,7 +1969,7 @@
     },
     {
      "metric": "diluted_shares",
-     "value": 112550881.0,
+     "value": 131279347.6,
      "period_end": "2024-09-30",
      "period_type": "Q",
      "known_at": "2024-11-09"
@@ -1997,7 +1997,7 @@
     },
     {
      "metric": "cash",
-     "value": -58665910.0,
+     "value": 26635340.0,
      "period_end": "2024-09-30",
      "period_type": "instant",
      "known_at": "2024-11-09"
@@ -2011,14 +2011,14 @@
     },
     {
      "metric": "equity",
-     "value": 481334090.0,
+     "value": 566635340.0,
      "period_end": "2024-09-30",
      "period_type": "instant",
      "known_at": "2024-11-09"
     },
     {
      "metric": "current_assets",
-     "value": -23685785.0,
+     "value": 61615465.0,
      "period_end": "2024-09-30",
      "period_type": "instant",
      "known_at": "2024-11-09"
@@ -2088,7 +2088,7 @@
     },
     {
      "metric": "diluted_shares",
-     "value": 115927407.43,
+     "value": 146035146.27,
      "period_end": "2024-12-31",
      "period_type": "Q",
      "known_at": "2025-02-09"
@@ -2116,7 +2116,7 @@
     },
     {
      "metric": "cash",
-     "value": -94065796.5,
+     "value": 51576169.12,
      "period_end": "2024-12-31",
      "period_type": "instant",
      "known_at": "2025-02-09"
@@ -2130,14 +2130,14 @@
     },
     {
      "metric": "equity",
-     "value": 445934203.5,
+     "value": 591576169.12,
      "period_end": "2024-12-31",
      "period_type": "instant",
      "known_at": "2025-02-09"
     },
     {
      "metric": "current_assets",
-     "value": -53838652.75,
+     "value": 91803312.87,
      "period_end": "2024-12-31",
      "period_type": "instant",
      "known_at": "2025-02-09"
@@ -2207,7 +2207,7 @@
     },
     {
      "metric": "diluted_shares",
-     "value": 119405229.65,
+     "value": 162449496.71,
      "period_end": "2025-03-31",
      "period_type": "Q",
      "known_at": "2025-05-10"
@@ -2235,7 +2235,7 @@
     },
     {
      "metric": "cash",
-     "value": -134775665.97,
+     "value": 80258122.62,
      "period_end": "2025-03-31",
      "period_type": "instant",
      "known_at": "2025-05-10"
@@ -2249,14 +2249,14 @@
     },
     {
      "metric": "equity",
-     "value": 405224334.03,
+     "value": 620258122.62,
      "period_end": "2025-03-31",
      "period_type": "instant",
      "known_at": "2025-05-10"
     },
     {
      "metric": "current_assets",
-     "value": -88514450.66,
+     "value": 126519337.93,
      "period_end": "2025-03-31",
      "period_type": "instant",
      "known_at": "2025-05-10"
@@ -2326,7 +2326,7 @@
     },
     {
      "metric": "diluted_shares",
-     "value": 122987386.54,
+     "value": 167322981.61,
      "period_end": "2025-06-30",
      "period_type": "Q",
      "known_at": "2025-08-09"
@@ -2354,7 +2354,7 @@
     },
     {
      "metric": "cash",
-     "value": -181592015.87,
+     "value": 33441772.72,
      "period_end": "2025-06-30",
      "period_type": "instant",
      "known_at": "2025-08-09"
@@ -2368,14 +2368,14 @@
     },
     {
      "metric": "equity",
-     "value": 358407984.13,
+     "value": 573441772.72,
      "period_end": "2025-06-30",
      "period_type": "instant",
      "known_at": "2025-08-09"
     },
     {
      "metric": "current_assets",
-     "value": -128391618.26,
+     "value": 86642170.33,
      "period_end": "2025-06-30",
      "period_type": "instant",
      "known_at": "2025-08-09"
@@ -2445,7 +2445,7 @@
     },
     {
      "metric": "diluted_shares",
-     "value": 126677008.14,
+     "value": 186130084.74,
      "period_end": "2025-09-30",
      "period_type": "Q",
      "known_at": "2025-11-09"
@@ -2473,7 +2473,7 @@
     },
     {
      "metric": "cash",
-     "value": -235430818.25,
+     "value": 71373656.22,
      "period_end": "2025-09-30",
      "period_type": "instant",
      "known_at": "2025-11-09"
@@ -2487,14 +2487,14 @@
     },
     {
      "metric": "equity",
-     "value": 304569181.75,
+     "value": 611373656.22,
      "period_end": "2025-09-30",
      "period_type": "instant",
      "known_at": "2025-11-09"
     },
     {
      "metric": "current_assets",
-     "value": -174250361.0,
+     "value": 132554113.47,
      "period_end": "2025-09-30",
      "period_type": "instant",
      "known_at": "2025-11-09"
@@ -2564,7 +2564,7 @@
     },
     {
      "metric": "diluted_shares",
-     "value": 130477318.38,
+     "value": 207051106.27,
      "period_end": "2025-12-31",
      "period_type": "Q",
      "known_at": "2026-02-09"
@@ -2592,7 +2592,7 @@
     },
     {
      "metric": "cash",
-     "value": -297345440.99,
+     "value": 114995322.24,
      "period_end": "2025-12-31",
      "period_type": "instant",
      "known_at": "2026-02-09"
@@ -2606,14 +2606,14 @@
     },
     {
      "metric": "equity",
-     "value": 242654559.01,
+     "value": 654995322.24,
      "period_end": "2025-12-31",
      "period_type": "instant",
      "known_at": "2026-02-09"
     },
     {
      "metric": "current_assets",
-     "value": -226987915.15,
+     "value": 185352848.08,
      "period_end": "2025-12-31",
      "period_type": "instant",
      "known_at": "2026-02-09"
@@ -2683,7 +2683,7 @@
     },
     {
      "metric": "diluted_shares",
-     "value": 134391637.93,
+     "value": 213262639.46,
      "period_end": "2026-03-31",
      "period_type": "Q",
      "known_at": "2026-05-10"
@@ -2711,7 +2711,7 @@
     },
     {
      "metric": "cash",
-     "value": -368547257.14,
+     "value": 43793506.09,
      "period_end": "2026-03-31",
      "period_type": "instant",
      "known_at": "2026-05-10"
@@ -2725,14 +2725,14 @@
     },
     {
      "metric": "equity",
-     "value": 171452742.86,
+     "value": 583793506.09,
      "period_end": "2026-03-31",
      "period_type": "instant",
      "known_at": "2026-05-10"
     },
     {
      "metric": "current_assets",
-     "value": -287636102.42,
+     "value": 124704660.8,
      "period_end": "2026-03-31",
      "period_type": "instant",
      "known_at": "2026-05-10"
@@ -2802,7 +2802,7 @@
     },
     {
      "metric": "diluted_shares",
-     "value": 138423387.07,
+     "value": 237233360.13,
      "period_end": "2026-06-30",
      "period_type": "Q",
      "known_at": "2026-08-09"
@@ -2830,7 +2830,7 @@
     },
     {
      "metric": "cash",
-     "value": -450429345.71,
+     "value": 101483159.4,
      "period_end": "2026-06-30",
      "period_type": "instant",
      "known_at": "2026-08-09"
@@ -2844,14 +2844,14 @@
     },
     {
      "metric": "equity",
-     "value": 89570654.29,
+     "value": 641483159.4,
      "period_end": "2026-06-30",
      "period_type": "instant",
      "known_at": "2026-08-09"
     },
     {
      "metric": "current_assets",
-     "value": -357381517.79,
+     "value": 194530987.32,
      "period_end": "2026-06-30",
      "period_type": "instant",
      "known_at": "2026-08-09"

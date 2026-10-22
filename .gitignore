@@ -5,3 +5,4 @@ data/*.sqlite
 data/runs/
 data/exports/
 .venv/
+data/demo_runs/

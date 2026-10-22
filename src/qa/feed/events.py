@@ -7,6 +7,7 @@ from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from qa.config import settings
 from qa.db.schema import DataPointRow, FeedEvent, MarketSnapshot
 
 
@@ -27,7 +28,29 @@ def detect_new_filings(s: Session, since: date) -> int:
     return n
 
 
-def detect_price_moves(s: Session, threshold_pct: float = 15.0, lookback_days: int = 30) -> int:
+def detect_restatements(s: Session, since: date) -> int:
+    """Vintages nuevos (known_at >= since) que re-expresan un valor ya publicado: es una red flag a revisar."""
+    rows = s.scalars(select(DataPointRow).where(DataPointRow.known_at >= since, DataPointRow.kind == "original",
+                                                DataPointRow.note.contains("restates="))).all()
+    n = 0
+    for r in rows:
+        title = f"Re-expresión: {r.metric} {r.period_type} {r.period_end}"
+        exists = s.scalars(select(FeedEvent).where(FeedEvent.company_id == r.entity,
+                                                   FeedEvent.event_type == "restatement",
+                                                   FeedEvent.title == title, FeedEvent.event_date == r.known_at)).first()
+        if exists:
+            continue
+        prev = r.note.split("restates=")[1].split(";")[0]
+        s.add(FeedEvent(event_date=r.known_at, company_id=r.entity, event_type="restatement", title=title,
+                        detail=f"nuevo valor {r.value} (antes {prev}); {r.document_type}", url=r.source_url,
+                        verification="confirmed_by_filing", impact="unknown", triggers_review=True))
+        n += 1
+    return n
+
+
+def detect_price_moves(s: Session, threshold_pct: float | None = None, lookback_days: int = 30) -> int:
+    if threshold_pct is None:
+        threshold_pct = settings()["funnel"]["reuse"]["price_move_trigger_pct"]
     cutoff = datetime.now(timezone.utc) - timedelta(days=lookback_days)
     n = 0
     for cid in s.scalars(select(MarketSnapshot.company_id).distinct()):
@@ -39,9 +62,12 @@ def detect_price_moves(s: Session, threshold_pct: float = 15.0, lookback_days: i
         if not old.price:
             continue
         move = snaps[0].price / old.price - 1
-        if abs(move) * 100 >= threshold_pct:
+        title = f"Movimiento de precio {move:+.0%} desde {old.as_of.date()}"
+        dup = s.scalars(select(FeedEvent).where(FeedEvent.company_id == cid, FeedEvent.event_type == "price_move",
+                                                FeedEvent.event_date == snaps[0].as_of.date())).first()
+        if abs(move) * 100 >= threshold_pct and dup is None:
             s.add(FeedEvent(event_date=snaps[0].as_of.date(), company_id=cid, event_type="price_move",
-                            title=f"Movimiento de precio {move:+.0%} desde {old.as_of.date()}",
+                            title=title,
                             verification="market_data",
                             detail=f"{old.price:.2f} -> {snaps[0].price:.2f} ({snaps[0].source})",
                             impact="unknown", triggers_review=True))

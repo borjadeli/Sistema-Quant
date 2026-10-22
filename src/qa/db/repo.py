@@ -92,7 +92,8 @@ def upsert_datapoints(s: Session, points: list[DataPoint]) -> int:
         q = select(DataPointRow).where(
             DataPointRow.entity == p.entity, DataPointRow.metric == p.metric,
             DataPointRow.period_type == p.period_type, DataPointRow.period_end == p.period_end,
-            DataPointRow.kind == p.kind.value, DataPointRow.source_name == p.source.name)
+            DataPointRow.kind == p.kind.value, DataPointRow.source_name == p.source.name,
+            DataPointRow.known_at == p.known_at)          # cada vintage es una fila: nunca se pisa el pasado
         row = s.scalars(q).first() or DataPointRow()
         row.entity, row.metric, row.value, row.unit, row.currency = p.entity, p.metric, p.value, p.unit, p.currency
         row.period_end, row.period_type, row.fiscal_label = p.period_end, p.period_type, p.fiscal_label

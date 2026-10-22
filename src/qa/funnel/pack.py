@@ -3,13 +3,13 @@ from __future__ import annotations
 
 import json
 import math
-from datetime import date, datetime
+from datetime import date, datetime, time, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from qa.bottlenecks import BottleneckRecord, company_bottlenecks
-from qa.config import RESEARCH_DIR
+from qa.config import RESEARCH_DIR, settings
 from qa.db import repo
 from qa.db.schema import FeedEvent, as_utc
 from qa.fundamentals.metrics import Fundamentals, compute_fundamentals
@@ -20,7 +20,16 @@ from qa.valuation.core import MarketInputs, compute_multiples, reverse_dcf
 _SEED_CACHE: dict | None = None
 
 
-def seed_research(cid: str) -> dict | None:
+def end_of_day(d: date | datetime | None) -> datetime | None:
+    """Fin del día UTC de la fecha de decisión: todo dato de mercado/evento posterior es futuro (look-ahead)."""
+    if d is None:
+        return None
+    if isinstance(d, datetime):
+        return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+    return datetime.combine(d, time(23, 59, 59), tzinfo=timezone.utc)
+
+
+def seed_research(cid: str, as_of: date | None = None) -> dict | None:
     global _SEED_CACHE
     if _SEED_CACHE is None:
         p = RESEARCH_DIR / "seed_companies_verified.json"
@@ -29,20 +38,31 @@ def seed_research(cid: str) -> dict | None:
     # Los "skeletons" (data_quality none) contienen solo conocimiento previo sin fuente: no se pasan a los agentes.
     if not r or not r.get("business_summary") or str(r.get("data_quality", "")).startswith("none"):
         return None
+    try:
+        researched = date.fromisoformat(str(r.get("research_date"))[:10])
+    except ValueError:
+        return None                       # sin fecha de investigación no se puede usar point-in-time
+    if as_of is not None and researched > as_of:
+        return None
     keep = ["business_summary", "main_products", "segments", "ai_energy_commodity_link", "confirmed_relationships",
             "key_recent_events", "red_flags", "notes_unverified", "verification_method"]
-    return {k: r.get(k) for k in keep} | {"_verification": "search_summary — leído en resúmenes de buscador"}
+    return {k: r.get(k) for k in keep} | {"_verification": "search_summary — leído en resúmenes de buscador",
+                                         "research_date": str(researched)}
 
 
-def market_inputs(s: Session, c: Company, f: Fundamentals | None, as_of: datetime | None = None) -> MarketInputs | None:
-    snap = repo.latest_snapshot(s, c.id, as_of)
+def market_inputs(s: Session, c: Company, f: Fundamentals | None,
+                  as_of: date | datetime | None = None) -> MarketInputs | None:
+    """Precio y acciones a la fecha de decisión. Devuelve None (no valuable) si falta algo o hay ambigüedad de moneda."""
+    snap = repo.latest_snapshot(s, c.id, end_of_day(as_of))
     if snap is None or snap.price is None:
         return None
     shares = (f.v("diluted_shares") if f else None) or snap.shares_outstanding
     if not shares:
         return None
     fx = 1.0
-    if f is not None and f.currency and snap.currency and f.currency != snap.currency:
+    if f is not None and (f.currency is None or f.currency_conflict or snap.currency is None):
+        return None     # moneda de reporte desconocida o mezclada: no se asume fx=1
+    if f is not None and f.currency != snap.currency:
         return None     # moneda de reporte != cotización: requiere FX explícito (no se asume)
     return MarketInputs(price=snap.price, shares=shares, price_currency=snap.currency or c.currency,
                         price_time=as_utc(snap.as_of).isoformat(), price_source=snap.source, fx_report_to_price=fx)
@@ -58,8 +78,8 @@ def company_pack(s: Session, c: Company, m: IndustryMap, registry: dict[str, Bot
                  as_of: date, compact: bool = False) -> dict:
     pts = repo.load_datapoints(s, c.id, as_of=as_of)
     f = compute_fundamentals(c.id, pts, as_of) if pts else None
-    mk = market_inputs(s, c, f)
-    snap = repo.latest_snapshot(s, c.id)
+    mk = market_inputs(s, c, f, as_of)
+    snap = repo.latest_snapshot(s, c.id, end_of_day(as_of))
     crit = m.structural_criticality()
     pack: dict = {
         "company": {"id": c.id, "name": c.name, "exchange": c.exchange, "country": c.country, "currency": c.currency,
@@ -91,6 +111,7 @@ def company_pack(s: Session, c: Company, m: IndustryMap, registry: dict[str, Bot
                 "dilution_yoy", "sbc_pct_revenue", "incremental_margin", "rpo", "diluted_shares", "net_income_last_q"]
         pack["fundamentals"] = {
             "currency": f.currency, "data_quality": f.data_quality, "as_of": str(f.as_of), "missing": f.missing,
+            "balance_date": str(f.balance_date) if f.balance_date else None, "warnings": f.warnings,
             "metrics": {k: {"value": _clean(f.metrics[k].value), "period": f.metrics[k].period}
                         for k in keys if k in f.metrics and f.metrics[k].value is not None}}
         if not compact:
@@ -107,22 +128,25 @@ def company_pack(s: Session, c: Company, m: IndustryMap, registry: dict[str, Bot
                              "not_meaningful": mult.not_meaningful,
                              "reverse_dcf": rd.model_dump() if rd else None}
     if not compact:
-        sr = seed_research(c.id)
+        sr = seed_research(c.id, as_of)
         if sr:
             pack["web_research"] = sr
-        ev = s.scalars(select(FeedEvent).where(FeedEvent.company_id == c.id)
-                       .order_by(FeedEvent.created_at.desc()).limit(10)).all()
+        ev = s.scalars(select(FeedEvent).where(FeedEvent.company_id == c.id, FeedEvent.event_date <= as_of,
+                                               FeedEvent.created_at <= end_of_day(as_of))
+                       .order_by(FeedEvent.event_date.desc(), FeedEvent.id.desc()).limit(10)).all()
         pack["recent_events"] = [{"date": str(e.event_date), "type": e.event_type, "title": e.title, "url": e.url,
                                   "verification": e.verification} for e in ev]
     pack["_meta"] = {"decision_date": str(as_of)}
     return pack
 
 
+# Campos que cambian con el precio del día o con la fecha de corrida, sin ser un cambio material de información.
 VOLATILE_KEYS = {"market", "valuation", "price_time", "returns", "expected_return", "prob_loss", "prob_permanent_loss",
-                 "upside_downside_ratio", "price0", "score", "current_portfolio_weights", "cash_weight"}
+                 "upside_downside_ratio", "price0", "score", "current_portfolio_weights", "cash_weight",
+                 "_meta", "as_of", "mcap_usd", "adv_usd", "prescore", "valuation_rel"}
 
 
-def hash_view(pack: dict, move_pct: float = 15.0) -> dict:
+def hash_view(pack: dict, move_pct: float | None = None) -> dict:
     """Vista estable del pack para decidir reutilización: el precio entra en 'buckets' logarítmicos de
     `move_pct`%, así un análisis se reutiliza salvo cambio material (nuevo filing, evento o movimiento > move_pct).
     Se quitan recursivamente los campos que dependen del precio del día."""
@@ -149,6 +173,8 @@ def hash_view(pack: dict, move_pct: float = 15.0) -> dict:
             return [strip(v) for v in x]
         return x
 
+    if move_pct is None:
+        move_pct = settings()["funnel"]["reuse"]["price_move_trigger_pct"]
     v = json.loads(json.dumps(pack, default=str))
     price = find_price(v)
     out = strip(v)

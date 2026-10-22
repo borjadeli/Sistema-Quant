@@ -8,9 +8,13 @@ Reglas de la SEC: User-Agent identificable y <= 10 requests/s. Configurar `QA_SE
 Cobertura: emisores que presentan XBRL a la SEC (10-K/10-Q; y 20-F/40-F de extranjeros, que suelen usar
 taxonomía IFRS). No cubre emisores solo-SEDAR/TSE/TWSE: para esos se usa `manual_csv` u otro proveedor.
 
-Point-in-time: cada hecho conserva `filed` como `known_at`. Si un mismo período aparece en varias
-presentaciones (comparativos, re-expresiones), se conserva la PRIMERA presentación: es lo que el mercado
-sabía en ese momento. Las re-expresiones posteriores se registran como nota.
+Point-in-time por VINTAGES: cada hecho conserva `filed` como `known_at`. Para un mismo período:
+  - el primer vintage es la PRIMERA presentación (lo que sabía el mercado), sin importar qué concepto XBRL
+    usó; la prioridad de conceptos solo desempata dentro de una misma presentación;
+  - cada presentación posterior que CAMBIA el valor (re-expresión, 10-K/A, comparativo corregido) se guarda
+    como un vintage nuevo con su propio `known_at` y la nota `restates=...`;
+  - comparativos que repiten el mismo valor no generan filas nuevas.
+Al leer, `compute_fundamentals` toma el vintage más reciente con known_at <= fecha de decisión.
 """
 from __future__ import annotations
 
@@ -145,10 +149,12 @@ class SecEdgarProvider:
         return parse_companyfacts(raw, company.id, cik)
 
 
-def parse_companyfacts(raw: dict, entity: str, cik: int | None = None) -> list[DataPoint]:
-    """Convierte el JSON companyfacts en DataPoints ORIGINALES con trazabilidad completa."""
+def parse_companyfacts(raw: dict, entity: str, cik: int | None = None,
+                       restatement_tolerance: float = 0.001) -> list[DataPoint]:
+    """Convierte el JSON companyfacts en DataPoints ORIGINALES (uno por vintage) con trazabilidad completa."""
     facts = raw.get("facts", {})
-    out: dict[tuple, DataPoint] = {}
+    # (metric, ptype, end) -> {filed: (rank, row, taxonomy, concept, unit)}
+    cands: dict[tuple, dict[date, tuple]] = {}
     plans = [("us-gaap", US_GAAP), ("ifrs-full", IFRS), ("dei", DEI)]
     for taxonomy, mapping in plans:
         tx = facts.get(taxonomy)
@@ -161,35 +167,47 @@ def parse_companyfacts(raw: dict, entity: str, cik: int | None = None) -> list[D
                     continue
                 for unit, rows in node.get("units", {}).items():
                     for row in rows:
-                        form = row.get("form", "")
-                        if form not in VALID_FORMS:
+                        if row.get("form", "") not in VALID_FORMS:
                             continue
                         ptype = _period_type(row.get("start"), row["end"])
                         if ptype is None or (metric in INSTANT_METRICS) != (ptype == "instant"):
                             continue
-                        key = (metric, ptype, row["end"])
                         filed = date.fromisoformat(row["filed"])
-                        prev = out.get(key)
-                        # preferimos el concepto de mayor prioridad; dentro de él, la primera presentación
-                        if prev is not None:
-                            prev_rank = int(prev.note.split("rank=")[1].split(";")[0]) if prev.note else 99
-                            if prev_rank < rank or (prev_rank == rank and prev.known_at <= filed):
-                                continue
-                        currency = unit if len(unit) == 3 and unit.isupper() else None
-                        accn = row.get("accn")
-                        url = (f"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={cik}&type={form}"
-                               if cik else None)
-                        if accn and cik:
-                            url = f"https://www.sec.gov/Archives/edgar/data/{cik}/{accn.replace('-', '')}/"
-                        out[key] = DataPoint(
-                            entity=entity, metric=metric, value=float(row["val"]),
-                            unit=unit, currency=currency,
-                            period_end=date.fromisoformat(row["end"]), period_type=ptype,
-                            fiscal_label=f"{row.get('fy')}-{row.get('fp')}" if row.get("fy") else None,
-                            kind=DataKind.ORIGINAL, verification=Verification.CONFIRMED_FILING,
-                            source=Source(name="sec_edgar", url=url, document_type=form,
-                                          published_at=filed, retrieved_at=datetime.now(timezone.utc)),
-                            known_at=filed,
-                            note=f"rank={rank};concept={taxonomy}:{concept};accn={accn}",
-                        )
-    return sorted(out.values(), key=lambda p: (p.metric, p.period_end or date.min))
+                        slot = cands.setdefault((metric, ptype, row["end"]), {})
+                        prev = slot.get(filed)
+                        # dentro de UNA presentación desempata la prioridad de concepto
+                        if prev is None or rank < prev[0]:
+                            slot[filed] = (rank, row, taxonomy, concept, unit)
+    out: list[DataPoint] = []
+    for (metric, ptype, end), by_filed in cands.items():
+        last_val, last_filed = None, None
+        for filed in sorted(by_filed):
+            rank, row, taxonomy, concept, unit = by_filed[filed]
+            val = float(row["val"])
+            if last_val is not None:
+                denom = max(abs(last_val), 1e-9)
+                if abs(val - last_val) / denom <= restatement_tolerance:
+                    continue                      # comparativo idéntico: no es un vintage nuevo
+            note = f"rank={rank};concept={taxonomy}:{concept};accn={row.get('accn')}"
+            if last_val is not None:
+                note += f";restates={last_val}@{last_filed}"
+            out.append(_datapoint(entity, metric, ptype, end, val, unit, row, filed, cik, note))
+            last_val, last_filed = val, filed
+    return sorted(out, key=lambda p: (p.metric, p.period_end or date.min, p.known_at or date.min))
+
+
+def _datapoint(entity: str, metric: str, ptype: str, end: str, val: float, unit: str, row: dict, filed: date,
+               cik: int | None, note: str) -> DataPoint:
+    form, accn = row.get("form"), row.get("accn")
+    url = f"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={cik}&type={form}" if cik else None
+    if accn and cik:
+        url = f"https://www.sec.gov/Archives/edgar/data/{cik}/{accn.replace('-', '')}/"
+    currency = unit if len(unit) == 3 and unit.isupper() else None
+    # La etiqueta fiscal describe el PERÍODO del hecho (frame de la SEC si existe), no la presentación.
+    label = row.get("frame") or f"{ptype} al {end}"
+    return DataPoint(entity=entity, metric=metric, value=val, unit=unit, currency=currency,
+                     period_end=date.fromisoformat(end), period_type=ptype, fiscal_label=label,
+                     kind=DataKind.ORIGINAL, verification=Verification.CONFIRMED_FILING,
+                     source=Source(name="sec_edgar", url=url, document_type=form, published_at=filed,
+                                   retrieved_at=datetime.now(timezone.utc)),
+                     known_at=filed, note=note)

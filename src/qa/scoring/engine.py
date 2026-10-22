@@ -199,7 +199,7 @@ def combine(company_id: str, factors: dict[str, FactorScore], *, fundamentals: F
             scenarios: ScenarioSet | None = None, adv_usd: float | None = None,
             red_flags: dict[str, bool] | None = None, alerts_in: list[str] | None = None,
             n_open_disagreements: int = 0, audit_verdict: str | None = None,
-            is_candidate: bool = False) -> ScoreCard:
+            is_candidate: bool = False, incomplete: list[str] | None = None) -> ScoreCard:
     cfg = settings()["scoring"]
     w = cfg["weights"]
     missing = [f"{k}: factor no evaluado" for k in FACTORS if k not in factors]
@@ -208,16 +208,19 @@ def combine(company_id: str, factors: dict[str, FactorScore], *, fundamentals: F
     caps = []
     for c in cfg["caps"]:
         fs = factors.get(c["factor"])
-        if fs is not None and fs.score < c["below"] and total > c["max_total"]:
+        score = fs.score if fs is not None else 0.0          # factor no evaluado = no compensa (fail-closed)
+        if score < c["below"] and total > c["max_total"]:
             total = c["max_total"]
-            caps.append(f"{c['factor']} < {c['below']} -> total limitado a {c['max_total']}")
+            cond = "no evaluado" if fs is None else f"< {c['below']}"
+            caps.append(f"{c['factor']} {cond} -> total limitado a {c['max_total']}")
     kills, alerts = kill_switches(fundamentals, scenarios, adv_usd, red_flags or {}, audit_verdict, is_candidate)
+    kills = list(incomplete or []) + kills
     alerts += list(alerts_in or [])
     for fs in factors.values():
         missing += fs.missing
     # confianza: calidad de datos, faltantes, discrepancias abiertas
     pts = 3
-    if fundamentals is None or fundamentals.data_quality in ("none", "synthetic"):
+    if fundamentals is None or fundamentals.data_quality in ("none", "synthetic") or fundamentals.has_synthetic:
         pts -= 2
     elif fundamentals.data_quality != "filing":
         pts -= 1
@@ -237,7 +240,7 @@ def kill_switches(f: Fundamentals | None, ss: ScenarioSet | None, adv_usd: float
     min_adv = settings()["funnel"]["L0"]["min_adv_usd"]
     if f is None or f.data_quality == "none":
         kills.append("K4: sin datos fundamentales verificables")
-    elif f.data_quality == "synthetic":
+    elif f.has_synthetic or f.data_quality == "synthetic":   # cualquier dato sintético contamina
         if ALLOW_SYNTHETIC_FOR_DEMO:
             alerts.append("DEMO: datos sintéticos (K4 desactivado solo en demo)")
         else:

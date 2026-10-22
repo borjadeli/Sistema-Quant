@@ -26,6 +26,10 @@ def company(rev0, g_q, gm, om, burn=False, shares0=100e6, dil_q=0.002, cash0=300
         ocf = oi * 1.1 + rev * 0.03
         capex = rev * (0.25 if burn else 0.05)
         cash += ocf - capex
+        if cash < 0.5 * rev:                          # financiamiento sintético: nunca caja negativa
+            raise_amt = 1.5 * rev
+            cash += raise_amt
+            shares *= 1.08
         for metric, val in [("revenue", rev), ("gross_profit", rev * gm), ("operating_income", oi),
                             ("net_income", oi * 0.8), ("d_and_a", rev * 0.04), ("ocf", ocf), ("capex", capex),
                             ("sbc", rev * 0.04), ("diluted_shares", shares), ("income_tax", max(oi, 0) * 0.2),

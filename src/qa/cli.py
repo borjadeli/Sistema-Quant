@@ -71,7 +71,7 @@ def cmd_validate(args) -> None:  # noqa: ANN001
 
 def cmd_ingest(args) -> None:  # noqa: ANN001
     from qa.db.session import session_scope
-    from qa.feed.events import detect_new_filings, detect_price_moves
+    from qa.feed.events import detect_new_filings, detect_price_moves, detect_restatements
     from qa.providers.registry import IngestReport, ingest_benchmarks, ingest_company
     m, u, reg = _load()
     targets = [u.companies[t] for t in args.tickers] if args.tickers else (
@@ -84,8 +84,14 @@ def cmd_ingest(args) -> None:  # noqa: ANN001
         if args.benchmarks:
             ingest_benchmarks(s, rep)
         nf = detect_new_filings(s, date.today() - timedelta(days=30))
+        nr = detect_restatements(s, date.today() - timedelta(days=30))
         npm = detect_price_moves(s)
-    print(f"OK {len(rep.ok)} | con errores {len(rep.failed)} | feed: {nf} filings, {npm} movimientos de precio")
+    print(f"OK {len(rep.ok)} | con errores {len(rep.failed)} | feed: {nf} filings, {nr} re-expresiones, "
+          f"{npm} movimientos de precio")
+    from qa.providers.registry import fundamentals_providers
+    for prov in fundamentals_providers():
+        for bad in getattr(prov, "rejected", []):
+            print(f"  fila rechazada [{prov.name}]: {bad}")
     for cid, errs in list(rep.failed.items())[:40]:
         print(f"  {cid}: {errs}")
 
@@ -153,31 +159,65 @@ def cmd_proposals(args) -> None:  # noqa: ANN001
 
 
 def cmd_options(args) -> None:  # noqa: ANN001
+    from datetime import datetime, timezone
+
     from sqlalchemy import select
-    from qa.db.schema import ScenarioSet as Row
+
+    from qa.db.schema import AgentRun, ScenarioSet as Row
     from qa.db.session import session_scope
     from qa.options.analyzer import analyze_calls
     from qa.providers.base import ProviderUnavailable
     from qa.providers.yahoo import YahooProvider
     from qa.valuation.core import ScenarioSet
     m, u, reg = _load()
-    c = u.companies[args.ticker]
+    tk = args.ticker.strip().upper()
+    c = u.companies.get(tk) or next((x for x in u.companies.values() if x.yahoo_symbol.upper() == tk), None)
+    if c is None:
+        print(f"Ticker desconocido en el universo: {args.ticker}")
+        sys.exit(2)
     try:
         chain = YahooProvider().chain(c.yahoo_symbol)
     except ProviderUnavailable as e:
         print(f"Sin cadena de opciones verificable: {e}. No se evalúan calls sin datos actuales.")
         sys.exit(2)
+    max_age = settings()["funnel"]["reuse"]["max_age_days"]["L3"]
+    move = settings()["funnel"]["reuse"]["price_move_trigger_pct"] / 100
+    ss, catalysts, why, ss_age = None, [], None, 0
     with session_scope() as s:
         row = s.scalars(select(Row).where(Row.company_id == c.id).order_by(Row.created_at.desc())).first()
-        ss = ScenarioSet.model_validate(row.results) if row else None
-    rep = analyze_calls(chain, ss, r=settings()["risk_free_rate"])
+        if row is not None:
+            created = row.created_at if row.created_at.tzinfo else row.created_at.replace(tzinfo=timezone.utc)
+            age = (datetime.now(timezone.utc) - created).days
+            cand = ScenarioSet.model_validate(row.results)
+            drift = abs((chain.underlying_price or cand.price0) / cand.price0 - 1)
+            if age > max_age:
+                why = f"escenarios de hace {age} días (> {max_age}): re-analizar antes de usar"
+            elif drift > move:
+                why = f"el precio se movió {drift:.0%} desde los escenarios (> {move:.0%}): re-analizar"
+            else:
+                ss, ss_age = cand, age
+        cat_run = s.scalars(select(AgentRun).where(AgentRun.agent == "catalyst", AgentRun.subject == c.id,
+                                                   AgentRun.status == "ok").order_by(AgentRun.created_at.desc())).first()
+        if cat_run and cat_run.output:
+            for k in cat_run.output.get("catalysts", []):
+                d = (k.get("expected_date") or "")[:10]
+                try:
+                    dd = date.fromisoformat(d if len(d) == 10 else d[:7] + "-28")
+                except ValueError:
+                    continue
+                catalysts.append((dd, f"{k.get('description', '')[:80]} ({k.get('direction')})"))
+    if why:
+        print("AVISO:", why, "— solo probabilidades risk-neutral, sin escenarios subjetivos.")
+    rep = analyze_calls(chain, ss, r=settings()["risk_free_rate"], catalysts=catalysts, scenario_age_days=ss_age)
     print(f"{rep.underlying} spot {rep.spot} | cadena {rep.chain_time.isoformat()} ({rep.chain_source}) | {rep.status}")
     print("rechazados:", rep.rejected)
     for cnd in rep.candidates[:15]:
+        subj0 = cnd.subj.get("p_total_loss")
+        subj3 = cnd.subj.get("p_3x")
         print(f"  {cnd.expiry} K={cnd.strike:<8} prima={cnd.premium:.2f} BE={cnd.breakeven_move:+.0%} IV={cnd.iv:.0%} "
               f"RN P(0)={cnd.rn['p_total_loss']:.0%} P(2x)={cnd.rn['p_2x']:.0%} | "
-              f"subj P(0)={cnd.subj.get('p_total_loss', float('nan')):.0%} P(3x)={cnd.subj.get('p_3x', float('nan')):.0%} "
-              f"edge={cnd.edge_vs_stock if cnd.edge_vs_stock is None else round(cnd.edge_vs_stock, 2)} {cnd.flags}")
+              f"subj P(0)={'n/a' if subj0 is None else f'{subj0:.0%}'} P(3x)={'n/a' if subj3 is None else f'{subj3:.0%}'} "
+              f"edge={'n/a' if cnd.edge_vs_stock is None else f'{cnd.edge_vs_stock:+.2f}'} {cnd.flags}")
     print("Notas del modelo:", *rep.model_notes, sep="\n  - ")
 
 
@@ -198,7 +238,9 @@ def cmd_portfolio(args) -> None:  # noqa: ANN001
         if snaps:
             nav = pd.Series({x.date: x.nav for x in snaps})
             for b in ("SPY", "QQQ"):
-                print(b, json.dumps(performance(nav, repo.price_series(s, b) or None), default=str))
+                ser = repo.price_series(s, b)
+                print(b, json.dumps(performance(nav, ser if not ser.empty else None,
+                                                rf=settings()["risk_free_rate"]), default=str))
             print("concentración", concentration({k: v["weight"] for k, v in snaps[-1].positions.items()}))
         for r in s.scalars(select(Recommendation).order_by(Recommendation.created_at.desc()).limit(20)):
             print(f"  {r.created_at:%Y-%m-%d %H:%M} {r.company_id:10} {r.action:5} w={r.target_weight:.1%} "

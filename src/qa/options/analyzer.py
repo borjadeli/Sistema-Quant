@@ -122,7 +122,9 @@ class OptionsReport:
 def analyze_calls(chain: OptionChain, scenarios: ScenarioSet | None, *, r: float = 0.04,
                   catalysts: list[tuple[date, str]] | None = None, max_age_hours: float = 24,
                   min_open_interest: float = 100, max_spread_pct: float = 0.15, min_days: int = 60,
-                  dispersion_frac: float = 0.5, now: datetime | None = None) -> OptionsReport:
+                  dispersion_frac: float = 0.5, now: datetime | None = None,
+                  scenario_age_days: float = 0.0) -> OptionsReport:
+    """`scenario_age_days`: antigüedad de los escenarios; sus horizontes (12/24/36m) se miden desde su creación."""
     now = now or datetime.now(timezone.utc)
     notes = ["Probabilidades risk-neutral (IV) ≠ probabilidades reales.",
              "Mezcla de escenarios = probabilidades subjetivas del análisis, no calibradas.",
@@ -173,9 +175,10 @@ def analyze_calls(chain: OptionChain, scenarios: ScenarioSet | None, *, r: float
         if scenarios is not None:
             comps = []
             for res in scenarios.results:
-                tgt = interpolate_target(scenarios.price0, res.price_target, days / 30.44)
+                # los precios objetivo salen de fundamentals: NO se reescalan con el spot; el horizonte se corre por la edad
+                tgt = interpolate_target(scenarios.price0, res.price_target, (days + scenario_age_days) / 30.44)
                 if tgt:
-                    comps.append((res.probability, tgt * spot / scenarios.price0, dispersion_frac * iv * math.sqrt(T)))
+                    comps.append((res.probability, tgt, dispersion_frac * iv * math.sqrt(T)))
             if comps:
                 subj = {"p_itm": mixture_prob_above(comps, K),
                         "p_2x": mixture_prob_above(comps, K + 2 * mid),
@@ -186,8 +189,9 @@ def analyze_calls(chain: OptionChain, scenarios: ScenarioSet | None, *, r: float
                 er_opt = exp_payoff / mid - 1
                 exp_spot = sum(w * med * math.exp(s * s / 2) for w, med, s in comps)
                 er_stock = exp_spot / spot - 1
+                # posición réplica: Ω acciones por unidad de prima, financiando (Ω-1) a la tasa libre de riesgo
                 leverage = greeks["delta"] * spot / mid
-                edge = er_opt - er_stock * leverage
+                edge = er_opt - (leverage * er_stock - (leverage - 1) * (math.exp(r * T) - 1))
         flags = []
         if rn["p_total_loss"] > 0.7:
             flags.append("P(pérdida total) risk-neutral > 70%")

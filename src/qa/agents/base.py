@@ -110,8 +110,12 @@ AGENTS: dict[str, AgentSpec] = {a.name: a for a in [
 ]}
 
 
-def system_prompt(spec: AgentSpec, decision_date: date) -> str:
-    common = (PROMPTS / "_common.md").read_text(encoding="utf-8").replace("{decision_date}", decision_date.isoformat())
+def system_prompt(spec: AgentSpec, decision_date: date | None) -> str:
+    """System prompt del agente. Con decision_date=None devuelve la PLANTILLA (sin fecha), que es lo que se
+    usa para el hash de reutilización: el mismo prompt en otro día no es un cambio material."""
+    common = (PROMPTS / "_common.md").read_text(encoding="utf-8")
+    if decision_date is not None:
+        common = common.replace("{decision_date}", decision_date.isoformat())
     body = (PROMPTS / spec.prompt_file).read_text(encoding="utf-8")
     if spec.name == "portfolio_manager":
         body = body.format(**settings()["portfolio"])
@@ -135,7 +139,7 @@ def run_agent(ctx: RunContext, agent: str, subject: str, task: str, pack: dict,
     sysmsg = system_prompt(spec, ctx.decision_date)
     user = user_message(task, pack)
     input_hash = stable_hash({"agent": agent, "v": spec.prompt_version, "model": model, "effort": effort,
-                              "system": sysmsg, "task": task,
+                              "system": system_prompt(spec, None), "task": task,
                               "data": hash_payload if hash_payload is not None else pack})
     s = ctx.session
     max_age = settings()["funnel"]["reuse"]["max_age_days"].get(spec.tier.split("_")[0], 30)
@@ -145,10 +149,12 @@ def run_agent(ctx: RunContext, agent: str, subject: str, task: str, pack: dict,
         if prev is not None and _age_days(prev.created_at) <= max_age:
             try:
                 out = spec.output.model_validate(prev.output)
+            except ValidationError:
+                out = None
+            if out is not None:
+                _record(ctx, spec, subject, prev.model, input_hash, None, "reused", None, reused_from=prev.id)
                 ctx.log.append({"agent": agent, "subject": subject, "status": "reused", "cost": 0.0})
                 return AgentResult(agent, subject, "reused", out, run_id=prev.id, web_sources=prev.web_sources or [])
-            except ValidationError:
-                pass
     est = estimate_cost(model, len(sysmsg) + len(user), max_tokens, ws)
     if ctx.dry_run:
         ctx.log.append({"agent": agent, "subject": subject, "status": "dry_run", "est_cost": est})
@@ -161,12 +167,11 @@ def run_agent(ctx: RunContext, agent: str, subject: str, task: str, pack: dict,
     try:
         resp = ctx.llm.complete(agent=agent, model=model, system=sysmsg, user=user, schema=schema, effort=effort,
                                 max_tokens=max_tokens, web_search_uses=ws)
-    except LLMRefusal as e:
-        rid = _record(ctx, spec, subject, model, input_hash, None, "refusal", str(e))
-        return AgentResult(agent, subject, "refusal", None, run_id=rid, error=str(e))
-    except LLMError as e:
-        rid = _record(ctx, spec, subject, model, input_hash, None, "error", str(e))
-        return AgentResult(agent, subject, "error", None, run_id=rid, error=str(e))
+    except LLMError as e:                     # incluye LLMRefusal; lo ya facturado se cuenta igual
+        ctx.budget.spent_run += e.cost_usd
+        status = "refusal" if isinstance(e, LLMRefusal) else "error"
+        rid = _record(ctx, spec, subject, model, input_hash, None, status, str(e), e)
+        return AgentResult(agent, subject, status, None, run_id=rid, cost_usd=e.cost_usd, error=str(e))
     ctx.budget.spent_run += resp.cost_usd
     try:
         out = spec.output.model_validate(resp.data)
@@ -186,15 +191,18 @@ def _age_days(ts: datetime) -> float:
 
 
 def _record(ctx: RunContext, spec: AgentSpec, subject: str, model: str, input_hash: str, output: Any,
-            status: str, error: str | None, resp: Any = None) -> int:
+            status: str, error: str | None, resp: Any = None, reused_from: int | None = None) -> int:
+    """Registra la llamada y hace COMMIT inmediato: el costo queda persistido aunque la corrida falle después."""
     row = AgentRun(pipeline_run_id=ctx.pipeline_run_id, agent=spec.name, tier=spec.tier, subject=subject, model=model,
                    prompt_version=spec.prompt_version, input_hash=input_hash, config_hash=config_hash(),
                    decision_time=ctx.decision_date, output=output, status=status, error=error,
                    input_tokens=getattr(resp, "input_tokens", 0) or 0,
                    output_tokens=getattr(resp, "output_tokens", 0) or 0,
-                   cost_usd=getattr(resp, "cost_usd", 0.0) or 0.0, web_sources=getattr(resp, "web_sources", []) or [])
+                   cost_usd=getattr(resp, "cost_usd", 0.0) or 0.0, web_sources=getattr(resp, "web_sources", []) or [],
+                   reused_from=reused_from)
     ctx.session.add(row)
     ctx.session.flush()
-    if status not in ("ok",):
+    ctx.session.commit()
+    if status not in ("ok", "reused"):
         ctx.log.append({"agent": spec.name, "subject": subject, "status": status, "error": error})
     return row.id

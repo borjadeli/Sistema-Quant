@@ -12,11 +12,12 @@ def _row(val, start, end, filed, form="10-Q", fy=2025, fp="Q1"):
     return {"val": val, "start": start, "end": end, "filed": filed, "form": form, "fy": fy, "fp": fp, "accn": "0001-25-1"}
 
 
-def test_sec_parser_keeps_first_filing_and_priority():
+def test_sec_parser_vintages_first_filing_and_priority():
     raw = {"facts": {"us-gaap": {
         "Revenues": {"units": {"USD": [
             _row(100, "2025-01-01", "2025-03-31", "2025-05-01"),
-            _row(105, "2025-01-01", "2025-03-31", "2026-05-01"),           # comparativo posterior: se ignora
+            _row(105, "2025-01-01", "2025-03-31", "2026-05-01"),           # re-expresión posterior: vintage nuevo
+            _row(100, "2025-01-01", "2025-03-31", "2025-08-01"),           # comparativo idéntico: no genera fila
             _row(400, "2025-01-01", "2025-12-31", "2026-02-15", "10-K", 2025, "FY")]}},
         "RevenueFromContractWithCustomerExcludingAssessedTax": {"units": {"USD": [
             _row(99, "2025-01-01", "2025-03-31", "2025-05-01")]}},           # menor prioridad
@@ -24,7 +25,13 @@ def test_sec_parser_keeps_first_filing_and_priority():
             {"val": 50, "end": "2025-03-31", "filed": "2025-05-01", "form": "10-Q", "fy": 2025, "fp": "Q1"}]}}}}}
     pts = parse_companyfacts(raw, "X", cik=1)
     q = [p for p in pts if p.metric == "revenue" and p.period_type == "Q"]
-    assert len(q) == 1 and q[0].value == 100 and q[0].known_at == date(2025, 5, 1)
+    assert [(p.value, p.known_at) for p in q] == [(100, date(2025, 5, 1)), (105, date(2026, 5, 1))]
+    assert "restates=100.0@2025-05-01" in q[1].note
+    # point-in-time: antes de la re-expresión se ve 100, después 105
+    f_before = compute_fundamentals("X", pts, as_of=date(2025, 12, 31))
+    f_after = compute_fundamentals("X", pts, as_of=date(2026, 6, 1))
+    assert f_before.quarterly["revenue"][date(2025, 3, 31)] == 100
+    assert f_after.quarterly["revenue"][date(2025, 3, 31)] == 105
     assert any(p.metric == "revenue" and p.period_type == "FY" and p.value == 400 for p in pts)
     cash = [p for p in pts if p.metric == "cash"]
     assert cash and cash[0].period_type == "instant"

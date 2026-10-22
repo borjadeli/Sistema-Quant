@@ -88,6 +88,7 @@ class ScenarioAssumptions(BaseModel):
     capex_pct_revenue: float = 0.05
     nwc_pct_incremental_revenue: float = 0.15
     annual_dilution: float = 0.01       # SBC / emisiones no ligadas a financiamiento
+    interest_rate: float = 0.05         # costo de la deuda financiera (se paga con caja)
     exit_multiple: float
     exit_multiple_type: MultipleType = "EV/EBIT"
     rationale: str = ""
@@ -118,6 +119,7 @@ class ScenarioResult(BaseModel):
     returns: dict[int, float | None]
     financing_need: float                   # financiamiento externo acumulado requerido (moneda de reporte)
     dilution_from_financing: float          # % acciones nuevas por financiamiento
+    notes: list[str] = Field(default_factory=list)
 
 
 class ScenarioSet(BaseModel):
@@ -137,14 +139,32 @@ def _metric_for_multiple(kind: str, rev: float, ebit: float, da: float, ni: floa
     return {"EV/EBIT": ebit, "EV/EBITDA": ebit + da, "EV/Sales": rev, "P/E": ni, "EV/FCF": fcf}[kind]
 
 
+def balance_inputs(f: Fundamentals) -> tuple[float, float, list[str]]:
+    """Caja y deuda iniciales. Nunca se inventa un balance:
+    - sin caja reportada (o sin fecha de balance) -> ValueError: la valuación no es calculable;
+    - con balance pero sin deuda financiera reportada a esa fecha -> deuda 0 como SUPUESTO EXPLÍCITO (advertido).
+    """
+    cash, debt = f.v("cash_total"), f.v("debt")
+    if cash is None or f.balance_date is None:
+        raise ValueError("caja desconocida: no se asume 0 — valuación no calculable hasta tener balance")
+    notes = []
+    if debt is None:
+        debt = 0.0
+        notes.append(f"sin deuda financiera reportada al {f.balance_date}: se SUPONE 0 (verificar en el balance)")
+    return cash, debt, notes
+
+
 def run_scenario(a: ScenarioAssumptions, f: Fundamentals, mk: MarketInputs,
                  equity_raise_discount: float = 0.15) -> ScenarioResult:
-    """Proyección anual a 3 años y valuación por múltiplo de salida en cada horizonte."""
+    """Proyección anual a 3 años y valuación por múltiplo de salida en cada horizonte.
+
+    El FCF proyectado es apalancado: los intereses de la deuda salen de la caja. El valor del equity tiene
+    piso 0 (responsabilidad limitada): el peor retorno posible es -100%.
+    """
     rev0 = f.v("revenue_ttm")
     if rev0 is None and f.v("revenue_last_q") is not None:
         rev0 = 4 * f.v("revenue_last_q")          # anualización explícita (se advierte en ScenarioSet)
-    cash0 = f.v("cash_total") or 0.0
-    debt0 = f.v("debt") or 0.0
+    cash0, debt0, notes = balance_inputs(f)
     shares = mk.shares * mk.adr_ratio  # acciones subyacentes
     fx, adr = mk.fx_report_to_price, mk.adr_ratio
     years, cash, prev_rev = [], cash0, rev0 or 0.0
@@ -152,10 +172,13 @@ def run_scenario(a: ScenarioAssumptions, f: Fundamentals, mk: MarketInputs,
     for t in range(3):
         rev = a.revenue_path[t] if a.revenue_path else prev_rev * (1 + a.revenue_growth[t])
         ebit = rev * a.ebit_margin[t]
-        nopat = ebit * (1 - a.tax_rate) if ebit > 0 else ebit
+        interest = a.interest_rate * debt0
+        pretax = ebit - interest
+        tax = pretax * a.tax_rate if pretax > 0 else 0.0
+        ni = pretax - tax
         da, capex = rev * a.da_pct_revenue, rev * a.capex_pct_revenue
         d_nwc = (rev - prev_rev) * a.nwc_pct_incremental_revenue
-        fcf = nopat + da - capex - d_nwc
+        fcf = ni + da - capex - d_nwc                # FCF al accionista (después de intereses e impuestos)
         shares *= (1 + a.annual_dilution)
         cash += fcf
         min_cash = 0.05 * rev
@@ -167,9 +190,8 @@ def run_scenario(a: ScenarioAssumptions, f: Fundamentals, mk: MarketInputs,
             new_shares_fin += issued
             fin_need_total += need
             cash = min_cash
-        ni = (ebit - 0.05 * debt0) * (1 - a.tax_rate) if ebit > 0 else ebit - 0.05 * debt0
         years.append({"year": t + 1, "revenue": rev, "ebit": ebit, "ebit_margin": a.ebit_margin[t], "fcf": fcf,
-                      "cash": cash, "debt": debt0, "shares": shares, "net_income": ni, "da": da})
+                      "interest": interest, "cash": cash, "debt": debt0, "shares": shares, "net_income": ni, "da": da})
         prev_rev = rev
     targets, rets = {}, {}
     for h in HORIZONS_M:
@@ -177,17 +199,21 @@ def run_scenario(a: ScenarioAssumptions, f: Fundamentals, mk: MarketInputs,
         metric = _metric_for_multiple(a.exit_multiple_type, y["revenue"], y["ebit"], y["da"], y["net_income"], y["fcf"])
         if metric <= 0 and a.exit_multiple_type != "EV/Sales":
             # múltiplo sobre métrica negativa no tiene sentido: valor = caja neta (piso contable) — explícito
-            equity = max(y["cash"] - y["debt"], 0.0)
+            equity = y["cash"] - y["debt"]
         elif a.exit_multiple_type == "P/E":
             equity = a.exit_multiple * metric
         else:
             equity = a.exit_multiple * metric + y["cash"] - y["debt"]
+        if equity < 0:
+            notes.append(f"{h}m: deuda neta > valor de la empresa: equity con piso 0 (pérdida total)")
+            equity = 0.0
         px = equity / y["shares"] * fx * adr if y["shares"] > 0 else None
         targets[h] = px
         rets[h] = (px / mk.price - 1) if px is not None else None
     base_shares = mk.shares * mk.adr_ratio
     return ScenarioResult(name=a.name, probability=a.probability, years=years, price_target=targets, returns=rets,
-                          financing_need=fin_need_total, dilution_from_financing=new_shares_fin / base_shares)
+                          financing_need=fin_need_total, dilution_from_financing=new_shares_fin / base_shares,
+                          notes=list(dict.fromkeys(notes)))
 
 
 def run_scenarios(assumptions: list[ScenarioAssumptions], f: Fundamentals, mk: MarketInputs) -> ScenarioSet:
@@ -205,6 +231,9 @@ def run_scenarios(assumptions: list[ScenarioAssumptions], f: Fundamentals, mk: M
     if f.data_quality == "synthetic":
         warnings.append("DATOS SINTÉTICOS — resultado solo ilustrativo")
     res = [run_scenario(a, f, mk) for a in assumptions]
+    for r in res:
+        warnings += [f"{r.name}: {n}" if "piso 0" in n else n for n in r.notes]
+    warnings = list(dict.fromkeys(warnings))
     by = {r.name: r for r in res}
     exp, ploss = {}, {}
     for h in HORIZONS_M:

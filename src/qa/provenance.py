@@ -74,7 +74,9 @@ class DataPoint(BaseModel):
         return v
 
     def key(self) -> str:
-        return f"{self.entity}|{self.metric}|{self.period_type}|{self.period_end}|{self.kind.value}"
+        """Identificador trazable: incluye fuente y vintage (known_at) para saber de dónde salió el valor."""
+        return (f"{self.entity}|{self.metric}|{self.period_type}|{self.period_end}|{self.kind.value}"
+                f"|{self.source.name}|{self.known_at}")
 
 
 def stable_hash(obj: Any) -> str:

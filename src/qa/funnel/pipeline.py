@@ -17,7 +17,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-
+from pathlib import Path
 
 from qa.agents import schemas as S
 from qa.agents.base import AgentResult, RunContext, run_agent
@@ -26,7 +26,7 @@ from qa.config import DATA_DIR, settings
 from qa.db import repo
 from qa.db.schema import as_utc, Disagreement, FunnelState, Recommendation, ScenarioSet as ScenarioRow, ScoreRow
 from qa.fundamentals.metrics import Fundamentals, compute_fundamentals
-from qa.funnel.pack import company_pack, hash_view, market_inputs
+from qa.funnel.pack import company_pack, end_of_day, hash_view, market_inputs
 from qa.map.model import IndustryMap
 from qa.portfolio import ledger
 from qa.portfolio.construction import PositionMeta, enforce_constraints
@@ -54,7 +54,11 @@ class Dossier:
     scenario_id: int | None = None
     tier: str = "L0"
     auto_checks: list[str] = field(default_factory=list)
+    scenario_checks: list[str] = field(default_factory=list)   # se reemplazan cada vez que cambian los escenarios
     disagreements: list[dict] = field(default_factory=list)
+    # procedencia del ScenarioSet EN USO: (autor, supuestos normalizados); evita mezclar supuestos y resultados
+    scenario_source: tuple[str, list[dict]] | None = None
+    scenario_row_source: tuple[str, list[dict]] | None = None
 
     def out(self, agent: str):  # noqa: ANN201
         r = self.agents.get(agent)
@@ -76,15 +80,22 @@ class CycleReport:
     constraint_notes: list[str] = field(default_factory=list)
     trades: list[dict] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    mode: str = "real"                 # real | demo_synthetic | test
+    db_url: str | None = None
+    dry_run: bool = False
 
 
 class Pipeline:
     def __init__(self, ctx: RunContext, m: IndustryMap, u: Universe, registry: dict[str, BottleneckRecord],
-                 portfolio_name: str | None = None):
+                 portfolio_name: str | None = None, mode: str = "real", runs_dir: Path | None = None):
         self.ctx, self.m, self.u, self.reg = ctx, m, u, registry
         self.cfg = settings()
         self.crit = m.structural_criticality()
         self.portfolio_name = portfolio_name or self.cfg["portfolio"]["name"]
+        self.mode = mode
+        # los reportes de demo/test NO van a data/runs (historial real)
+        self.runs_dir = runs_dir or (DATA_DIR / ("runs" if mode == "real" else "demo_runs"))
+        self.eod = end_of_day(ctx.decision_date)
 
     # ================================================================== L0
     def screen(self, companies: list[Company]) -> list[Dossier]:
@@ -96,8 +107,8 @@ class Pipeline:
             d = Dossier(company=c)
             pts = repo.load_datapoints(self.ctx.session, c.id, as_of=self.ctx.decision_date)
             d.fundamentals = compute_fundamentals(c.id, pts, self.ctx.decision_date) if pts else None
-            d.market = market_inputs(self.ctx.session, c, d.fundamentals)
-            snap = repo.latest_snapshot(self.ctx.session, c.id)
+            d.market = market_inputs(self.ctx.session, c, d.fundamentals, self.ctx.decision_date)
+            snap = repo.latest_snapshot(self.ctx.session, c.id, self.eod)
             reasons, passed = [], True
             if c.status in ("excluded", "delisted"):
                 passed = False; reasons.append(f"status {c.status}")
@@ -120,7 +131,7 @@ class Pipeline:
                 g = d.fundamentals.v("revenue_growth_yoy")
                 if evs_:
                     evs[c.id] = evs_ / max(1 + (g or 0), 0.5)          # EV/Sales ajustado por crecimiento
-            b = score_bottleneck(company_bottlenecks(c.nodes, self.reg), max(self.crit[n] for n in c.nodes))
+            b = score_bottleneck(company_bottlenecks(c.nodes, self.reg), max(self.crit.get(n, 0.0) for n in c.nodes))
             fq = score_financial_quality(d.fundamentals) if d.fundamentals else FactorScore(score=0, rationale="sin datos")
             ai, en, cm = c.ai_energy_commodity_vector()
             expo = 10 * max(ai, 0.9 * en, 0.7 * cm)
@@ -158,20 +169,27 @@ class Pipeline:
             d.tier = "L1"
             self._state(d, "L1")
         holdings = {d.company.id for d in dossiers if d.l0.get("holding")}
-        ok = [d for d in todo if d.out("triage") and d.out("triage").recommended_next == "L2"
-              and d.out("triage").priority >= c1["min_priority"]]
-        ok.sort(key=lambda d: -(d.out("triage").priority + 0.3 * d.out("triage").uncertainty))
-        chosen = ok[: c1["max_promoted"]] + [d for d in todo if d.company.id in holdings and d not in ok[: c1["max_promoted"]]]
-        return chosen
+        if self.ctx.dry_run:
+            # sin salidas reales: peor caso = se promueve el tope de la capa (por pre-score) + cartera
+            ok = sorted(todo, key=lambda d: -d.l0["prescore"])
+        else:
+            ok = [d for d in todo if d.out("triage") and d.out("triage").recommended_next == "L2"
+                  and d.out("triage").priority >= c1["min_priority"]]
+            ok.sort(key=lambda d: -(d.out("triage").priority + 0.3 * d.out("triage").uncertainty))
+        top = ok[: c1["max_promoted"]]
+        return top + [d for d in todo if d.company.id in holdings and d not in top]
 
     # ================================================================== L2
     def standard(self, dossiers: list[Dossier]) -> list[Dossier]:
         for d in dossiers:
             self._l2(d)
         c2 = self.cfg["funnel"]["L2"]
-        scored = [d for d in dossiers if d.scorecard]
-        scored.sort(key=lambda d: -d.scorecard.total)
-        top = [d for d in scored if d.scorecard.total >= c2["min_score"]][: c2["max_promoted"]]
+        if self.ctx.dry_run:
+            top = sorted(dossiers, key=lambda d: -d.l0.get("prescore", 0))[: c2["max_promoted"]]
+        else:
+            scored = [d for d in dossiers if d.scorecard]
+            scored.sort(key=lambda d: -d.scorecard.total)
+            top = [d for d in scored if d.scorecard.total >= c2["min_score"]][: c2["max_promoted"]]
         if self.cfg["funnel"]["L3"].get("always_include_holdings"):
             top += [d for d in dossiers if d.l0.get("holding") and d not in top]
         return top
@@ -194,7 +212,7 @@ class Pipeline:
                 vpack[k] = d.out(k).model_dump()
         d.agents["valuation"] = run_agent(self.ctx, "valuation", c.id,
                                           "Proponé supuestos bear/base/bull a 3 años.", vpack, hash_view(vpack))
-        d.scenarios = self._scenarios(d, d.out("valuation"))
+        self._use_scenarios(d, d.out("valuation"), "valuation")
         d.scenarios_initial = d.scenarios
         epack = dict(vpack)
         if d.scenarios:
@@ -204,30 +222,44 @@ class Pipeline:
         d.agents["expectations"] = run_agent(self.ctx, "expectations", c.id,
                                              "Evaluá qué está incorporado en el precio vs nuestro base case.", epack, hash_view(epack))
         d.tier = "L2"
+        if self.ctx.dry_run:
+            return
         self._auto_checks(d)
         self._detect_disagreements(d)
         self._score(d, "L2")
 
-    def _scenarios(self, d: Dossier, v: S.ValuationOutput | None) -> ScenarioSet | None:
+    def _use_scenarios(self, d: Dossier, v: S.ValuationOutput | None, author: str) -> bool:
+        """Calcula escenarios con los supuestos de `author`; si son válidos pasan a ser los EN USO y sus checks
+        reemplazan a los anteriores. Si no, se conservan los vigentes y se agrega por qué se rechazó el nuevo set."""
+        res, checks = self._scenarios(d, v, author)
+        if res is None:
+            d.scenario_checks = d.scenario_checks + checks
+            return False
+        d.scenarios, normalized = res
+        d.scenario_source = (author, normalized)
+        d.scenario_checks = checks
+        return True
+
+    def _scenarios(self, d: Dossier, v: S.ValuationOutput | None,
+                   author: str) -> tuple[tuple[ScenarioSet, list[dict]] | None, list[str]]:
         if v is None:
-            return None
+            return None, []
         if d.fundamentals is None or d.market is None:
-            d.auto_checks.append("escenarios no calculables: faltan fundamentales o precio/acciones")
-            return None
+            return None, [f"{author}: escenarios no calculables (faltan fundamentales, precio o moneda consistente)"]
         sc = list(v.scenarios)
         names = sorted(x.name for x in sc)
         if names != ["base", "bear", "bull"]:
-            d.auto_checks.append(f"valuation devolvió escenarios {names}: inválido")
-            return None
+            return None, [f"{author} devolvió escenarios {names}: inválido, se descarta"]
         tot = sum(x.probability for x in sc)
-        if abs(tot - 1) > 0.02:
-            d.auto_checks.append(f"probabilidades sumaban {tot:.2f}: normalizadas")
-        sc = [x.model_copy(update={"probability": x.probability / tot, "author": "valuation_agent"}) for x in sc]
+        if tot <= 0:
+            return None, [f"{author}: probabilidades no positivas, se descarta"]
+        checks = [f"{author}: probabilidades sumaban {tot:.2f}: normalizadas"] if abs(tot - 1) > 0.02 else []
+        sc = [x.model_copy(update={"probability": x.probability / tot, "author": author}) for x in sc]
         try:
-            return run_scenarios(sc, d.fundamentals, d.market)
+            ss = run_scenarios(sc, d.fundamentals, d.market)
         except ValueError as e:
-            d.auto_checks.append(f"error en escenarios: {e}")
-            return None
+            return None, checks + [f"{author}: error en escenarios: {e}"]
+        return (ss, [x.model_dump() for x in sc]), checks
 
     # ================================================================== L3
     def deep(self, dossiers: list[Dossier]) -> list[Dossier]:
@@ -244,9 +276,14 @@ class Pipeline:
                     self.ctx, "valuation_rebuttal", c.id,
                     "REVISIÓN: incorporá los argumentos válidos del Bear Case Analyst y re-proponé los tres escenarios. "
                     "Explicá qué aceptaste y qué rechazaste.", rpack, hash_view(rpack))
-                new = self._scenarios(d, d.out("valuation_rebuttal"))
-                if new is not None:
-                    d.scenarios = new
+                if not self._use_scenarios(d, d.out("valuation_rebuttal"), "valuation_rebuttal") and \
+                        d.out("valuation_rebuttal") is not None:
+                    d.scenario_checks = d.scenario_checks + ["rebuttal inválido: se mantienen los escenarios de L2"]
+            if self.ctx.dry_run:
+                d.agents["auditor"] = run_agent(self.ctx, "auditor", c.id, "Auditá el dossier completo.",
+                                                self._dossier_pack(d))
+                d.tier = "L3"
+                continue
             self._auto_checks(d)
             apack = self._dossier_pack(d)
             apack["automatic_checks"] = d.auto_checks
@@ -270,7 +307,7 @@ class Pipeline:
             report.notes.append(f"no se puede valuar la cartera actual: {e}")
             return
         candidates = [d for d in dossiers if d.scorecard]
-        if not candidates:
+        if not candidates and not current:
             report.notes.append("comité: sin candidatos con score")
             return
         pack = {"current_portfolio_weights": cur_w, "cash_weight": 1 - sum(cur_w.values()),
@@ -284,17 +321,36 @@ class Pipeline:
             report.notes.append(f"comité no ejecutado: {res.status} {res.error or ''}")
             return
         pm: S.PortfolioOutput = res.output
-        meta = {d.company.id: PositionMeta(
-            company_id=d.company.id, layer=self.m.nodes[d.company.primary_node].layer,
-            primary_bottleneck=_primary_bottleneck(d, self.reg), eligible=d.scorecard.eligible,
-            speculative=d.company.status == "candidate" or "speculative" in d.company.tags,
-            kill_reasons=d.scorecard.kill_switches) for d in candidates}
+        meta = {}
+        for d in candidates:
+            kills = list(d.scorecard.kill_switches)
+            if d.tier != "L3":
+                kills.append("K9: no completó L3 (bear case + auditoría) — no puede entrar a cartera")
+            meta[d.company.id] = PositionMeta(
+                company_id=d.company.id, layer=self.m.nodes[d.company.primary_node].layer,
+                primary_bottleneck=_primary_bottleneck(d, self.reg), eligible=not kills,
+                speculative=d.company.status == "candidate" or "speculative" in d.company.tags, kill_reasons=kills)
+        decided = {x.company_id for x in pm.decisions}
         proposed = {x.company_id: x.target_weight for x in pm.decisions if x.action not in ("SELL", "AVOID")}
-        # posiciones actuales no tratadas por el PM: se mantienen solo si tienen dossier elegible
+        # posiciones actuales con dossier pero no tratadas por el PM: se mantienen (sujeto a restricciones)
         for k, w in cur_w.items():
-            if k not in {x.company_id for x in pm.decisions} and k in meta:
+            if k not in decided and k in meta:
                 proposed.setdefault(k, w)
         targets, notes = enforce_constraints(proposed, meta)
+        # posiciones actuales SIN dossier en esta corrida: nunca se venden por omisión; se mantienen y se avisa
+        unanalyzed = {k: w for k, w in cur_w.items() if k not in meta}
+        for k, w in unanalyzed.items():
+            targets[k] = round(w, 4)
+            notes.append(f"{k}: en cartera sin análisis en esta corrida -> se mantiene {w:.1%} (revisar)")
+        invest_max = 1 - self.cfg["portfolio"]["min_cash"]
+        tot = sum(targets.values())
+        if tot > invest_max:
+            free = [k for k in targets if k not in unanalyzed]
+            room = max(invest_max - sum(unanalyzed.values()), 0.0)
+            f_sum = sum(targets[k] for k in free)
+            for k in free:
+                targets[k] = round(targets[k] * room / f_sum, 4) if f_sum else 0.0
+            notes.append(f"total {tot:.1%} > {invest_max:.0%}: se escalan las posiciones nuevas")
         report.constraint_notes = notes
         rec_ids = {}
         by_id = {d.company.id: d for d in candidates}
@@ -304,9 +360,13 @@ class Pipeline:
                 report.notes.append(f"PM decidió sobre {x.company_id} sin dossier: ignorado")
                 continue
             q = quotes.get(x.company_id)
+            final_w = targets.get(x.company_id, 0.0)
+            final_action = _final_action(cur_w.get(x.company_id, 0.0), final_w)
+            my_notes = [n for n in notes if n.startswith(x.company_id + ":")]
             rec = Recommendation(
-                pipeline_run_id=self.ctx.pipeline_run_id, company_id=x.company_id, action=x.action,
-                target_weight=targets.get(x.company_id, 0.0), conviction=x.conviction,
+                pipeline_run_id=self.ctx.pipeline_run_id, company_id=x.company_id, action=final_action,
+                pm_action=x.action, pm_target_weight=x.target_weight, constraint_notes=my_notes,
+                target_weight=final_w, conviction=x.conviction,
                 price_at_decision=q.price if q else None, price_time=q.time if q else None,
                 price_source=q.source if q else None, thesis=x.thesis, catalysts=x.catalysts, risks=x.risks,
                 scenario_id=d.scenario_id, score_id=d.score_id, data_cutoff=self.ctx.decision_date,
@@ -315,9 +375,9 @@ class Pipeline:
             s.add(rec)
             s.flush()
             rec_ids[x.company_id] = rec.id
-            report.decisions.append({"company": x.company_id, "action": x.action, "pm_weight": x.target_weight,
-                                     "final_weight": targets.get(x.company_id, 0.0), "conviction": x.conviction,
-                                     "thesis": x.thesis})
+            report.decisions.append({"company": x.company_id, "action": final_action, "pm_action": x.action,
+                                     "pm_weight": x.target_weight, "final_weight": final_w,
+                                     "conviction": x.conviction, "thesis": x.thesis, "constraint_notes": my_notes})
         missing_q = [k for k in set(targets) | set(current) if k not in quotes]
         if missing_q:
             report.notes.append(f"sin cotización para {missing_q}: no se ejecuta rebalanceo simulado")
@@ -331,7 +391,7 @@ class Pipeline:
     def _quotes(self, companies: list[Company]) -> dict[str, ledger.Quote]:
         out = {}
         for c in companies:
-            snap = repo.latest_snapshot(self.ctx.session, c.id)
+            snap = repo.latest_snapshot(self.ctx.session, c.id, self.eod)
             if snap and snap.price:
                 adv = snap.adv_usd_20d or 0
                 liq = "large" if adv > 50e6 else "mid" if adv > 5e6 else "small"
@@ -367,10 +427,11 @@ class Pipeline:
         return p
 
     def _auto_checks(self, d: Dossier) -> None:
-        chk = d.auto_checks
+        """Checks automáticos recalculados desde cero en cada capa (no arrastra checks de escenarios viejos)."""
+        chk = list(d.scenario_checks)
         if d.market:
             try:
-                age = (datetime.now(timezone.utc) - datetime.fromisoformat(d.market.price_time)).days
+                age = (self.eod - datetime.fromisoformat(d.market.price_time)).days
                 if age > 3:
                     chk.append(f"precio con {age} días de antigüedad")
             except ValueError:
@@ -437,7 +498,7 @@ class Pipeline:
 
     def _score(self, d: Dossier, tier: str) -> None:
         c = d.company
-        crit = max(self.crit[n] for n in c.nodes)
+        crit = max(self.crit.get(n, 0.0) for n in c.nodes)
         b = score_bottleneck(company_bottlenecks(c.nodes, self.reg), crit)
         ind = d.out("industrial")
         if ind:
@@ -452,7 +513,7 @@ class Pipeline:
             factors["economic_capture"] = _from_rubric(fun.economic_capture)
         if cat:
             factors["catalysts"] = _from_rubric(cat.catalysts_score)
-        snap = repo.latest_snapshot(self.ctx.session, c.id)
+        snap = repo.latest_snapshot(self.ctx.session, c.id, self.eod)
         proxy = edge_proxy(snap.market_cap_usd if snap else None, c.is_us_listed, None)
         if exp:
             a = _from_rubric(exp.informational_edge)
@@ -463,18 +524,28 @@ class Pipeline:
             factors["informational_edge"] = proxy
         red = fun.red_flags.model_dump() if fun else {}
         aud = d.out("auditor")
+        # análisis incompleto = bloqueo (fail-closed): sin red flags evaluadas o sin auditoría no hay cartera
+        incomplete = []
+        if fun is None:
+            incomplete.append(f"K9: sin evaluación fundamental válida ({_status(d, 'fundamental')}): "
+                              "going concern / financiamiento no evaluados")
+        if tier == "L3" and aud is None:
+            incomplete.append(f"K9: sin veredicto del Research Auditor ({_status(d, 'auditor')})")
         sc = combine(c.id, factors, fundamentals=d.fundamentals, scenarios=d.scenarios,
                      adv_usd=snap.adv_usd_20d if snap else None, red_flags=red,
                      alerts_in=red.get("other", []) if fun else [], n_open_disagreements=len(d.disagreements),
                      audit_verdict=aud.verdict if aud else None,
-                     is_candidate=c.status == "candidate" or "speculative" in c.tags)
+                     is_candidate=c.status == "candidate" or "speculative" in c.tags, incomplete=incomplete)
         d.scorecard = sc
         s = self.ctx.session
-        if d.scenarios:
-            row = ScenarioRow(company_id=c.id, author="valuation_rebuttal" if tier == "L3" and d.out("valuation_rebuttal") else "valuation",
+        if d.scenarios is None:
+            d.scenario_id = None
+        elif d.scenario_source is not None and d.scenario_source != d.scenario_row_source:
+            author, assumptions = d.scenario_source        # supuestos y resultados del MISMO set
+            row = ScenarioRow(company_id=c.id, author=author,
                               price_at_creation=d.market.price if d.market else None,
                               price_source=f"{d.market.price_source}@{d.market.price_time}" if d.market else None,
-                              assumptions={"scenarios": [x.model_dump() for x in (d.out("valuation_rebuttal") or d.out("valuation")).scenarios]},
+                              assumptions={"scenarios": assumptions},
                               results=json.loads(d.scenarios.model_dump_json()),
                               expected_return={str(k): v for k, v in d.scenarios.expected_return.items()},
                               prob_loss=d.scenarios.prob_permanent_loss,
@@ -482,11 +553,12 @@ class Pipeline:
             s.add(row)
             s.flush()
             d.scenario_id = row.id
+            d.scenario_row_source = d.scenario_source
         srow = ScoreRow(pipeline_run_id=self.ctx.pipeline_run_id, company_id=c.id, tier=tier, total=sc.total,
                         total_uncapped=sc.total_uncapped,
                         factors={k: v.model_dump() for k, v in sc.factors.items()}, caps_applied=sc.caps_applied,
                         kill_switches=sc.kill_switches, alerts=sc.alerts, missing_data=sc.missing_data,
-                        confidence=sc.confidence, eligible=sc.eligible)
+                        confidence=sc.confidence, eligible=sc.eligible, scenario_id=d.scenario_id)
         s.add(srow)
         s.flush()
         d.score_id = srow.id
@@ -510,7 +582,11 @@ class Pipeline:
     def run(self, tiers: tuple[str, ...] = TIERS, only: list[str] | None = None) -> CycleReport:
         rep = CycleReport(run_id=self.ctx.pipeline_run_id, started_at=datetime.now(timezone.utc).isoformat(),
                           tiers_run=list(tiers))
-        comps = [c for c in self.u.companies.values() if only is None or c.id in only]
+        held = set(ledger.holdings(self.ctx.session, self.portfolio_name))
+        comps = [c for c in self.u.companies.values() if only is None or c.id in only or c.id in held]
+        if only is not None and held - set(only):
+            rep.notes.append(f"--only: se agregaron las posiciones en cartera {sorted(held - set(only))} "
+                             "(la cartera siempre se re-analiza; nunca se vende por omisión)")
         dossiers = self.screen(comps)
         rep.counts["L0_screened"] = len(dossiers)
         rep.counts["L0_passed"] = sum(d.l0["pass"] for d in dossiers)
@@ -533,10 +609,16 @@ class Pipeline:
                              for d in dossiers if d.scorecard], key=lambda x: -x["total"])
         if "committee" in tiers and not self.ctx.dry_run:
             self.committee(stage, rep)
+        elif "committee" in tiers and stage:
+            run_agent(self.ctx, "portfolio_manager", "portfolio", "Decidí la cartera modelo para este ciclo.",
+                      {"candidates": [self._dossier_pack(d, brief=True) for d in stage]})
         rep.agent_log = self.ctx.log
         rep.cost_usd = round(self.ctx.budget.spent_run, 4)
         rep.est_cost_usd = round(sum(x.get("est_cost", 0) for x in self.ctx.log), 4)
-        out = DATA_DIR / "runs"
+        rep.mode, rep.dry_run = self.mode, self.ctx.dry_run
+        bind = self.ctx.session.get_bind()
+        rep.db_url = str(bind.url) if bind is not None else None
+        out = self.runs_dir
         out.mkdir(parents=True, exist_ok=True)
         (out / f"{rep.run_id}.json").write_text(json.dumps(rep.__dict__, indent=1, default=str), encoding="utf-8")
         return rep
@@ -549,6 +631,24 @@ def _from_rubric(r: S.RubricScore) -> FactorScore:
     note = "" if score == r.score else f" [ajustado a la banda {r.rubric_band}]"
     return FactorScore(score=score, method="agent", rationale=r.rationale + note,
                        evidence=[e.source_url or e.claim[:120] for e in r.evidence], missing=r.missing_information)
+
+
+def _final_action(cur: float, final: float) -> str:
+    """Acción realmente ejecutada (después de restricciones), no la propuesta del PM."""
+    if final <= 0:
+        return "SELL" if cur > 0 else "AVOID"
+    if cur <= 0:
+        return "BUY"
+    if final > cur + 0.005:
+        return "ADD"
+    if final < cur - 0.005:
+        return "TRIM"
+    return "HOLD"
+
+
+def _status(d: Dossier, agent: str) -> str:
+    r = d.agents.get(agent)
+    return "no ejecutado" if r is None else r.status
 
 
 def _scenario_summary(ss: ScenarioSet) -> dict:

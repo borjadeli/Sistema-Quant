@@ -163,7 +163,7 @@ companies:
   - {ticker: CRWV, name: "CoreWeave", exchange: NASDAQ, country: US, currency: USD, nodes: [neocloud_capex], exposure: {ai: H, energy: M, commodities: N}}
   - {ticker: NBIS, name: "Nebius Group", exchange: NASDAQ, country: NL, currency: USD, nodes: [neocloud_capex], exposure: {ai: H, energy: L, commodities: N}}
   - {ticker: IREN, name: "IREN Ltd", exchange: NASDAQ, country: AU, currency: USD, nodes: [btc_miners_hpc, neocloud_capex, dc_powered_land], exposure: {ai: H, energy: H, commodities: N}, seed: true, tags: [tracked]}
-  - {ticker: CIFR, name: "Cipher Mining", exchange: NASDAQ, country: US, currency: USD, nodes: [btc_miners_hpc, dc_powered_land], exposure: {ai: M, energy: H, commodities: N}, seed: true, tags: [tracked], verify: "confirmar nombre/ticker vigente"}
+  - {ticker: CIFR, name: "Cipher Digital (ex Cipher Mining)", exchange: NASDAQ, country: US, currency: USD, nodes: [btc_miners_hpc, dc_powered_land], exposure: {ai: M, energy: H, commodities: N}, seed: true, tags: [tracked], notes: "renombrada Cipher Digital Inc. el 2026-02-20 (search_summary); ticker CIFR sin cambios"}
   - {ticker: WULF, name: "TeraWulf", exchange: NASDAQ, country: US, currency: USD, nodes: [btc_miners_hpc, dc_powered_land], exposure: {ai: M, energy: H, commodities: N}}
   - {ticker: APLD, name: "Applied Digital", exchange: NASDAQ, country: US, currency: USD, nodes: [dc_powered_land, neocloud_capex], exposure: {ai: H, energy: H, commodities: N}}
   - {ticker: HUT, name: "Hut 8", exchange: NASDAQ, country: US, currency: USD, nodes: [btc_miners_hpc, dc_powered_land], exposure: {ai: L, energy: H, commodities: N}}

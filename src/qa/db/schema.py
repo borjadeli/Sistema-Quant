@@ -166,8 +166,9 @@ class DataPointRow(Base):
     inputs: Mapped[list] = mapped_column(JSON, default=list)
     author: Mapped[str | None] = mapped_column(String(80))
     note: Mapped[str | None] = mapped_column(Text)
+    # Una fila por VINTAGE (known_at): los valores re-expresados no pisan lo que se sabía antes.
     __table_args__ = (UniqueConstraint("entity", "metric", "period_type", "period_end", "kind",
-                                       "source_name", name="uq_datapoint"),)
+                                       "source_name", "known_at", name="uq_datapoint"),)
 
 
 class Price(Base):
@@ -237,6 +238,7 @@ class AgentRun(Base):
     decision_time: Mapped[date | None] = mapped_column(Date)
     output: Mapped[dict | None] = mapped_column(JSON)
     status: Mapped[str] = mapped_column(String(20))   # ok|error|refusal|skipped_budget|reused
+    reused_from: Mapped[int | None] = mapped_column(Integer)   # id del AgentRun reutilizado
     error: Mapped[str | None] = mapped_column(Text)
     input_tokens: Mapped[int] = mapped_column(Integer, default=0)
     output_tokens: Mapped[int] = mapped_column(Integer, default=0)
@@ -285,6 +287,8 @@ class ScoreRow(Base):
     missing_data: Mapped[list] = mapped_column(JSON, default=list)
     confidence: Mapped[str] = mapped_column(String(10))
     eligible: Mapped[bool] = mapped_column(Boolean)
+    # escenarios exactos usados para este score (None = sin escenarios: ER/P(pérdida) no aplican)
+    scenario_id: Mapped[int | None] = mapped_column(ForeignKey("scenarios.id"))
 
 
 class ScenarioSet(Base):
@@ -310,7 +314,10 @@ class Recommendation(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     pipeline_run_id: Mapped[str | None] = mapped_column(String(40))
     company_id: Mapped[str] = mapped_column(String(40), index=True)
-    action: Mapped[str] = mapped_column(String(10))       # BUY|ADD|HOLD|TRIM|SELL|AVOID
+    action: Mapped[str] = mapped_column(String(10))       # acción FINAL ejecutada: BUY|ADD|HOLD|TRIM|SELL|AVOID
+    pm_action: Mapped[str | None] = mapped_column(String(10))       # lo que propuso el Portfolio Manager
+    pm_target_weight: Mapped[float | None] = mapped_column(Float)
+    constraint_notes: Mapped[list] = mapped_column(JSON, default=list)  # por qué el código cambió la propuesta
     target_weight: Mapped[float] = mapped_column(Float)
     conviction: Mapped[str] = mapped_column(String(10))   # low|medium|high
     price_at_decision: Mapped[float | None] = mapped_column(Float)

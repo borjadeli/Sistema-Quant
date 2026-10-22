@@ -1,0 +1,537 @@
+[
+  {
+    "ticker": "BE",
+    "name": "Bloom Energy Corporation",
+    "primary_exchange": "NYSE",
+    "other_listings": [],
+    "country_hq": "United States (San Jose, California)",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "December",
+    "business_summary": "Bloom Energy makes solid-oxide fuel cell power systems that generate electricity on site, sold mainly as product, installation and service, and also offers solid-oxide electrolyzers. More and more of its new business comes from AI data centers through large frameworks with Oracle and Brookfield. It reports a single segment.",
+    "main_products": [
+      "Solid-oxide fuel cell power systems (Energy Servers) for on-site/behind-the-meter power",
+      "Installation and service",
+      "Electricity (power purchase arrangements)",
+      "Solid-oxide electrolyzers"
+    ],
+    "segments": [
+      "Single reportable segment (CODM = CEO; FY2025 10-K)"
+    ],
+    "ai_energy_commodity_link": "Company-stated: Bloom positions its fuel cells as fast behind-the-meter power for AI data centers. Oracle intends to procure up to 2.8 GW under a master services agreement, with 1.2 GW contracted and being deployed (Apr 13, 2026 release). Brookfield's AI-infrastructure financing framework with Bloom grew from up to $5B (Oct 2025) to $25B (Jun 30, 2026), but no specific new sites or customers were named. Measurable: Q2 2026 revenue was $1,065.4M (+165.5% y/y), of which product revenue was $935.4M. FY2025 10-K: three customers made up ~43%, 13% and 12% of revenue, and the largest is a related party. No data-center share of revenue was seen in any filing. Commodity exposure: the systems typically run on natural gas (background knowledge; not quantified here). Scandium oxide is a key input and is the subject of short-seller allegations.",
+    "confirmed_relationships": [
+      {
+        "counterparty": "Oracle",
+        "relationship": "customer",
+        "detail": "Master services agreement under which Oracle intends to procure up to 2.8 GW of Bloom fuel cell systems for U.S. projects; initial 1.2 GW contracted with deployment underway and continuing into next year",
+        "source_url": "https://www.bloomenergy.com/news/bloom-energy-and-oracle-expand-strategic-partnership-to-deploy-up-to-2-8-gw-to-accelerate-ai-infrastructure-build-out/",
+        "source_date": "2026-04-13",
+        "status": "company_press_release",
+        "verification": "Search-result summary of the Bloom newsroom release; full page not fetched (DNS failure)"
+      },
+      {
+        "counterparty": "Brookfield (Brookfield Asset Management AI Infrastructure strategy)",
+        "relationship": "partner",
+        "detail": "Oct 2025: Brookfield to invest up to $5B to deploy Bloom SOFC technology at AI data centers, with Bloom as preferred on-site power provider. Jun 30, 2026: framework expanded to $25B; no specific new sites or customers identified",
+        "source_url": "https://www.bloomenergy.com/news/brookfield-and-bloom-energy-expand-ai-infrastructure-partnership/",
+        "source_date": "2026-06-30",
+        "status": "company_press_release",
+        "verification": "Search-result summaries of the Business Wire (2025-10-13) and Bloom newsroom (2026-06-30) releases; original 2025 release: https://www.businesswire.com/news/home/20251013114760/en/Brookfield-and-Bloom-Energy-Announce-%245-Billion-Strategic-AI-Infrastructure-Partnership"
+      },
+      {
+        "counterparty": "American Electric Power (AEP)",
+        "relationship": "customer",
+        "detail": "Supply agreement for up to 1 GW of fuel cells for AI data centers; initial order of 100 MW, with expansion orders expected in 2025",
+        "source_url": "https://www.businesswire.com/news/home/20241114493147/en/Bloom-Energy-Announces-Gigawatt-Fuel-Cell-Procurement-Agreement-with-AEP-to-Power-AI-Data-Centers/",
+        "source_date": "2024-11-14",
+        "status": "company_press_release",
+        "verification": "Search-result summary of the release; older than 12 months. A ~$2.65B value cited by Barchart was not seen in the release"
+      },
+      {
+        "counterparty": "Unnamed related party (largest FY2025 customer; identity not confirmed this session)",
+        "relationship": "customer",
+        "detail": "Three customers made up ~43%, 13% and 12% of FY2025 revenue, the first being a related party. 'Customer' means the contractual counterparty, which may be a project-finance affiliate rather than the end user. Related-party revenue was $2.8M in Q2 2026 and $376.1M in 1H 2026 (vs $29.9M in 1H 2025)",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1664703/000162828026006516/be-20251231.htm",
+        "source_date": "2026-02",
+        "status": "confirmed_by_filing",
+        "verification": "Search-result excerpts of the FY2025 10-K and the Q2 2026 10-Q (https://www.sec.gov/Archives/edgar/data/0001664703/000162828026050247/be-20260630.htm); filing not fetched in full"
+      },
+      {
+        "counterparty": "Equinix",
+        "relationship": "customer",
+        "detail": "Named, together with AEP and Oracle, among the customers whose data centers run on hundreds of MW of installed Bloom fuel cell systems (context in Brookfield partnership coverage)",
+        "source_url": "https://www.datacenterdynamics.com/en/news/bloom-energy-signs-5bn-partnership-with-brookfield-to-deploy-fuel-cell-tech-across-ai-data-centers/",
+        "source_date": "2025-10",
+        "status": "media_report",
+        "verification": "Search-result summary of media coverage; not read in a company filing"
+      }
+    ],
+    "latest_reported_quarter": {
+      "period_label": "Q2 2026",
+      "period_end_date": "2026-06-30",
+      "revenue": 1065.4,
+      "revenue_unit": "USD millions",
+      "gaap_net_income": 196.29,
+      "gaap_net_income_note": "Net profit to common stockholders of $196,290 thousand per the earnings release; GAAP diluted EPS $0.62 (basic $0.68); operating income $182.2M",
+      "cash_and_equivalents": 2670.0,
+      "cash_note": "$2.67B cash and cash equivalents per secondary coverage (Quartr/sec-api summaries); cash incl. restricted ~$2.69B. Not read from the balance sheet directly",
+      "total_debt": 2480.0,
+      "total_debt_note": "Approximate. A search summary of the Q2 2026 10-Q debt note gives a net carrying value of ~$2.48B and unpaid principal of ~$2.53B. This is mostly the $2.5B 0% convertible senior notes due Nov 2030 (net carrying $2,447.9M), plus 3.0% green convertible notes due 2028/2029 and a ~$2.6M non-recourse Korean JV term loan",
+      "guidance_next_quarter": "No quarterly guidance seen. FY2026 raised to revenue $3.9B-$4.2B, non-GAAP operating income $800M-$900M and non-GAAP EPS $2.55-$2.85. Q3 2026 results are scheduled for Oct 22, 2026 after market close",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/0001664703/000162828026050150/ex991_q226financialresults.htm",
+      "source_date": "2026-07-28"
+    },
+    "key_recent_events": [
+      {
+        "date": "2025-10-13",
+        "event": "Brookfield and Bloom announce up to $5B strategic AI infrastructure partnership",
+        "source_url": "https://www.businesswire.com/news/home/20251013114760/en/Brookfield-and-Bloom-Energy-Announce-%245-Billion-Strategic-AI-Infrastructure-Partnership"
+      },
+      {
+        "date": "2026-04-13",
+        "event": "Oracle partnership expanded: Oracle intends to procure up to 2.8 GW (1.2 GW contracted)",
+        "source_url": "https://www.bloomenergy.com/news/bloom-energy-and-oracle-expand-strategic-partnership-to-deploy-up-to-2-8-gw-to-accelerate-ai-infrastructure-build-out/"
+      },
+      {
+        "date": "2026-06-30",
+        "event": "Brookfield partnership financing framework expanded to $25B",
+        "source_url": "https://www.bloomenergy.com/news/brookfield-and-bloom-energy-expand-ai-infrastructure-partnership/"
+      },
+      {
+        "date": "2026-07-08",
+        "event": "Hunterbrook short report ('Bloom's Big Lie') alleges undisclosed reliance on Chinese scandium oxide and questions revenue quality and backlog; Bloom rejected the claims in a Jul 9 8-K",
+        "source_url": "https://www.barchart.com/story/news/3226408/be-stock-alert-bloom-energy-stock-remains-in-focus-following-short-report-rebuttal"
+      },
+      {
+        "date": "2026-07-28",
+        "event": "Record Q2 2026: revenue $1,065.4M (+165.5% y/y), GAAP diluted EPS $0.62; FY2026 revenue guidance raised to $3.9B-$4.2B",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001664703/000162828026050150/ex991_q226financialresults.htm"
+      }
+    ],
+    "red_flags": [
+      {
+        "flag": "Heavy customer concentration: the top three customers were ~68% of FY2025 revenue, and the largest (~43%) is a related party. 'Customers' may be project-finance affiliates, not end users",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1664703/000162828026006516/be-20251231.htm"
+      },
+      {
+        "flag": "Lumpy related-party revenue: $376.1M in 1H 2026 vs $29.9M in 1H 2025 (only $2.8M in Q2 2026)",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001664703/000162828026050247/be-20260630.htm"
+      },
+      {
+        "flag": "Fully vested equity warrant issued Apr 9, 2026 under a strategic partnership (grant-date fair value ~$261.3M), booked as consideration payable to a customer's customer that reduces revenue. The holder was not confirmed (a third party says it relates to Oracle)",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001664703/000162828026028021/be-20260331.htm"
+      },
+      {
+        "flag": "Short-seller allegations from Hunterbrook (Jul 8, 2026, plus a later fuel-cell performance report ~Jul 30) and Crossroads Capital: Chinese scandium supply, Brookfield-JV share of revenue (claimed 74% of Q4 2025), and a ~$20B unaudited backlog vs. a smaller audited RPO. Bloom calls the claims false and misleading. The short sellers disclosed short positions",
+        "source_url": "https://247wallst.com/investing/2026/07/09/the-market-rejects-bloom-energy-short-attack-but-should-you-ignore-it-too/"
+      },
+      {
+        "flag": "Proposed securities class actions filed after the short reports (law-firm notice; lead-plaintiff deadline Sep 28, 2026). Case status not verified",
+        "source_url": "https://www.glancylaw.com/cases/bloom-energy-corporation-1/"
+      },
+      {
+        "flag": "$2.5B 0% convertible notes due 2030 (initial conversion price $194.97/share): potential dilution",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001664703/000162828026050247/be-20260630.htm"
+      }
+    ],
+    "notes_unverified": [
+      "Nebius deal (~$2.6B, May 2026) appeared only on low-quality mirror/aggregator domains, with conflicting detail (U.S. vs European sites). No Bloom or Nebius release was seen, so it is excluded from confirmed_relationships.",
+      "Cash ($2.67B) comes from secondary summaries, and total debt (~$2.48B) is a rounded search-summary figure from the 10-Q. Neither was read from the balance sheet.",
+      "Q2 2026 backlog figure not found. A ~$20B backlog (Q1-era) was cited only by secondary sources and the short report.",
+      "HQ city (San Jose) is background knowledge, not verified this session.",
+      "Identity of the related-party top customer (likely a Brookfield-linked entity) was NOT confirmed.",
+      "Q3 2026 results are due Oct 22, 2026 after market close (after this research), so they are not included."
+    ],
+    "data_quality": "partial (cash and total debt from search summaries/secondary sources, not the balance sheet; Nebius relationship unverified; no full-document reads)",
+    "research_date": "2026-10-21",
+    "verification_method": "WebSearch result summaries only. WebFetch failed with DNS errors (getaddrinfo ENOTFOUND for sec.gov and investor.bloomenergy.com), so no primary document was read in full. Figures come from search-result excerpts of the SEC 8-K Ex.99.1, 10-Q and 10-K and from company releases, cross-checked across multiple results where possible."
+  },
+  {
+    "ticker": "ERO",
+    "name": "Ero Copper Corp.",
+    "primary_exchange": "TSX",
+    "other_listings": [
+      "NYSE: ERO"
+    ],
+    "country_hq": "Canada (Vancouver, British Columbia); operations in Brazil",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "December",
+    "business_summary": "Ero Copper is a copper-focused miner whose operations are all in Brazil: the Caraíba Operations (Bahia), the Tucumã Operation (Pará; commercial production July 2025) and the NX Gold Xavantina gold operations. It is also earning a 60% interest in Vale Base Metals' Furnas copper-gold project. It sells copper concentrate and gold.",
+    "main_products": [
+      "Copper in concentrate",
+      "Gold (doré and gold-in-concentrate from Xavantina)",
+      "Silver/gold by-products in copper concentrate (by-product detail not verified)"
+    ],
+    "segments": [
+      "Caraíba Operations",
+      "Tucumã Operation",
+      "Xavantina Operations (NX Gold)"
+    ],
+    "ai_energy_commodity_link": "Measurable commodity exposure: copper production was 17,315 t in concentrate in Q2 2026 (C1 $2.42/lb), and FY2026 guidance is 67,500-77,500 t. Gold from Xavantina was 20,553 oz in Q2 2026. Revenue and earnings are driven by copper and gold prices, with Brazil-only operations (BRL cost exposure is background knowledge, not quantified here). No company statement linking revenue to AI data centers was seen. Any AI/electrification link is indirect, through copper demand.",
+    "confirmed_relationships": [
+      {
+        "counterparty": "Vale Base Metals",
+        "relationship": "partner",
+        "detail": "Furnas Copper-Gold Project earn-in: Ero can earn 60% by completing exploration, engineering and development milestones over 5 years. Ero funds exploration and provides Vale Base Metals up to an 11% free carry on construction capital. Announced Oct 30, 2023; definitive agreement later closed (per mining.com)",
+        "source_url": "https://erocopper.com/site/assets/files/6388/furnas_partnership_nr_vf2.pdf",
+        "source_date": "2023-10-30",
+        "status": "company_press_release",
+        "verification": "Search-result summary of the company release plus mining.com coverage (https://www.mining.com/?p=1155941); older than 12 months; current milestone status not verified"
+      }
+    ],
+    "latest_reported_quarter": {
+      "period_label": "Q2 2026",
+      "period_end_date": "2026-06-30",
+      "revenue": 284.3,
+      "revenue_unit": "USD millions",
+      "gaap_net_income": 89.5,
+      "gaap_net_income_note": "Net income attributable to owners of the Company: $89.5M ($0.85 diluted), IFRS. Adjusted net income $87.4M",
+      "cash_and_equivalents": 101.7,
+      "total_debt": null,
+      "total_debt_note": "Gross debt not seen. Net debt was $452.7M (down $38.0M q/q; leverage 0.8x). Available liquidity was $181.7M, including $80.0M undrawn on the senior secured revolver. $25.0M more was repaid on the revolver after quarter-end ($60.0M repaid in 2026 YTD). Debt includes US$400M 6.50% senior notes due Feb 15, 2030 (AIF)",
+      "guidance_next_quarter": "No quarterly guidance. FY2026 copper production maintained at 67,500-77,500 t, H2-weighted. Xavantina gold now expected at the low end of 40,000-50,000 oz. FY C1 guidance of $2.15-$2.35/lb was held as of the Q1 filing. Tucumã tailings filtration expansion on track for Q4 2026, but not included in guidance",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/0001853860/000162828026053508/erocopper-pressreleasex202.htm",
+      "source_date": "2026-08-05"
+    },
+    "key_recent_events": [
+      {
+        "date": "2026-02-05",
+        "event": "Record Q4 2025 production (19,706 t Cu; FY2025 64,307 t) and 2026 guidance; Xavantina gold concentrate sales to continue through mid-2027",
+        "source_url": "https://www.barchart.com/story/news/42451/ero-delivers-record-q4-production-and-strong-year-end-liquidity-gold-concentrate-sales-to-continue-through-mid-2027-positioning-for-next-phase-of-step-change-growth"
+      },
+      {
+        "date": "2026-03-05",
+        "event": "FY2025 results: operating cash flow $395.1M for the year (Q4 $129.1M)",
+        "source_url": "https://www.barchart.com/story/news/594983/ero-copper-reports-fourth-quarter-and-full-year-2025-operating-and-financial-results"
+      },
+      {
+        "date": "2026-05-04",
+        "event": "Q1 2026 results: copper production 17,287 t at C1 $2.39/lb",
+        "source_url": "https://www.barchart.com/story/news/1695180/ero-copper-reports-first-quarter-2026-operating-and-financial-results"
+      },
+      {
+        "date": "2026-08-05",
+        "event": "Q2 2026 results: revenue $284.3M, net income attributable $89.5M, operating cash flow $137.9M, net debt down to $452.7M; Xavantina gold guided to low end",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001853860/000162828026053508/erocopper-pressreleasex202.htm"
+      },
+      {
+        "date": "2026-10-01",
+        "event": "Announced Q3 2026 results for Nov 2, 2026 after market close (call Nov 3)",
+        "source_url": "https://finviz.com/news/398124/ero-copper-to-release-third-quarter-2026-operating-and-financial-results-on-november-2-2026"
+      }
+    ],
+    "red_flags": [
+      {
+        "flag": "Xavantina gold output cut to the low end of 40-50 koz guidance after extended H1 downtime (ventilation/cooling) and a slower Q2 mining ramp-up",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001853860/000162828026053508/erocopper-mdax2026q2.htm"
+      },
+      {
+        "flag": "Tucumã: lower mined and processed copper grades expected in H2 2026, to be offset by higher throughput. FY copper guidance depends on an H2-weighted ramp at both copper operations",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001853860/000162828026053508/erocopper-mdax2026q2.htm"
+      },
+      {
+        "flag": "Leverage: net debt $452.7M against $101.7M cash at Jun 30, 2026. All operations are in a single country (Brazil)",
+        "source_url": "https://www.barchart.com/story/news/3675711/ero-copper-reports-second-quarter-2026-operating-and-financial-results"
+      }
+    ],
+    "notes_unverified": [
+      "Gross total debt at Jun 30, 2026 was not seen; revolver balance ~$95M per a MarketBeat call summary (secondary, unverified).",
+      "Senior secured revolver maturity was extended to Dec 2026 in a Dec 2022 amendment; any later extension/refinancing was not verified (possible near-term refinancing item).",
+      "Segment names come from a third-party summary and from operation names in company releases, not from the IFRS segment note.",
+      "No named concentrate offtakers seen. A third-party summary says concentrate is sold to international traders/smelters. A Royal Gold/NX Gold stream is background knowledge only and was not verified.",
+      "FY2025 revenue ($785.8M) and Q4 2025 revenue ($320.2M) were seen only on 247wallst and are not used.",
+      "Primary exchange designation (TSX) is background knowledge; both TSX and NYSE listings appear in sources.",
+      "Q1 2026 results date (May 4, 2026) taken from the release-date announcement title."
+    ],
+    "data_quality": "partial (gross total debt missing; segment names not from segment note; no named offtakers)",
+    "research_date": "2026-10-21",
+    "verification_method": "WebSearch result summaries only. WebFetch failed with DNS errors on all hosts tried, so no document was read in full. Figures come from search excerpts of the SEC 6-K (press release and MD&A) and GlobeNewswire copies on Barchart/Finviz."
+  },
+  {
+    "ticker": "IVN",
+    "name": "Ivanhoe Mines Ltd.",
+    "primary_exchange": "TSX",
+    "other_listings": [
+      "OTCQX: IVPAF"
+    ],
+    "country_hq": "Canada (Vancouver, British Columbia); assets in DRC and South Africa",
+    "reporting_currency": "USD",
+    "fiscal_year_end": "December",
+    "business_summary": "Ivanhoe Mines develops and operates mines in Africa. Its main assets are the Kamoa-Kakula copper complex in the DRC (a joint venture with Zijin and the DRC government, with an on-site smelter), the Kipushi zinc mine in the DRC, and the Platreef PGM-nickel-copper-gold mine in South Africa, which began Phase 1 production in Nov 2025. Kamoa-Kakula is equity-accounted, so consolidated revenue mainly reflects Kipushi.",
+    "main_products": [
+      "Copper (anode/blister and concentrate; Kamoa-Kakula)",
+      "Zinc concentrate (Kipushi)",
+      "PGMs (3PE+Au), nickel and copper in concentrate (Platreef)",
+      "Sulphuric acid (by-product of Kamoa-Kakula smelter)"
+    ],
+    "segments": [
+      "Kamoa-Kakula (joint venture; share of profit, equity-accounted)",
+      "Kipushi (reported 'segmental profit')",
+      "Platreef"
+    ],
+    "ai_energy_commodity_link": "Measurable commodity exposure: Kamoa-Kakula (100% basis) sold 61,249 t of payable copper in Q2 2026 at an average realized $5.99/lb, for revenue of $880M (including $56M of sulphuric acid sales). Kipushi produced a record 70,177 t of zinc in Q2 2026. Ivanhoe's consolidated revenue is only $152.6M because Kamoa-Kakula is a joint venture. The company tightened 2026 Kamoa-Kakula guidance to 290-310 kt copper. Energy: an on-site hybrid solar and battery facility cut diesel-generator use by 40% in Sep 2026 (secondary report). No company statement linking revenue to AI data centers was seen. The AI link is only indirect, through copper demand.",
+    "confirmed_relationships": [
+      {
+        "counterparty": "Zijin Mining (via Gold Mountains (H.K.) International Mining)",
+        "relationship": "partner",
+        "detail": "Kamoa-Kakula JV partner. After the Nov 2016 transfer of 15% to the DRC government, Ivanhoe and Zijin each held an indirect 39.6%, Crystal River Global 0.8% and the DRC government 20%",
+        "source_url": "https://www.ivanhoemines.com/news-stories/news-release/ivanhoe-mines-and-zijin-mining-sign-landmark-agreement-to-transfer-an-additional-15-interest-in-the-kamoa-kakula-copper-project-to-the-government-of-the-democratic-republic-of-congo/",
+        "source_date": "2016-11-11",
+        "status": "company_press_release",
+        "verification": "Search-result summary; ownership as of 2016-2017, current stakes not re-verified"
+      },
+      {
+        "counterparty": "Government of the Democratic Republic of Congo",
+        "relationship": "partner",
+        "detail": "Holds a direct 20% of the Kamoa-Kakula Copper Project (per the 2016 agreement)",
+        "source_url": "https://www.ivanhoemines.com/news-stories/news-release/ivanhoe-mines-and-zijin-mining-sign-landmark-agreement-to-transfer-an-additional-15-interest-in-the-kamoa-kakula-copper-project-to-the-government-of-the-democratic-republic-of-congo/",
+        "source_date": "2016-11-11",
+        "status": "company_press_release",
+        "verification": "Search-result summary; not re-verified for 2026"
+      },
+      {
+        "counterparty": "Northam Platinum",
+        "relationship": "customer",
+        "detail": "Bought the first commercial sale of Platreef concentrate in late Q4 2025",
+        "source_url": "https://www.newsfilecorp.com/release/280041/Ivanhoe-Mines-Announces-Update-on-Platreef-the-Worlds-Largest-Precious-Metals-Mine-Under-Development",
+        "source_date": "2026-01-12",
+        "status": "company_press_release",
+        "verification": "Search-result summary of the company release; contract terms/ongoing offtake not seen"
+      },
+      {
+        "counterparty": "Lualaba Copper Smelter (Kolwezi, DRC)",
+        "relationship": "supplier",
+        "detail": "Kamoa-Kakula concentrate is smelted at the on-site smelter or at the Lualaba Copper Smelter (toll smelting). A 56-day LCS shutdown in Q2 2026 reduced blister output (the shutdown detail is from secondary coverage)",
+        "source_url": "https://www.ivanhoemines.com/wp-content/uploads/20260806-Response-to-Reuters-Article-vF.pdf",
+        "source_date": "2026-08-06",
+        "status": "company_press_release",
+        "verification": "Search-result summary of the company clarification release"
+      }
+    ],
+    "latest_reported_quarter": {
+      "period_label": "Q2 2026",
+      "period_end_date": "2026-06-30",
+      "revenue": 152.611,
+      "revenue_unit": "USD millions",
+      "revenue_note": "Consolidated IFRS revenue (US$152,611 thousand) per the interim financial statements. Excludes equity-accounted Kamoa-Kakula, whose 100%-basis revenue was $880M. MarketBeat's $216.83M does not match and was ignored",
+      "gaap_net_income": 46.0,
+      "gaap_net_income_note": "'Profit after tax' of $46M per the company release (vs $35M in Q2 2025 and a $2M loss in Q1 2026). Whether this is total or attributable to owners was not confirmed. Adjusted EBITDA $179M",
+      "cash_and_equivalents": 635.3,
+      "total_debt": null,
+      "total_debt_note": "No single total-debt figure seen. Balance-sheet line items at Jun 30, 2026 (US$ thousands): senior notes non-current 749,284 and current 11,742; borrowings non-current 304,702 and current 219,854 (not summed here). Notes are US$750M 7.875% due Jan 23, 2030. A third-party summary cites net debt of $651M and pro-rata net debt/adj. EBITDA of 2.48x",
+      "guidance_next_quarter": "No quarterly guidance. Kamoa-Kakula 2026 copper guidance tightened to 290,000-310,000 t at Q2 (from 290,000-330,000 t), and 2027 guidance kept at 380,000-420,000 t. Q3 production of 76,401 t was reported as trending toward the low end",
+      "source_url": "https://www.ivanhoemines.com/wp-content/uploads/20260729-IVN-Q2-Financial-Results-ABF.pdf",
+      "source_date": "2026-07-29"
+    },
+    "key_recent_events": [
+      {
+        "date": "2026-04-01",
+        "event": "Kamoa-Kakula guidance cut: 2026 to 290-330 kt (from 380-420 kt) and 2027 to 380-420 kt (from 500-540 kt), citing development focus and geotechnical/hydrological constraints; >500 kt/y targeted from 2028",
+        "source_url": "https://www.engineeringnews.co.za/article/kamoa-kakula-output-guidance-for-2026-2027-lowered-output-to-reach-above-500-000-t-from-2028-2026-04-01"
+      },
+      {
+        "date": "2026-04-30",
+        "event": "Financial close of Platreef $700M Phase 2 senior project finance facility (~$600M net new capital); $87M drawn in July",
+        "source_url": "https://www.ivanhoemines.com/wp-content/uploads/20260630-00000-MDA-vF.pdf"
+      },
+      {
+        "date": "2026-07-29",
+        "event": "Q2 2026 results: profit $46M, adjusted EBITDA $179M, cash $635M; 2026 Kamoa-Kakula guidance tightened to 290-310 kt",
+        "source_url": "https://www.ivanhoemines.com/wp-content/uploads/20260729-IVN-Q2-Financial-Results-ABF.pdf"
+      },
+      {
+        "date": "2026-08-06",
+        "event": "Reuters reports a DRC order (dated Jun 29) banning copper/cobalt concentrate exports and adding a new by-product tax regime. Ivanhoe says the ban has existed for ~10 years and that Kamoa-Kakula has operated under derogations",
+        "source_url": "https://www.ivanhoemines.com/wp-content/uploads/20260806-Response-to-Reuters-Article-vF.pdf"
+      },
+      {
+        "date": "2026-10",
+        "event": "Q3 2026 Kamoa-Kakula production 76,401 t copper (9M: 212,146 t); guidance maintained but trending to the low end; Kipushi 77,147 t zinc",
+        "source_url": "https://www.northernminer.com/news/ivanhoe-copper-output-jumps-19-as-kamoa-kakula-rebounds/1003895595/"
+      }
+    ],
+    "red_flags": [
+      {
+        "flag": "Repeated Kamoa-Kakula guidance cuts: 2026 went from 380-420 kt (Dec 2025) to 290-330 kt (Apr 2026) to 290-310 kt (Jul 2026), and Q3 commentary says it is trending to the low end. The cuts are linked to geotechnical/hydrological constraints and dewatering",
+        "source_url": "https://www.engineeringnews.co.za/article/kamoa-kakula-output-guidance-for-2026-2027-lowered-output-to-reach-above-500-000-t-from-2028-2026-04-01"
+      },
+      {
+        "flag": "DRC jurisdiction risk: the concentrate export ban order and new tax regime make export waivers a swing factor",
+        "source_url": "https://www.spglobal.com/energy/en/news-research/latest-news/metals/080626-kamoa-kakula-smelter-ramp-up-to-offset-drcs-copper-concentrate-export-ban-analysts"
+      },
+      {
+        "flag": "Liquidity drawdown: cash fell from $784.5M (Dec 31, 2025) to $635.3M (Jun 30, 2026) and short-term investments went from $100.7M to zero, while 2026 Kamoa-Kakula capex is guided at $1.1-1.4B (100% basis)",
+        "source_url": "https://www.ivanhoemines.com/wp-content/uploads/20260630-00000-Ivanhoe-Mines-Ltd.-QFS-vF.pdf"
+      },
+      {
+        "flag": "Copper inventory of ~43,000 t at Kamoa-Kakula at end of Q3 2026 (secondary report), against a plan to destock in H2",
+        "source_url": "https://thedeepdive.ca/ivanhoe-mines-produces-76401-tonnes-of-copper-in-q3-trends-toward-low-end-of-guidance/"
+      }
+    ],
+    "notes_unverified": [
+      "Total debt not summed (instructed not to compute); line items are given in total_debt_note.",
+      "Whether the $46M Q2 profit is attributable to owners or total (incl. non-controlling interests) was not confirmed.",
+      "Q3 2026 production figures (76,401 t; ~43 kt inventory) come from secondary coverage (Northern Miner, The Deep Dive); the company's own Q3 release was not seen and its exact date is unknown.",
+      "Current Kamoa-Kakula ownership percentages come from 2016-2017 releases; not re-verified for 2026.",
+      "Platreef Phase 2 lenders (Société Générale, Absa Bank, Nedbank) were named in a search summary whose underlying source could not be pinned down; not listed as confirmed.",
+      "Gécamines' stake in Kipushi and the CITIC Metal shareholding are background knowledge only, not verified this session.",
+      "The 56-day Lualaba Copper Smelter shutdown in Q2 2026 is from secondary coverage.",
+      "Segment names are inferred from release wording ('segmental profit', 'share of profit'), not read from the IFRS segment note.",
+      "HQ city (Vancouver) and the OTCQX listing come from background knowledge and the IVPAF ticker seen in GuruFocus; not verified against a filing."
+    ],
+    "data_quality": "partial (total debt not stated as a single figure; attribution of net profit unconfirmed; Q3 production from secondary sources; segment names inferred)",
+    "research_date": "2026-10-21",
+    "verification_method": "WebSearch result summaries only. WebFetch failed with DNS errors, so no PDF or page was read in full. Revenue, cash and debt line items come from search excerpts of the June 30, 2026 interim financial statements and MD&A PDFs on ivanhoemines.com. Profit/EBITDA come from excerpts of the Q2 release. Other items come from Engineering News, Northern Miner and S&P Global coverage."
+  },
+  {
+    "ticker": "CCJ",
+    "name": "Cameco Corporation",
+    "primary_exchange": "TSX (ticker CCO)",
+    "other_listings": [
+      "NYSE: CCJ"
+    ],
+    "country_hq": "Canada (Saskatoon, Saskatchewan)",
+    "reporting_currency": "CAD",
+    "fiscal_year_end": "December",
+    "business_summary": "Cameco is a uranium producer (McArthur River/Key Lake and Cigar Lake in Saskatchewan, plus a share of JV Inkai in Kazakhstan) and a nuclear fuel services provider (conversion, CANDU fuel). It owns 49% of Westinghouse Electric with Brookfield and equity-accounts the stake. It sells mainly to nuclear utilities under long-term contracts.",
+    "main_products": [
+      "Uranium concentrate (U3O8)",
+      "Fuel services: UF6 conversion, UO2 and CANDU fuel fabrication",
+      "Westinghouse (49%): reactor technology (AP1000), nuclear fuel and plant services"
+    ],
+    "segments": [
+      "Uranium",
+      "Fuel services",
+      "Westinghouse (49% equity-accounted investment)"
+    ],
+    "ai_energy_commodity_link": "Measurable: revenue depends on uranium volumes and realized prices under long-term utility contracts. ~230 Mlb were committed under long-term contracts at end-2025 (call summary). FY2026 guidance is revenue C$3,320-3,570M and 19.5-21.5 Mlb of production (Cameco share). Energy policy link: Westinghouse is central to the US government framework for at least US$80B of new reactors (Oct 2025 binding term sheet) and a DOE conditional commitment of up to US$17.5B for AP1000 long-lead items (Jun 2026). AI data-center demand appears only in secondary commentary (e.g., Motley Fool). No company-disclosed AI-linked revenue was seen.",
+    "confirmed_relationships": [
+      {
+        "counterparty": "Brookfield",
+        "relationship": "partner",
+        "detail": "Co-owner of Westinghouse (Cameco 49%, Brookfield the remainder) and co-party to the US government reactor-deployment partnership",
+        "source_url": "https://www.businesswire.com/news/home/20251027861514/en/Cameco-and-Brookfield-Establish-Transformational-Partnership-With-United-States-Government-to-Accelerate-Deployment-of-Westinghouse-Nuclear-Reactors",
+        "source_date": "2025-10-27",
+        "status": "company_press_release",
+        "verification": "Search-result summary of the release"
+      },
+      {
+        "counterparty": "United States Government",
+        "relationship": "partner",
+        "detail": "Binding term sheet: the US government arranges financing and facilitates permitting for new Westinghouse reactors with aggregate value of at least US$80B. Its participation interest (once vested) gives 20% of Westinghouse cash distributions above US$17.5B. It can require an IPO (with a 20% warrant) if valuation is expected to be ≥$30B by Jan 2029. Definitive agreements are still pending",
+        "source_url": "https://www.businesswire.com/news/home/20251027861514/en/Cameco-and-Brookfield-Establish-Transformational-Partnership-With-United-States-Government-to-Accelerate-Deployment-of-Westinghouse-Nuclear-Reactors",
+        "source_date": "2025-10-27",
+        "status": "company_press_release",
+        "verification": "Search-result summary of the release and media coverage"
+      },
+      {
+        "counterparty": "U.S. Department of Energy",
+        "relationship": "partner",
+        "detail": "Conditional commitment of up to US$17.5B to finance AP1000 long-lead items through a Westinghouse SPV serving up to five project vehicles (two reactors each); subject to conditions and definitive agreements",
+        "source_url": "https://www.cameco.com/media/news/us-department-of-energy-to-jumpstart-nuclear-supply-chain-and-accelerate-deployment-of",
+        "source_date": "2026-06-23",
+        "status": "company_press_release",
+        "verification": "Search-result summary of the Cameco release"
+      },
+      {
+        "counterparty": "India Department of Atomic Energy",
+        "relationship": "customer",
+        "detail": "Nine-year uranium ore concentrate supply agreement, deliveries 2027-2035, market-related pricing; estimated value ~C$2.6B at US$86.95/lb",
+        "source_url": "https://cameco.com/media/news/cameco-signs-long-term-uranium-supply-agreement-with-india",
+        "source_date": "2026-03-02",
+        "status": "company_press_release",
+        "verification": "Search-result summary of the Cameco release"
+      },
+      {
+        "counterparty": "JV Inkai (Kazakhstan)",
+        "relationship": "partner",
+        "detail": "Cameco received a US$124M dividend (net of withholdings) from JV Inkai in Q2 2026. 2026 JV Inkai production target is 10.4 Mlb (100%), with Cameco's purchase allocation expected at 4.2 Mlb",
+        "source_url": "https://www.cameco.com/sites/default/files/documents/2026-Q2-MDA-FS-Notes_0.pdf",
+        "source_date": "2026-07-31",
+        "status": "confirmed_by_filing",
+        "verification": "Search-result excerpts of the Q2 2026 MD&A and the Q1 2026 6-K (https://www.sec.gov/Archives/edgar/data/0001009001/000119312526205080/d103546dex991.htm); JV partner name not seen"
+      },
+      {
+        "counterparty": "Unnamed nuclear utilities (largest customers)",
+        "relationship": "customer",
+        "detail": "At Dec 31, 2025: the five largest uranium customers held 56% of contracted U3O8 supply, and the two largest made up ~23% of uranium segment revenue (C$649M). The five largest conversion customers held 53%. Westinghouse's top five were ~32% of contracted sales. The largest UO2 customer was 41% of UO2 sales",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1009001/000119312526116229/d34605dex991.htm",
+        "source_date": "2026-03",
+        "status": "confirmed_by_filing",
+        "verification": "Search-result excerpt of the FY2025 40-F exhibit (AIF)"
+      }
+    ],
+    "latest_reported_quarter": {
+      "period_label": "Q2 2026",
+      "period_end_date": "2026-06-30",
+      "revenue": 814,
+      "revenue_unit": "CAD millions",
+      "revenue_note": "$814M (vs $877M in Q2 2025) per Canadian Press/BNN and Quartr summaries; not read from Cameco's own statement table",
+      "gaap_net_income": 25,
+      "gaap_net_income_note": "Net earnings $25M ($0.06 diluted). Adjusted net earnings $77M, adjusted EBITDA $391M. Westinghouse share was a $10M net loss (vs +$126M in Q2 2025, which included ~US$170M from Dukovany)",
+      "cash_and_equivalents": 1100,
+      "cash_note": "Stated as '$1.1 billion' (rounded) in the release and MD&A",
+      "total_debt": 1000,
+      "total_debt_note": "Stated as '$1.0 billion' (rounded) total debt; $1.0B revolving credit facility undrawn",
+      "guidance_next_quarter": "No quarterly guidance. FY2026 outlook: revenue raised to $3,320M-$3,570M, uranium average realized price raised to $91-$96/lb (currency basis not confirmed), production unchanged at 19.5-21.5 Mlb U3O8 (Cameco share). Q3 2026 results due Oct 30, 2026 before market open",
+      "source_url": "https://www.cameco.com/sites/default/files/documents/2026-Q2-News-Release.pdf",
+      "source_date": "2026-07-31"
+    },
+    "key_recent_events": [
+      {
+        "date": "2025-10-27",
+        "event": "Cameco and Brookfield sign a binding term sheet with the US government for at least US$80B of new Westinghouse reactors",
+        "source_url": "https://www.businesswire.com/news/home/20251027861514/en/Cameco-and-Brookfield-Establish-Transformational-Partnership-With-United-States-Government-to-Accelerate-Deployment-of-Westinghouse-Nuclear-Reactors"
+      },
+      {
+        "date": "2026-02-12",
+        "event": "FY2025 results; ~230 Mlb under long-term contracts at year-end (per call summary)",
+        "source_url": "https://www.businesswire.com/news/home/20260212233756/en/Cameco-Announces-2025-Results"
+      },
+      {
+        "date": "2026-03-02",
+        "event": "Long-term uranium supply agreement with India's Department of Atomic Energy (~C$2.6B, 2027-2035)",
+        "source_url": "https://cameco.com/media/news/cameco-signs-long-term-uranium-supply-agreement-with-india"
+      },
+      {
+        "date": "2026-06-23",
+        "event": "DOE conditional commitment of up to US$17.5B for Westinghouse AP1000 long-lead items",
+        "source_url": "https://www.cameco.com/media/news/us-department-of-energy-to-jumpstart-nuclear-supply-chain-and-accelerate-deployment-of"
+      },
+      {
+        "date": "2026-07-31",
+        "event": "Q2 2026: net earnings $25M, adjusted EBITDA $391M (vs $673M); Westinghouse swung to a loss; FY2026 revenue outlook raised",
+        "source_url": "https://www.cameco.com/media/news/cameco-reports-2026-second-quarter-results"
+      }
+    ],
+    "red_flags": [
+      {
+        "flag": "Westinghouse earnings are volatile: a $10M share loss in Q2 2026 and a $56M loss in 1H 2026 (vs +$64M in 1H 2025). Prior-year results were lifted by one-off Dukovany project revenue",
+        "source_url": "https://pulse2.com/cameco-westinghouse-swings-to-10-million-loss-as-prior-year-reactor-project-benefit-lapses"
+      },
+      {
+        "flag": "US government participation interest (20% of Westinghouse distributions above US$17.5B, plus a potential 20% IPO warrant) would dilute Cameco's Westinghouse economics. Definitive agreements are not yet signed, and Cameco warns they may never be entered into",
+        "source_url": "https://www.businesswire.com/news/home/20251027861514/en/Cameco-and-Brookfield-Establish-Transformational-Partnership-With-United-States-Government-to-Accelerate-Deployment-of-Westinghouse-Nuclear-Reactors"
+      },
+      {
+        "flag": "Temporary operational disruptions at Key Lake/McArthur River during Q2 and at Cigar Lake after quarter-end (secondary report), leaving little room against unchanged production guidance",
+        "source_url": "https://www.tikr.com/blog/camecos-uranium-earnings-fell-nearly-40-in-q2-despite-18-higher-prices-heres-where-the-stock-could-go-by-2030"
+      },
+      {
+        "flag": "Uranium segment Q2 2026 earnings before taxes fell to $170M (from $281M) despite higher realized prices; Fuel Services EBT fell to $30M (from $44M)",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/0001009001/000119312526326768/d125942dex992.htm"
+      }
+    ],
+    "notes_unverified": [
+      "Q2 2026 revenue ($814M) comes from Canadian Press/BNN and Quartr; Cameco's own consolidated revenue table was not seen. A 6-K excerpt citing '$152M revenue, -6%' appears to be segment-level (likely Fuel Services) and was not used.",
+      "Q2 2026 results date: Business Wire ID is dated 2026-07-30 while BNN coverage and the call summary are dated 2026-07-31; 2026-07-31 used. FY2025 results: Business Wire ID dated 2026-02-12, call summary 2026-02-13.",
+      "Q2 2026 uranium realized price conflicts across sources ($67.79/lb vs $78.50/lb vs $93.13/lb); not recorded.",
+      "Cash ($1.1B) and total debt ($1.0B) are rounded company figures; exact values not seen.",
+      "~230 Mlb long-term contract commitments are from a MarketBeat Q4 2025 call summary, not a company document.",
+      "Cameco's 40% JV Inkai stake is from a secondary source; Kazakhstan/Kazatomprom-specific 2026 risks were not found in sources.",
+      "Claims that hyperscalers (Microsoft/Google/Amazon) are contracting uranium directly appeared only in unverified secondary articles."
+    ],
+    "data_quality": "partial (revenue from news-wire/aggregator summaries rather than the statement table; cash and debt are rounded figures; realized price conflicting)",
+    "research_date": "2026-10-21",
+    "verification_method": "WebSearch result summaries only. WebFetch failed with DNS errors, so no document was read in full. Figures come from search excerpts of the Cameco Q2 2026 news release, MD&A and SEC 6-K/40-F exhibits, cross-checked with Canadian Press/BNN and Quartr summaries."
+  }
+]
