@@ -36,6 +36,7 @@ class Budget:
     monthly_usd: float
     spent_run: float = 0.0
     spent_month_before: float = 0.0
+    simulated: float = 0.0           # dry-run: gasto esperado acumulado (para simular el mismo control)
 
     @classmethod
     def from_settings(cls, s: Session | None = None, per_run: float | None = None) -> "Budget":
@@ -49,11 +50,12 @@ class Budget:
         return b
 
     def can_spend(self, est: float) -> bool:
-        return (self.spent_run + est <= self.per_run_usd and
-                self.spent_month_before + self.spent_run + est <= self.monthly_usd)
+        used = self.spent_run + self.simulated
+        return used + est <= self.per_run_usd and self.spent_month_before + used + est <= self.monthly_usd
 
     def remaining(self) -> float:
-        return min(self.per_run_usd - self.spent_run, self.monthly_usd - self.spent_month_before - self.spent_run)
+        used = self.spent_run + self.simulated
+        return min(self.per_run_usd - used, self.monthly_usd - self.spent_month_before - used)
 
 
 @dataclass
@@ -66,6 +68,9 @@ class RunContext:
     pipeline_run_id: str = field(default_factory=lambda: datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:6])
     reuse: bool = True
     dry_run: bool = False            # no llama al LLM: solo estima costos
+    # presupuesto reservado para el comité: las capas L1-L3 no pueden consumirlo (el PM es la última llamada y sin
+    # él no hay decisiones de cartera). Lo fija el Pipeline cuando la corrida incluye el comité.
+    reserve_usd: float = 0.0
     log: list[dict] = field(default_factory=list)
 
 
@@ -111,6 +116,23 @@ AGENTS: dict[str, AgentSpec] = {a.name: a for a in [
     AgentSpec("map_curator", "map_curator.md", "map_curator", S.MapCuratorOutput, reusable=False),
     AgentSpec("discovery", "discovery.md", "discovery", S.DiscoveryOutput, reusable=False),
 ]}
+
+
+# Dry-run: los packs reales de las capas siguientes incluyen las salidas de los agentes previos, que en un dry-run no
+# existen. Se suma su tamaño esperado (60% de max_tokens, ~3.5 chars/token: el mismo supuesto de estimate_cost).
+_L2 = ["industrial", "fundamental", "catalyst", "valuation", "expectations"]
+DRY_UPSTREAM = {"valuation": ["industrial", "fundamental"], "expectations": ["industrial", "fundamental", "valuation"],
+                "bear": _L2, "valuation_rebuttal": _L2 + ["bear"], "auditor": _L2 + ["bear", "valuation_rebuttal"]}
+DRY_PM_CHARS_PER_CANDIDATE = 3000      # score, factores, bear/auditor resumidos y catalizadores por candidato
+
+
+def _dry_upstream_chars(agent: str, pack: dict) -> int:
+    tiers = settings()["llm"]["tiers"]
+    extra = sum(int(0.6 * tiers[AGENTS[u].tier]["max_tokens"] * 3.5) for u in DRY_UPSTREAM.get(agent, [])
+                if u not in pack)
+    if agent == "portfolio_manager":
+        extra += DRY_PM_CHARS_PER_CANDIDATE * len(pack.get("candidates", []))
+    return extra
 
 
 def system_prompt(spec: AgentSpec, decision_date: date | None) -> str:
@@ -163,14 +185,22 @@ def run_agent(ctx: RunContext, agent: str, subject: str, task: str, pack: dict,
                     _record(ctx, spec, subject, prev.model, input_hash, None, "reused", None, reused_from=prev.id)
                 ctx.log.append({"agent": agent, "subject": subject, "status": "reused", "cost": 0.0})
                 return AgentResult(agent, subject, "reused", out, run_id=prev.id, web_sources=prev.web_sources or [])
-    est = estimate_cost(model, len(sysmsg) + len(user), max_tokens, ws)
+    chars = len(sysmsg) + len(user) + (_dry_upstream_chars(agent, pack) if ctx.dry_run else 0)
+    est = estimate_cost(model, chars, max_tokens, ws)
+    bound = max_cost(model, chars, max_tokens, ws)
+    need = bound + (0.0 if agent == "portfolio_manager" else ctx.reserve_usd)
     if ctx.dry_run:
-        ctx.log.append({"agent": agent, "subject": subject, "status": "dry_run", "est_cost": est})
+        # simula el MISMO control que la corrida real (cota de la solicitud vs restante, con el gasto esperado)
+        ok = ctx.budget.can_spend(need)
+        if ok:
+            ctx.budget.simulated += est
+        ctx.log.append({"agent": agent, "subject": subject, "status": "dry_run" if ok else "dry_run_skip_budget",
+                        "est_cost": est, "bound": bound})
         return AgentResult(agent, subject, "dry_run", None, est_cost_usd=est)
-    bound = max_cost(model, len(sysmsg) + len(user), max_tokens, ws)
-    if not ctx.budget.can_spend(bound):
+    if not ctx.budget.can_spend(need):
         _record(ctx, spec, subject, model, input_hash, None, "skipped_budget",
-                f"cota ${bound:.3f} > restante ${ctx.budget.remaining():.3f}")
+                f"cota ${bound:.3f}" + (f" + reserva del comité ${ctx.reserve_usd:.3f}" if need > bound else "")
+                + f" > restante ${ctx.budget.remaining():.3f}")
         return AgentResult(agent, subject, "skipped_budget", None, est_cost_usd=est, error="presupuesto")
     schema = strict_schema(spec.output)
     try:

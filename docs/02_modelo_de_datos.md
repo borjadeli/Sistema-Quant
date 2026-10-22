@@ -36,9 +36,12 @@ verification, source{name, url, document_type, published_at, retrieved_at}, know
      trimestres contiguos;
   6. todas las cuentas de balance a **una** fecha de balance. La fecha la fija la mejor fuente entre cuentas
      patrimoniales (no las acciones de portada `dei`, que llevan la fecha de la portada). Un balance posterior de una
-     fuente de menor precedencia se usa solo si trae caja y deuda; uno de más de 480 días bloquea (K4). Si falta
-     deuda a esa fecha pero hay deuda no nula reciente, se bloquea (K7); un dato viejo o un 0 explícito va al
-     supuesto "deuda 0" con alerta, y solo si el balance viene de un filing;
+     fuente de menor precedencia se usa solo si trae caja y deuda y cubre todas las cuentas que reportaba el de la
+     mejor fuente (caja, inversiones CP, deuda, patrimonio); si no, se conserva el filing y al posterior igual se le
+     aplica K7. Uno de más de 520 días bloquea (K4). Si falta deuda a esa fecha pero hay deuda no nula en los ~400
+     días previos, se bloquea (K7); un dato más viejo o un 0 explícito va al supuesto "deuda 0" con alerta, y solo
+     si el balance viene de un filing. Un emisor anual con un trimestre posterior aislado conserva el último FY
+     como TTM;
   7. comparaciones interanuales por fecha (±20 días).
 
 ## Tablas principales

@@ -39,7 +39,8 @@ Promoción L2 → L3: `score ≥ 6.0`, los 8 mejores, más la cartera.
    - los movimientos de precio generan **un evento por episodio** (otro solo si el precio se mueve de nuevo más que
      el umbral desde el último evento), y en el pack entran como máximo 2, así no desplazan a una re-expresión;
    - el registro de bottlenecks es point-in-time: en un replay solo entra la evidencia conocida a la fecha de
-     decisión (`evidence_reviewed_at` acota las fechas parciales) y la severidad se recalcula.
+     decisión (una fecha exacta vale por sí misma; `evidence_reviewed_at` acota solo las fechas parciales o
+     ausentes, y `qa validate` avisa si hay evidencia fechada después de la revisión) y la severidad se recalcula.
    - Todo usa **un solo reloj, UTC**: la fecha de decisión por defecto es la fecha UTC, la misma con que se sellan
      precios y eventos.
 3. **Presupuesto duro** por corrida (US$30) y mensual (US$60). Antes de cada llamada se verifica una **cota
@@ -50,8 +51,10 @@ Promoción L2 → L3: `score ≥ 6.0`, los 8 mejores, más la cartera.
    effort bajo en lugar de la cascada de modelos.
 5. **Prompt caching** del system prompt de cada agente.
 6. **`qa funnel --dry-run`** y **`qa estimate`**: muestran el costo antes de gastar. El dry-run simula el peor caso: la
-   capa se llena hasta su tope por pre-score, e incluye L2, L3 (bear, rebuttal y auditor) y el comité. No deja
-   rastros: no escribe filas en `agent_runs` ni cambia el estado del embudo.
+   capa se llena hasta su tope por pre-score, e incluye L2, L3 (bear, rebuttal y auditor) y el comité. Aplica el
+   **mismo control de presupuesto** que la corrida real (cota por solicitud y reserva del comité) e informa qué
+   llamadas se saltarían y el presupuesto necesario (`budget_needed_usd`). No deja rastros: no escribe filas en
+   `agent_runs` ni cambia el estado del embudo.
 7. Las capas costosas reciben data packs ya calculados: el LLM no busca números que el pipeline ya tiene.
 8. **Contabilidad completa.** También se registran las llamadas fallidas que se facturaron (max_tokens, rechazos).
    Las escrituras de caché y los intentos de fallback se valúan al precio de su modelo. El costo se commitea después de
@@ -64,19 +67,28 @@ Promoción L2 → L3: `score ≥ 6.0`, los 8 mejores, más la cartera.
 
 ## Estimación (salida real de `qa estimate`)
 
-Cota superior por ciclo: **US$67.98**, sin reutilización y con todas las capas llenas. Analizar las 245
-empresas con el pipeline profundo costaría **unos US$1.353 por ciclo**. El embudo lo reduce unas 20 veces, y la
-reutilización lo baja más en los meses sin cambios materiales.
+Costo por ciclo con **todas las capas llenas** y sin reutilización: **US$85.93**. Analizar las 245 empresas con
+el pipeline profundo costaría **unos US$1.353 por ciclo**. El embudo lo reduce unas 16 veces, y la reutilización lo
+baja más en los meses sin cambios materiales.
 
 | Agente | Modelo | Llamadas | US$/llamada (pesimista) |
 |---|---|---:|---:|
 | triage | haiku-5-5 | 90 | 0.0014 |
-| industrial / fundamental / catalyst / valuation / expectations | sonnet-5-5 | 35 c/u | ~0.17 |
-| bear / valuation_rebuttal / auditor | opus-5-5 | 18 c/u | ~0.69 |
-| portfolio_manager | opus-5-5 | 1 | 0.42 |
+| industrial / fundamental / catalyst | sonnet-5-5 | 35 c/u | ~0.17 |
+| valuation / expectations | sonnet-5-5 | 35 c/u | ~0.21 / ~0.23 |
+| bear / valuation_rebuttal / auditor | opus-5-5 | 18 c/u | ~0.88 / ~0.96 / ~1.04 |
+| portfolio_manager | opus-5-5 | 1 | 0.48 |
 
-La estimación es pesimista: supone salida al 60% de `max_tokens` y 6.000 tokens de input por búsqueda web. El
-gasto real se registra por llamada en `agent_runs` (tokens, búsquedas, USD) y se ve en el dashboard.
+La estimación es pesimista: supone salida al 60% de `max_tokens`, 6.000 tokens de input por búsqueda web y que los
+packs de cada capa incluyen las salidas de los agentes previos con ese mismo tamaño (el dry-run usa el mismo
+supuesto). El gasto real se registra por llamada en `agent_runs` (tokens, búsquedas, USD) y se ve en el dashboard.
+
+**Presupuesto por corrida.** El control previo a cada llamada exige su **cota superior**, no su costo esperado:
+`qa estimate` informa el presupuesto necesario para que no se saltee nada con las capas llenas (US$86.20). Con el
+presupuesto por defecto (US$30) un ciclo con todas las capas llenas no entra entero: se saltan las últimas llamadas
+de L3. La cota del **Portfolio Manager queda reservada** desde el inicio, así que el comité siempre corre, y las
+posiciones cuyo L3 se salteó quedan con K9 (se mantienen, sin aumentos). En la práctica el embudo promueve menos
+empresas que sus topes y la reutilización evita la mayoría de las llamadas de las posiciones sin cambios.
 
 ## Próximas optimizaciones (no implementadas)
 - Batch API (−50%) para L1, que no es sensible a la latencia.

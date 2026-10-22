@@ -145,11 +145,13 @@ def score_valuation(ss: ScenarioSet | None) -> FactorScore:
 
 
 FQ_CORE = ("gross_margin", "fcf_margin", "roic", "leverage", "dilution")
+FQ_MISSING = 2.5          # sub-puntaje de una métrica núcleo faltante (banda "débil")
 
 
 def score_financial_quality(f: Fundamentals) -> FactorScore:
-    """Regla: promedio de sub-puntajes (cada uno 0-10). Una métrica NÚCLEO faltante cuenta como 0 (peor caso):
-    ocultar o no tener un dato nunca mejora el puntaje. Runway (solo para quien quema caja) suma si existe."""
+    """Regla: promedio de sub-puntajes (cada uno 0-10). Una métrica NÚCLEO faltante cuenta como FQ_MISSING (débil,
+    nunca neutral): la falta de datos no se premia, pero un hueco estructural de cobertura (p.ej. un emisor IFRS sin
+    acciones diluidas en XBRL) no hunde por sí solo el factor. Runway (solo para quien quema caja) suma si existe."""
     subs, miss = {}, []
 
     def add(name: str, v: float | None, fn) -> None:  # noqa: ANN001
@@ -177,10 +179,10 @@ def score_financial_quality(f: Fundamentals) -> FactorScore:
     if not subs:
         return FactorScore(score=0, rationale="sin datos financieros", method="rule", missing=miss)
     core_missing = [k for k in FQ_CORE if k not in subs]
-    s = (sum(subs.values()) + 0.0 * len(core_missing)) / (len(subs) + len(core_missing))
+    s = (sum(subs.values()) + FQ_MISSING * len(core_missing)) / (len(subs) + len(core_missing))
     why = "; ".join(f"{k}={v:.1f}" for k, v in subs.items())
     if core_missing:
-        why += f"; sin dato (cuentan 0): {', '.join(core_missing)}"
+        why += f"; sin dato (cuentan {FQ_MISSING}): {', '.join(core_missing)}"
     return FactorScore(score=round(_clamp(s), 2), method="rule", rationale=why, missing=miss)
 
 
@@ -272,6 +274,12 @@ def kill_switches(f: Fundamentals | None, ss: ScenarioSet | None, adv_usd: float
         nd = f.v("net_debt_to_ebitda")
         if nd is not None and nd > 6:
             kills.append(f"K7: deuda neta/EBITDA {nd:.1f}x > 6x")
+        nd_alt = f.v("net_debt_to_ebitda_alt")
+        if nd_alt is not None and nd_alt > 6:
+            kills.append(f"K7: deuda neta/EBITDA {nd_alt:.1f}x > 6x en el balance posterior al {f.alt_balance_date} "
+                         "(fuente de menor precedencia)")
+        if getattr(f, "debt_assumed_zero", False):
+            alerts.append("deuda supuesta 0 (el filing no etiqueta deuda): verificar antes de operar")
         ic = f.v("interest_coverage")
         if ic is not None and 0 < ic < 1.5:
             alerts.append(f"cobertura de intereses baja ({ic:.1f}x)")
@@ -291,7 +299,7 @@ def kill_switches(f: Fundamentals | None, ss: ScenarioSet | None, adv_usd: float
             kills.append(f"K5: retorno esperado 24m negativo ({er:+.0%})")
         if ss.prob_permanent_loss > 0.5:
             kills.append(f"K6: P(pérdida permanente) {ss.prob_permanent_loss:.0%} > 50%")
-        if any("SUPONE 0" in w for w in ss.warnings):
+        if any("SUPONE 0" in w for w in ss.warnings) and not any(a.startswith("deuda supuesta 0") for a in alerts):
             alerts.append("deuda supuesta 0 (no reportada en el balance XBRL): verificar antes de operar")
         if any(r.financing_need > 0 for r in ss.results if r.name == "base"):
             alerts.append("el escenario base requiere financiamiento externo (dilución)")

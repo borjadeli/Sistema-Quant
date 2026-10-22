@@ -95,13 +95,16 @@ else:
     st.dataframe(by_status, hide_index=True, width="stretch", placeholder="—",
                  column_config={"status": "estado", "usd": st.column_config.NumberColumn("costo (USD)", format="$%.4f")})
 
-st.subheader("Estimación de un ciclo completo (cota superior)")
+st.subheader("Estimación de un ciclo completo (capas llenas, sin reutilización)")
 est = estimate_cycle()
 est_df = pd.DataFrame(est["rows"])
 st.dataframe(est_df, hide_index=True, width="stretch", placeholder="—",
              column_config=D.colcfg(est_df, usd_per_call=st.column_config.NumberColumn("USD/llamada", format="$%.4f"),
                                     usd_total=st.column_config.NumberColumn("USD total", format="$%.2f")))
-c1, c2 = st.columns(2)
+c1, c2, c3 = st.columns(3)
 c1.metric("Embudo por capas", f"${est['total_usd_upper_bound']:,.2f} / ciclo")
-c2.metric("Sin embudo (todo el universo en profundidad)", f"${est['naive_all_deep_usd']:,.0f} / ciclo")
+c2.metric("Presupuesto por corrida necesario", f"${est['budget_needed_usd']:,.2f}",
+          help="El control previo a cada llamada exige la cota superior de esa solicitud (todo max_tokens y todas "
+               "las búsquedas), no su costo esperado.")
+c3.metric("Sin embudo (todo el universo en profundidad)", f"${est['naive_all_deep_usd']:,.0f} / ciclo")
 st.caption(est["note"] + ". Modelos y topes configurables en `config/settings.yaml`.")

@@ -100,35 +100,53 @@ def default_bottlenecks():
 _LEAD = re.compile(r"^\s*(\d{4})(?:-(\d{2})(?!\d))?(?:-(\d{2})(?!\d))?(?:\s*/\s*(\d{2})(?!\d)|-(\d{4})(?!\d))?")
 
 
-def evidence_date(e: dict) -> date | None:
-    """Fecha de publicación de una evidencia. Fechas parciales o rangos se llevan al FINAL del período
-    (conservador para point-in-time). None si no hay fecha interpretable."""
+def _parse_evidence_date(e: dict) -> tuple[date | None, bool]:
+    """(fecha, es_exacta). Fechas parciales o rangos se llevan al FINAL del período (conservador para
+    point-in-time); un día exacto (o un rango de días) es exacto."""
     m = _LEAD.match(str(e.get("date") or ""))
     if not m:
-        return None
+        return None, False
     y, mth, d, rng, y2 = m.groups()
     try:
         if y2:
-            return date(int(y2), 12, 31)
+            return date(int(y2), 12, 31), False
         if d:
-            return date(int(y), int(mth), int(rng or d))
+            return date(int(y), int(mth), int(rng or d)), True
         if mth:
             mm = int(rng or mth)
             if not 1 <= mm <= 12:
-                return None
-            return date(int(y) + (mm == 12), mm % 12 + 1, 1) - timedelta(days=1)
-        return date(int(y), 12, 31)
+                return None, False
+            return date(int(y) + (mm == 12), mm % 12 + 1, 1) - timedelta(days=1), False
+        return date(int(y), 12, 31), False
     except ValueError:
-        return None
+        return None, False
+
+
+def evidence_date(e: dict) -> date | None:
+    """Fecha de publicación de una evidencia (fin del período si es parcial). None si no es interpretable."""
+    return _parse_evidence_date(e)[0]
 
 
 def known_date(e: dict, reviewed_at: date | None) -> date | None:
-    """Desde cuándo el sistema puede usar una evidencia: su fecha (fin del período si es parcial), nunca después de
-    la revisión del registro (lo que está en el registro se conocía al compilarlo)."""
-    d = evidence_date(e)
-    if reviewed_at is None:
+    """Desde cuándo el sistema puede usar una evidencia. Una fecha EXACTA es su fecha (aunque sea posterior a la
+    revisión: entonces la revisión está desactualizada, ver stale_evidence). Una fecha parcial o ausente se acota a
+    la revisión del registro (lo que estaba en el registro se conocía al compilarlo)."""
+    d, exact = _parse_evidence_date(e)
+    if exact or reviewed_at is None:
         return d
     return reviewed_at if d is None else min(d, reviewed_at)
+
+
+def stale_evidence(registry: dict[str, BottleneckRecord]) -> list[str]:
+    """Evidencias con fecha exacta posterior a `evidence_reviewed_at`: la fecha de revisión quedó vieja."""
+    out = []
+    for b in registry.values():
+        for e in b.raw.get("evidence", []) + b.raw.get("counter_evidence", []):
+            d, exact = _parse_evidence_date(e)
+            if exact and b.reviewed_at is not None and d > b.reviewed_at:
+                out.append(f"bottleneck {b.id}: evidencia del {d} posterior a evidence_reviewed_at {b.reviewed_at} "
+                           "(actualizar la fecha de revisión en data/bottlenecks/bottlenecks.yaml)")
+    return out
 
 
 def registry_as_of(registry: dict[str, BottleneckRecord], m: IndustryMap, as_of: date) -> dict[str, BottleneckRecord]:

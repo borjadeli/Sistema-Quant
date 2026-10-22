@@ -219,7 +219,10 @@ class AnthropicLLM:
             except transport as e:            # p.ej. stream SSE cortado a mitad del cuerpo
                 add_partial(stream)
                 raise fail(LLMError, f"transporte: {type(e).__name__}: {e}") from e
-            except BaseException as e:        # Ctrl-C, etc.: el costo ya facturado viaja en la excepción
+            except Exception as e:            # stream 200 vacío, evento SSE truncado, HTML de un proxy...
+                add_partial(stream)
+                raise fail(LLMError, f"stream inválido: {type(e).__name__}: {e}") from e
+            except BaseException as e:        # Ctrl-C, SystemExit: el costo ya facturado viaja en la excepción
                 add_partial(stream)
                 e.qa_cost = (cost, tot_in, tot_out, searches)
                 raise

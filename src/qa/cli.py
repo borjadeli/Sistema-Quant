@@ -62,8 +62,10 @@ def cmd_validate(args) -> None:  # noqa: ANN001
     from qa.universe.model import coverage_report, validate_universe
     m, u, reg = _load()
     errs = validate_map(m) + validate_universe(u, m)
+    from qa.bottlenecks import stale_evidence
     for b in reg.values():
         errs += [f"bottleneck {b.id}: nodo inexistente {n}" for n in b.map_nodes if n not in m.nodes]
+    errs += stale_evidence(reg)
     print(json.dumps(coverage_report(u, m), indent=1, ensure_ascii=False))
     print("errores:", errs or "ninguno")
     sys.exit(1 if errs else 0)
@@ -101,8 +103,11 @@ def cmd_estimate(args) -> None:  # noqa: ANN001
     r = estimate_cycle()
     for row in r["rows"]:
         print(f"  {row['agent']:20} {row['model']:18} {row['calls']:4} x ${row['usd_per_call']:.4f} = ${row['usd_total']:.2f}")
-    print(f"Cota superior por ciclo: ${r['total_usd_upper_bound']:.2f}  (vs ${r['naive_all_deep_usd']:.0f} analizando todo "
-          f"el universo en profundidad). {r['note']}")
+    print(f"Costo por ciclo con todas las capas llenas: ${r['total_usd_upper_bound']:.2f}  (vs "
+          f"${r['naive_all_deep_usd']:.0f} analizando todo el universo en profundidad). {r['note']}")
+    per_run = settings()["funnel"]["per_run_budget_usd"]
+    print(f"Presupuesto por corrida para no saltear llamadas: ${r['budget_needed_usd']:.2f} (configurado: ${per_run:.2f}"
+          f"{'' if per_run >= r['budget_needed_usd'] else ' -> con capas llenas, las últimas llamadas se saltarían'}).")
 
 
 def cmd_funnel(args) -> None:  # noqa: ANN001
@@ -117,6 +122,7 @@ def cmd_funnel(args) -> None:  # noqa: ANN001
         ctx = _ctx(s, args, llm=None if tiers != ("L0",) else object())
         rep = Pipeline(ctx, m, u, reg).run(tiers=tiers, only=args.only.split(",") if args.only else None)
     print(json.dumps({"run_id": rep.run_id, "counts": rep.counts, "cost_usd": rep.cost_usd,
+                      **({"budget_needed_usd(dry_run)": rep.budget_needed_usd} if rep.dry_run else {}),
                       "est_cost_usd(dry_run)": rep.est_cost_usd, "decisions": rep.decisions,
                       "constraint_notes": rep.constraint_notes, "notes": rep.notes}, indent=1, ensure_ascii=False))
     print("\nTop L0 (pre-score):")

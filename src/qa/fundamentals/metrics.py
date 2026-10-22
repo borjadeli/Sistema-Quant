@@ -39,8 +39,15 @@ SOURCE_PRECEDENCE = {"confirmed_by_filing": 0, "company_statement": 1, "media_re
                      "analyst_prior": 4, "hypothesis": 5, "synthetic_test_data": 6}
 CLUSTER_DAYS = 10
 BALANCE_SOFT_STALE_DAYS = 200      # advertencia
-BALANCE_HARD_STALE_DAYS = 480      # > ~16 meses: falta al menos un reporte anual -> balance no utilizable
-DEBT_LOOKBACK_DAYS = 200           # deuda no nula reportada en los ~2 balances previos bloquea "suponer 0"
+# > 17 meses: más que cierre + 12 meses + plazo del 20-F (4 meses) + prórroga 12b-25 (15 días) -> falta un reporte
+BALANCE_HARD_STALE_DAYS = 520
+# deuda no nula reportada hasta ~13 meses antes del balance (cubre la deuda etiquetada solo en el 10-K/20-F anterior)
+# bloquea "suponer 0"; más vieja que eso se trata como deuda ya repagada (camino "SUPONE 0" con alerta)
+DEBT_LOOKBACK_DAYS = 400
+FY_FALLBACK_DAYS = 400             # un FY sigue siendo el TTM si los trimestres posteriores no llegan a 4 contiguos
+# grupos de cuentas que un balance posterior de menor precedencia debe cubrir para reemplazar al de la mejor fuente
+BALANCE_GROUPS = {"cash": ("cash",), "short_term_investments": ("short_term_investments",), "equity": ("equity",),
+                  "debt": DEBT_METRICS}
 _SCALED = re.compile(r"^([A-Z]{3})[_ ](thousands|millions|billions)$", re.I)
 _SCALE = {"thousands": 1e3, "millions": 1e6, "billions": 1e9}
 
@@ -67,6 +74,8 @@ class Fundamentals:
     balance_date: date | None = None
     balance_stale: bool = False              # balance demasiado antiguo: apalancamiento y valuación no calculables
     balance_rank: int | None = None          # precedencia de la fuente que ancla el balance (0 = filing)
+    alt_balance_date: date | None = None     # balance posterior PARCIAL (no usado): se le aplica igual el control K7
+    debt_assumed_zero: bool = False          # filing sin etiqueta de deuda: deuda SUPUESTA 0 (alerta)
     debt_elsewhere: bool = False             # hay deuda reciente no nula, pero no a la fecha de balance
     warnings: list[str] = field(default_factory=list)
 
@@ -308,10 +317,15 @@ def _ttm(series: dict[date, tuple[float, str]], end: date | None = None,
     fy_d = max((d for d in (fy or {}) if lim is None or d <= lim), default=None)
     if fy_d is not None:
         last = dates[-1] if dates else None
-        newer = q_ttm is None and (last is None or fy_d >= last - timedelta(days=7)) or \
-            q_ttm is not None and fy_d > last + timedelta(days=7)
-        if newer:
+        if q_ttm is not None and fy_d > last + timedelta(days=7):
             return Metric(fy[fy_d].value, period=f"FY a {fy_d}", inputs=[fy[fy_d].key()], note="TTM = ejercicio fiscal")
+        if q_ttm is None and (last is None or fy_d >= last - timedelta(days=7)):
+            return Metric(fy[fy_d].value, period=f"FY a {fy_d}", inputs=[fy[fy_d].key()], note="TTM = ejercicio fiscal")
+        if q_ttm is None and last - fy_d <= timedelta(days=FY_FALLBACK_DAYS):
+            # emisor anual (20-F/40-F) con un trimestre posterior aislado (p.ej. comunicado): el último ejercicio
+            # sigue siendo el período completo de 12 meses más reciente
+            return Metric(fy[fy_d].value, period=f"FY a {fy_d}", inputs=[fy[fy_d].key()],
+                          note="TTM = último ejercicio; trimestres posteriores aislados (sin 4 contiguos)")
     return q_ttm or Metric(None, note="menos de 4 trimestres contiguos")
 
 
@@ -350,8 +364,9 @@ def _balance_date(f: Fundamentals, stocks: dict[str, dict[date, DataPoint]], as_
 
     1. Ancla = la fecha más reciente de la MEJOR fuente entre cuentas patrimoniales (no la portada dei).
     2. Si una fuente aceptable de menor precedencia (p.ej. el comunicado de resultados, antes del 10-Q) trae un
-       balance POSTERIOR con caja y deuda, ese balance completo es el vigente. Si es parcial, se conserva el
-       filing (los datos parciales nunca reemplazan deuda reportada) y se advierte.
+       balance POSTERIOR con caja y deuda que además cubre todos los grupos que reportaba el de la mejor fuente
+       (caja, inversiones CP, deuda, patrimonio), ese balance es el vigente. Si no, se conserva el de la mejor fuente
+       y se advierte; si el posterior trae caja y deuda, igual se le aplica el control de apalancamiento (K7).
     3. Un balance de más de BALANCE_HARD_STALE_DAYS no es utilizable (balance_stale -> K4, valuación bloqueada).
     """
     anchors = [p for m in BALANCE_ANCHORS for p in stocks[m].values()]
@@ -364,14 +379,21 @@ def _balance_date(f: Fundamentals, stocks: dict[str, dict[date, DataPoint]], as_
     if newer:
         nd = max(p.period_end for p in newer)
         at_nd = [p for p in anchors if abs((p.period_end - nd).days) <= CLUSTER_DAYS]
-        names = {p.metric for p in at_nd}
-        if "cash" in names and names & set(DEBT_METRICS):
+        at_best = [p for p in anchors if abs((p.period_end - f.balance_date).days) <= CLUSTER_DAYS]
+
+        def groups(ps: list[DataPoint]) -> set[str]:
+            return {g for g, ms in BALANCE_GROUPS.items() if any(p.metric in ms for p in ps)}
+        g_new, g_best = groups(at_nd), groups(at_best)
+        if {"cash", "debt"} <= g_new and g_best <= g_new:
             f.warnings.append(f"balance al {nd} de una fuente de menor precedencia, posterior al último de la mejor "
-                              f"fuente ({f.balance_date}): se usa ese balance (caja y deuda a la misma fecha)")
+                              f"fuente ({f.balance_date}) y con las mismas cuentas: se usa ese balance")
             f.balance_date, best = nd, min(rank(p) for p in at_nd)
         else:
-            f.warnings.append(f"datos de balance posteriores ({nd}) pero parciales (sin caja o sin deuda): "
-                              f"se conserva el balance al {f.balance_date}")
+            falta = sorted(({"cash", "debt"} | g_best) - g_new)
+            f.warnings.append(f"datos de balance posteriores ({nd}) incompletos (faltan {', '.join(falta)}): se "
+                              f"conserva el balance al {f.balance_date}")
+            if {"cash", "debt"} <= g_new:
+                f.alt_balance_date = nd
     age = (as_of - f.balance_date).days
     if age > BALANCE_HARD_STALE_DAYS:
         f.balance_stale = True
@@ -498,15 +520,35 @@ def compute_fundamentals(entity: str, points: list[DataPoint], as_of: date | Non
     M["cash_total"] = Metric(cash, M["cash"].period, note="caja + inversiones CP (misma fecha de balance)")
     M["debt"] = Metric(debt, str(f.balance_date) if debt is not None else None,
                        note=f"deuda financiera ({debt_note}); excluye leases operativos")
-    M["net_debt"] = Metric(debt - cash if debt is not None and cash is not None else None)
+    # Filing sin etiqueta de deuda (y sin deuda reciente en otra fecha): la valuación ya SUPONE 0 con alerta; los
+    # ratios usan el mismo supuesto, explícito, en lugar de tratar apalancamiento y ROIC como faltantes.
+    debt_r = debt
+    if debt is None and cash is not None and f.balance_rank == 0 and not f.debt_elsewhere:
+        f.debt_assumed_zero, debt_r = True, 0.0
+    M["net_debt"] = Metric(debt_r - cash if debt_r is not None and cash is not None else None,
+                           note="deuda SUPUESTA 0 (sin etiqueta de deuda en el filing)" if f.debt_assumed_zero else None)
     M["net_debt_to_ebitda"] = Metric(_div(M["net_debt"].value, ebitda) if ebitda and ebitda > 0 else None)
+    if f.alt_balance_date is not None:
+        # balance posterior parcial (no usado para valuar): igual se controla su apalancamiento (K7 con ambos)
+        def at_alt(m: str) -> float | None:
+            d = next((x for x in stocks[m] if abs((x - f.alt_balance_date).days) <= CLUSTER_DAYS), None)
+            return stocks[m][d].value if d is not None else None
+        c_alt = at_alt("cash")
+        d_alt = at_alt("debt_total")
+        if d_alt is None:
+            comps = [v for v in (at_alt("debt_noncurrent"), at_alt("debt_current")) if v is not None]
+            d_alt = sum(comps) if comps else None
+        if c_alt is not None and d_alt is not None and ebitda and ebitda > 0:
+            M["net_debt_to_ebitda_alt"] = Metric((d_alt - c_alt - (at_alt("short_term_investments") or 0.0)) / ebitda,
+                                                 period=str(f.alt_balance_date),
+                                                 note="balance posterior parcial de menor precedencia")
     M["interest_coverage"] = Metric(_div(ebit, M["interest_expense_ttm"].value))
     M["current_ratio"] = Metric(_div(M["current_assets"].value, M["current_liabilities"].value))
     tax_rate = _div(M["income_tax_ttm"].value, M["pretax_income_ttm"].value)
     tax_rate = min(max(tax_rate, 0.0), 0.35) if tax_rate is not None else 0.21
     invested = None
-    if M["equity"].value is not None and debt is not None and cash is not None:
-        invested = M["equity"].value + debt - cash
+    if M["equity"].value is not None and debt_r is not None and cash is not None:
+        invested = M["equity"].value + debt_r - cash
     if ebit is not None and ebit > 0 and invested is not None and invested <= 0:
         M["roic"] = Metric(None, note="n.m.: EBIT > 0 con capital invertido (equity+deuda-caja) <= 0")
     else:

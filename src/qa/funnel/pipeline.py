@@ -84,6 +84,7 @@ class CycleReport:
     mode: str = "real"                 # real | demo_synthetic | test
     db_url: str | None = None
     dry_run: bool = False
+    budget_needed_usd: float | None = None   # dry-run: presupuesto por corrida para no saltear ninguna llamada
 
 
 class Pipeline:
@@ -627,6 +628,9 @@ class Pipeline:
     def run(self, tiers: tuple[str, ...] = TIERS, only: list[str] | None = None) -> CycleReport:
         rep = CycleReport(run_id=self.ctx.pipeline_run_id, started_at=datetime.now(timezone.utc).isoformat(),
                           tiers_run=list(tiers))
+        if "committee" in tiers:
+            self.ctx.reserve_usd = committee_reserve(self.cfg["funnel"]["L2"]["max_promoted"]
+                                                     + len(ledger.holdings(self.ctx.session, self.portfolio_name)))
         run_row = None
         if not self.ctx.dry_run:
             run_row = PipelineRun(id=self.ctx.pipeline_run_id, status="running", mode=self.mode,
@@ -671,6 +675,18 @@ class Pipeline:
         rep.agent_log = self.ctx.log
         rep.cost_usd = round(self.ctx.budget.spent_run, 4)
         rep.est_cost_usd = round(sum(x.get("est_cost", 0) for x in self.ctx.log), 4)
+        if self.ctx.dry_run:
+            spent, need = 0.0, 0.0
+            for x in self.ctx.log:
+                if "bound" in x:
+                    need = max(need, spent + x["bound"])
+                    spent += x["est_cost"]
+            rep.budget_needed_usd = round(need, 4)
+            skipped = [f"{x['agent']}/{x['subject']}" for x in self.ctx.log if x["status"] == "dry_run_skip_budget"]
+            if skipped:
+                rep.notes.append(f"dry-run: con el presupuesto actual se saltarían {len(skipped)} llamadas "
+                                 f"(el control exige la cota de cada solicitud): {skipped[:10]}; presupuesto por "
+                                 f"corrida necesario ≈ ${need:.2f}")
         rep.mode, rep.dry_run = self.mode, self.ctx.dry_run
         bind = self.ctx.session.get_bind()
         rep.db_url = str(bind.url) if bind is not None else None
@@ -687,6 +703,15 @@ def _from_rubric(r: S.RubricScore) -> FactorScore:
     note = "" if score == r.score else f" [ajustado a la banda {r.rubric_band}]"
     return FactorScore(score=score, method="agent", rationale=r.rationale + note,
                        evidence=[e.source_url or e.claim[:120] for e in r.evidence], missing=r.missing_information)
+
+
+def committee_reserve(n_candidates: int) -> float:
+    """Cota de la llamada del Portfolio Manager (pack típico por candidato), reservada desde el inicio de la corrida."""
+    from qa.agents.base import AGENTS, DRY_PM_CHARS_PER_CANDIDATE, system_prompt  # noqa: PLC0415
+    from qa.agents.llm import max_cost  # noqa: PLC0415
+    t = settings()["llm"]["tiers"][AGENTS["portfolio_manager"].tier]
+    chars = len(system_prompt(AGENTS["portfolio_manager"], None)) + 2000 + DRY_PM_CHARS_PER_CANDIDATE * n_candidates
+    return max_cost(t["model"], chars, t["max_tokens"], t.get("web_search_uses", 0))
 
 
 def _final_action(cur: float, final: float, band: float | None = None) -> str:

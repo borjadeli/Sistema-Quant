@@ -43,8 +43,11 @@ Es el promedio de los sub-puntajes. Las cinco métricas **núcleo** son:
 - apalancamiento: 10−2.5×ND/EBITDA, o 10 si tiene caja neta
 - dilución: 10−100×dilución
 
-Una métrica núcleo **faltante cuenta como 0** (peor caso): ocultar o no tener un dato nunca sube el puntaje. El
-runway (trimestres×10/12) se suma solo para quien quema caja y no reemplaza a una métrica núcleo.
+Una métrica núcleo **faltante cuenta 2.5** (banda débil, nunca neutral): la falta de datos se penaliza frente a
+ignorarla, pero un hueco estructural de cobertura (p.ej. un emisor IFRS sin acciones diluidas en XBRL) no hunde el
+factor por sí solo hasta el tope FQ<3. Si el filing no etiqueta deuda (y no hay deuda reciente en otra fecha), el
+apalancamiento y el ROIC usan el mismo supuesto explícito que la valuación (deuda 0, con alerta). El runway
+(trimestres×10/12) se suma solo para quien quema caja y no reemplaza a una métrica núcleo.
 
 ### Rúbricas de agentes (bandas)
 Están en `RUBRICS`; se inyectan en el prompt de cada agente.
@@ -75,10 +78,10 @@ Un factor **no evaluado** (agente fallido u omitido) cuenta como 0 para los tope
 | K1 | duda de empresa en marcha (going concern) |
 | K2 | runway de caja < 4 trimestres sin financiamiento comprometido |
 | K3 | liquidez diaria < mínimo de configuración (US$2M) |
-| K4 | sin datos fundamentales verificables, **cualquier** dato sintético mezclado, balance incompleto (sin caja), monedas mezcladas, o balance de más de 480 días |
+| K4 | sin datos fundamentales verificables, **cualquier** dato sintético mezclado, balance incompleto (sin caja), monedas mezcladas, o balance de más de 520 días (más que cierre + 12 meses + plazo del 20-F + prórroga) |
 | K5 | retorno esperado ponderado a 24 meses negativo |
 | K6 | P(pérdida permanente) > 50% |
-| K7 | deuda neta/EBITDA > 6x, o deuda no nula reportada en los ~200 días previos (o después) pero no a la fecha de balance |
+| K7 | deuda neta/EBITDA > 6x (en el balance usado **o** en un balance posterior parcial de menor precedencia), o deuda no nula reportada en los ~400 días previos (cubre la deuda del último 10-K/20-F) o después, pero no a la fecha de balance |
 | K8 | el Research Auditor rechazó el análisis |
 | K9 | análisis incompleto: sin evaluación fundamental válida (red flags/going concern no evaluados), sin escenarios de valuación válidos (K5/K6 no evaluables), sin bear case o sin veredicto del auditor en L3, o candidato que no completó L3 |
 

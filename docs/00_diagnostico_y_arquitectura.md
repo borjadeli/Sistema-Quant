@@ -20,7 +20,7 @@ Lo que pedís (que el modelo elija, compre y venda como AI Finance Labs, y vos l
    están escritos en código.
 2. **Riesgo de costo.** Analizar 245 empresas con 8 agentes cada mes cuesta del orden de US$1.350 por ciclo.
    *Mitigación:* un embudo de 4 capas con promoción por valor de la información, reutilización por hash y
-   presupuesto duro. La cota superior es de unos US$68 por ciclo (`qa estimate`) y el gasto real suele ser menor.
+   presupuesto duro. Con todas las capas llenas son unos US$86 por ciclo (`qa estimate`) y el gasto real suele ser menor.
 3. **Riesgo de evaluación.** Los backtests con LLM no sirven, por memorización y look-ahead (ver `research/ai_finance_labs.md` §3).
    *Mitigación:* la evaluación es solo forward, en paper trading append-only. Cada decisión guarda precio, fuente,
    timestamp, data cutoff, hash de inputs y hash de configuración. También se mide la calibración de las probabilidades.

@@ -21,11 +21,11 @@ la replicás manualmente. Nunca envía órdenes reales (`live_trading_enabled: f
 - **Scoring** de 6 factores con rúbricas, topes y 9 kill switches (K9 = análisis incompleto, falla cerrado).
 - **12 agentes** (Claude): Triage, Industrial, Fundamental, Valuation, Catalyst, Bear Case, Market Expectations,
   Valuation rebuttal, Research Auditor, Portfolio Manager, **Map Curator** y **Discovery**.
-- **Embudo de costos** L0→L3 + comité, con reutilización por hash y presupuesto duro: cota de unos US$68 por ciclo,
+- **Embudo de costos** L0→L3 + comité, con reutilización por hash y presupuesto duro: unos US$86 por ciclo con todas las capas llenas,
   contra unos US$1.350 si se analizara todo en profundidad.
 - **Opciones**: calls con probabilidades risk-neutral y por escenarios, comparadas siempre contra comprar la acción.
 - **Cartera simulada** append-only, métricas vs SPY/QQQ/sectoriales y calibración (Brier).
-- **Dashboard** Streamlit, export a Excel/CSV y 134 tests (incluye las regresiones de tres rondas de revisión
+- **Dashboard** Streamlit, export a Excel/CSV y 142 tests (incluye las regresiones de cuatro rondas de revisión
   adversarial).
 
 ## Instalación

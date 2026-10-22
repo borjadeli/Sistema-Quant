@@ -148,14 +148,19 @@ def _fq(**vals):
     return score_financial_quality(f).score
 
 
-def test_r3_missing_core_metric_never_improves_financial_quality():
+def test_r3_missing_core_metric_counts_as_weak_not_neutral():
+    """Ronda 4: un faltante núcleo cuenta 2.5 (débil): se penaliza frente a ignorarlo, pero un hueco estructural de
+    cobertura no hunde el factor por sí solo (antes contaba 0 y disparaba el tope FQ<3 en emisores IFRS)."""
     burner = dict(gross_margin=0.6, fcf_margin=-0.3, roic=-0.2, net_debt=-500, net_debt_to_ebitda=None,
                   cash_runway_quarters=20)
-    with_dil = _fq(**burner, dilution_yoy=0.10)                             # dilución 10% -> sub-puntaje 0
     without = _fq(**burner)
-    assert without <= with_dil
+    assert without == pytest.approx((10 + 0 + 0 + 10 + 10 + engine.FQ_MISSING) / 6, abs=0.01)
+    assert without < (10 + 0 + 0 + 10 + 10) / 5                           # peor que ignorar el faltante
     twin = dict(gross_margin=0.6, fcf_margin=0.2, roic=0.3, net_debt=-500, net_debt_to_ebitda=None)
-    assert _fq(**twin) == pytest.approx(40 / 5)                            # faltante núcleo cuenta 0
+    assert _fq(**twin) == pytest.approx((40 + engine.FQ_MISSING) / 5, abs=0.01)
+    assert _fq(**twin, dilution_yoy=0.0) > _fq(**twin)                     # el dato bueno mejora
+    no_runway = dict(burner, cash_runway_quarters=None)
+    assert _fq(**burner) != _fq(**no_runway)                              # el runway cuenta para quien quema caja
 
 
 def test_r3_layer_and_bottleneck_caps_and_notes():
@@ -617,3 +622,99 @@ def test_r3_options_provider_follows_settings(monkeypatch):
         registry.options_provider()
     s["providers"]["options"] = ["yahoo"]
     assert registry.options_provider().name == "yahoo"
+
+
+# ============================================================================ ronda 4
+def test_r4_partial_newer_balance_keeps_filing_and_still_checks_leverage():
+    """Un comunicado posterior con solo caja y deuda no reemplaza un 10-Q que trae inversiones CP y patrimonio;
+    igual se le aplica el control K7."""
+    filing = [dp("cash", 330, "2026-03-27", "instant", "2026-05-05"),
+              dp("short_term_investments", 620, "2026-03-27", "instant", "2026-05-05"),
+              dp("equity", 2300, "2026-03-27", "instant", "2026-05-05")]
+    seed = [dp("cash", 346.7, "2026-06-26", "instant", "2026-08-17", **SEED),
+            dp("debt_total", 0, "2026-06-26", "instant", "2026-08-17", **SEED)]
+    f = compute_fundamentals("X", filing + seed, as_of=date(2026, 8, 18))
+    assert f.balance_date == date(2026, 3, 27) and f.v("cash_total") == 950 and f.v("equity") == 2300
+    assert f.alt_balance_date == date(2026, 6, 26)
+    qs = (("2025-09-30", "2025-11-01"), ("2025-12-31", "2026-02-01"), ("2026-03-31", "2026-05-01"), ("2026-06-30", "2026-08-01"))
+    ebit = [dp(m, 10, e, "Q", k) for e, k in qs for m in ("operating_income", "d_and_a")]
+    lev = filing + ebit + [dp("cash", 50, "2026-06-26", "instant", "2026-08-17", **SEED),
+                           dp("debt_total", 3000, "2026-06-26", "instant", "2026-08-17", **SEED)]
+    g = compute_fundamentals("X", lev, as_of=date(2026, 8, 18))
+    assert g.balance_date == date(2026, 3, 27)
+    kills, _ = kill_switches(g, None, None, {}, None, False)
+    assert any("balance posterior" in k and k.startswith("K7") for k in kills)
+
+
+def test_r4_debt_tagged_only_in_annual_report_blocks_at_q3():
+    pts = [dp("debt_total", 3000, "2025-12-31", "instant", "2026-02-20"), dp("cash", 400, "2026-09-30", "instant", "2026-11-05")]
+    f = compute_fundamentals("X", pts, as_of=date(2026, 11, 10))
+    assert f.debt_elsewhere
+    with pytest.raises(ValueError, match="otra fecha"):
+        balance_inputs(f)
+
+
+def test_r4_debt_free_filer_without_debt_tag_scores_net_cash():
+    ebit = [dp("operating_income", 100, e, "Q", k) for e, k in (("2025-09-30", "2025-11-01"), ("2025-12-31", "2026-02-01"),
+                                                                ("2026-03-31", "2026-05-01"), ("2026-06-30", "2026-08-01"))]
+    pts = ebit + [dp("cash", 800, "2026-06-30", "instant", "2026-08-01"), dp("equity", 1500, "2026-06-30", "instant", "2026-08-01")]
+    f = compute_fundamentals("X", pts, as_of=date(2026, 9, 1))
+    assert f.debt_assumed_zero and f.v("debt") is None and f.v("net_debt") == -800 and f.v("roic") is not None
+    fq = score_financial_quality(f)
+    assert "leverage=10.0" in fq.rationale and "roic" not in fq.rationale.split("sin dato")[-1]
+    _, alerts = kill_switches(f, None, None, {}, None, False)
+    assert any(a.startswith("deuda supuesta 0") for a in alerts)
+    seed_only = compute_fundamentals("X", [dp("cash", 800, "2026-06-30", "instant", "2026-08-01", **SEED)],
+                                     as_of=date(2026, 9, 1))
+    assert not seed_only.debt_assumed_zero                         # el supuesto solo vale para un balance de filing
+
+
+def test_r4_annual_filer_keeps_fy_ttm_with_isolated_later_quarter():
+    pts = [dp("revenue", 3500, "2025-12-31", "FY", "2026-03-15"),
+           dp("revenue", 814, "2026-06-30", "Q", "2026-07-31", **SEED)]
+    f = compute_fundamentals("X", pts, as_of=date(2026, 10, 22))
+    assert f.v("revenue_ttm") == 3500 and "trimestres posteriores aislados" in f.metrics["revenue_ttm"].note
+
+
+def test_r4_on_time_20f_filer_not_stale_before_filing():
+    pts = [dp("cash", 900, "2024-12-31", "instant", "2025-04-29"), dp("debt_total", 1100, "2024-12-31", "instant", "2025-04-29")]
+    for d in (date(2026, 4, 28), date(2026, 5, 14)):                 # 4 meses + prórroga 12b-25
+        assert not compute_fundamentals("X", pts, as_of=d).balance_stale
+    assert compute_fundamentals("X", pts, as_of=date(2026, 6, 10)).balance_stale
+
+
+def test_r4_invalid_stream_is_recorded_not_raised(session):
+    llm = AnthropicLLM(client=_Client([AssertionError(), ValueError("Unterminated string")]))
+    for _ in range(2):
+        ctx = RunContext(session=session, llm=llm, budget=Budget(30, 60), reuse=False)
+        res = run_agent(ctx, "auditor", "X", "t", {"a": 1})
+        assert res.status == "error" and "stream inválido" in res.error
+
+
+def test_r4_dry_run_simulates_the_budget_gate_and_committee_is_reserved(session, tmp_path, synthetic_ok):
+    if "demo" not in session.info:
+        session.info["demo"] = _demo_setup(session)
+    m, u, reg = session.info["demo"]
+    ctx = RunContext(session=session, llm=None, budget=Budget(1.5, 50), reuse=False, dry_run=True)
+    rep = Pipeline(ctx, m, u, reg, portfolio_name="P", mode="test", runs_dir=tmp_path).run()
+    assert rep.budget_needed_usd and rep.budget_needed_usd > 1.5
+    assert any("se saltarían" in n for n in rep.notes)
+    log = {(x["agent"], x["subject"]): x["status"] for x in rep.agent_log}
+    assert log[("portfolio_manager", "portfolio")] == "dry_run"          # la reserva del comité no se consume antes
+    # corrida real con presupuesto justo: L3 se saltea pero el comité corre
+    real = _run(session, tmp_path, budget=1.5)
+    statuses = {x["agent"]: x["status"] for x in real.agent_log}
+    assert statuses.get("auditor") == "skipped_budget" and "comité no ejecutado" not in " ".join(real.notes)
+
+
+def test_r4_exact_evidence_dates_are_not_capped_by_review_date():
+    from qa.bottlenecks import BottleneckRecord, known_date, registry_as_of, stale_evidence
+    from qa.map.model import default_map
+    ev = {"claim": "x", "date": "2026-11-05", "evidence_type": "company_statement"}
+    assert known_date(ev, date(2026, 10, 21)) == date(2026, 11, 5)
+    assert known_date({"date": "2026 (approx.)"}, date(2026, 10, 21)) == date(2026, 10, 21)
+    b = BottleneckRecord(id="b", name="b", layer="l", status="current_shortage", confidence="high", map_nodes=["hbm"],
+                         raw={"name": "b", "status": "current_shortage", "evidence": [ev], "counter_evidence": []},
+                         reviewed_at=date(2026, 10, 21))
+    assert registry_as_of({"b": b}, default_map(), date(2026, 11, 4)) == {}
+    assert stale_evidence({"b": b})

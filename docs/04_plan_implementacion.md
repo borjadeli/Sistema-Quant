@@ -93,3 +93,16 @@ Estado al 2026-10-21. ✅ hecho y verificado por tests · 🟡 implementado, fal
      reconciliación por proveedor (borra huérfanas), fechas de semillas estrictas.
    Cada caso tiene su test en `tests/test_review_round3.py`; los scripts de reproducción de los verificadores
    también se volvieron a correr contra el código corregido.
+5. **Ronda 4.** La reverificación de las correcciones de la ronda 3 confirmó todas como corregidas y encontró
+   efectos colaterales, también corregidos (tests `test_r4_*`):
+   - un comunicado posterior con solo caja y deuda reemplazaba un balance de filing con inversiones CP y
+     patrimonio (ahora debe cubrir las mismas cuentas; si no, se conserva el filing y K7 se controla en ambos);
+   - la deuda etiquetada solo en el 10-K quedaba fuera de la ventana de 200 días al tercer trimestre (ahora 400);
+   - un emisor sin etiqueta de deuda puntuaba apalancamiento y ROIC como faltantes (ahora usa el supuesto
+     explícito "deuda 0", con alerta); un faltante núcleo cuenta 2.5 en lugar de 0;
+   - un emisor anual con un trimestre posterior aislado perdía el TTM (ahora conserva el último FY);
+   - un 20-F presentado en plazo quedaba "demasiado antiguo" unos días por año (umbral 480 -> 520 días);
+   - un stream 200 vacío o con un evento SSE truncado abortaba el embudo (ahora es un error registrado);
+   - el dry-run no simulaba el control de presupuesto por cota (ahora sí, con las salidas previas embebidas y la
+     reserva del comité, e informa el presupuesto necesario);
+   - las fechas exactas de evidencia posteriores a la revisión del registro se adelantaban en los replays.
