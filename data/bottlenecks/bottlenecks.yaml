@@ -5,6 +5,9 @@
 # `overrides` permite corregir con justificación explícita (queda registrado).
 version: "0.1.0"
 evidence_file: research/bottlenecks_evidence.json
+# Fecha en que se compiló/revisó la evidencia: todo lo del registro se conocía a esta fecha (las evidencias con
+# fecha parcial o sin fecha se consideran conocidas recién aquí). Actualizar al revisar el registro.
+evidence_reviewed_at: "2026-10-21"
 mapping:
   cowos_advanced_packaging: [cowos_packaging, tsv_hybrid_bonding, silicon_interposer]
   hbm_memory: [hbm, tsv_hybrid_bonding, hbm_test]

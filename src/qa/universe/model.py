@@ -20,6 +20,12 @@ LEVEL_VALUE = {"H": 1.0, "M": 0.6, "L": 0.25, "N": 0.0}
 YAHOO_SUFFIX = {"TSE": ".T", "TWSE": ".TW", "TPEX": ".TWO", "KRX": ".KS", "HKEX": ".HK", "ASX": ".AX",
                 "TSX": ".TO", "LSE": ".L", "XETRA": ".DE", "SZSE": ".SZ", "SSE": ".SS", "B3": ".SA"}
 US_EXCHANGES = {"NASDAQ", "NYSE", "NYSEAMERICAN"}
+# Moneda de cotización por bolsa (para altas de Discovery; nunca se asume USD fuera de EE.UU.).
+EXCHANGE_CURRENCY = {"NASDAQ": "USD", "NYSE": "USD", "NYSEAMERICAN": "USD", "TSE": "JPY", "TWSE": "TWD",
+                     "TPEX": "TWD", "KRX": "KRW", "KOSDAQ": "KRW", "HKEX": "HKD", "ASX": "AUD", "TSX": "CAD",
+                     "TSXV": "CAD", "LSE": "GBP", "XETRA": "EUR", "EURONEXT": "EUR", "BIT": "EUR", "HEL": "EUR",
+                     "SIX": "CHF", "CPH": "DKK", "STO": "SEK", "OSE": "NOK", "SZSE": "CNY", "SSE": "CNY",
+                     "B3": "BRL", "NSE": "INR", "BSE": "INR"}
 
 
 class Exposure(BaseModel):

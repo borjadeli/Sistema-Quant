@@ -7,12 +7,12 @@ pregrabadas. Usa una base separada (data/demo.sqlite) para no contaminar la base
 from __future__ import annotations
 
 import json
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 
 from qa.agents.base import Budget, RunContext
 from qa.agents.llm import ScriptedLLM
 from qa.bottlenecks import load_bottlenecks
-from qa.config import FIXTURES_DIR, ROOT
+from qa.config import FIXTURES_DIR, ROOT, utc_today
 from qa.db import repo
 from qa.db.session import session_scope
 from qa.funnel.pipeline import Pipeline
@@ -103,7 +103,7 @@ def scripted_responses() -> dict:
 def _demo_feed(s) -> None:  # noqa: ANN001
     """Eventos y propuestas SINTÉTICOS para poder ver el Research Feed en la demo."""
     from qa.db.schema import FeedEvent, MapChangeProposal
-    today = date.today()
+    today = utc_today()
     s.add_all([
         FeedEvent(event_date=today, company_id="TEST_ALPHA", event_type="earnings", title="DEMO: resultados trimestrales",
                   detail="Evento sintético de demostración", verification="synthetic_test_data", impact="unknown",
@@ -135,7 +135,7 @@ def run_demo(db_url: str = DEMO_DB) -> dict:
         repo.sync_universe(s, u, m)
         fp = FixtureProvider()
         for c in comps.values():
-            repo.upsert_datapoints(s, fp.get_facts(c))
+            repo.upsert_datapoints(s, fp.get_facts(c), provider="fixture", entities={c.id})
             mk = fx["market"][c.id]
             repo.save_snapshot(s, MarketSnapshotData(company_id=c.id, as_of=datetime.now(timezone.utc), price=mk["price"],
                                                      currency="USD", shares_outstanding=mk["shares"],
@@ -145,7 +145,7 @@ def run_demo(db_url: str = DEMO_DB) -> dict:
         _demo_feed(s)
         s.flush()
         ctx = RunContext(session=s, llm=ScriptedLLM(scripted_responses()), budget=Budget(per_run_usd=5, monthly_usd=50),
-                         decision_date=date.today(), reuse=False)
+                         decision_date=utc_today(), reuse=False)
         from qa.scoring import engine
         engine.ALLOW_SYNTHETIC_FOR_DEMO = True
         try:

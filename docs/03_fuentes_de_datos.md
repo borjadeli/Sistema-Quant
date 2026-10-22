@@ -5,8 +5,8 @@
 | Estados financieros EE.UU. (10-K/10-Q, y 20-F/40-F de extranjeros con XBRL) | **SEC EDGAR XBRL** (`data.sec.gov/api/xbrl/companyfacts`) | gratis | implementado y testeado con fixture; **no ejecutado** (red bloqueada en el contenedor) | requiere User-Agent con email (`QA_SEC_USER_AGENT`), ≤10 req/s |
 | Ticker → CIK | `www.sec.gov/files/company_tickers.json` | gratis | implementado | |
 | Precios, market cap, liquidez, FX | **yfinance** | gratis, no oficial | implementado; **no ejecutado** | sufijos .T .TW .TO .L .DE…; los precios GBp se convierten |
-| Cadenas de opciones | yfinance | gratis, con retraso | implementado; se exige cadena con < 24 h | reemplazar por IBKR/Polygon para cotizaciones en tiempo real |
-| Emisores fuera de EDGAR (TSX/SEDAR+, TSE, TWSE, KRX) | **CSV manual con fuente obligatoria** (`data/manual/*.csv`) | — | implementado | se rechaza cualquier fila sin URL o sin `known_at` |
+| Cadenas de opciones | yfinance (`providers.options`) | gratis, con retraso | implementado; se exige cadena con < 24 h | el proveedor sale de la configuración; reemplazar por IBKR/Polygon para tiempo real |
+| Emisores fuera de EDGAR (TSX/SEDAR+, TSE, TWSE, KRX) | **CSV manual con fuente obligatoria** (`data/manual/*.csv`) | — | implementado | UTF-8 con o sin BOM; se rechaza (con archivo:línea) toda fila sin URL, sin `known_at`, con métrica desconocida o con un saldo de balance que no sea `instant`; la base se reconcilia con el CSV en cada ingesta |
 | Evidencia de bottlenecks / investigación cualitativa | agentes con búsqueda web (Claude `web_search`) | ~US$0.01/búsqueda | 21 bottlenecks y 20 semillas investigadas (calidad `search_summary`) | |
 | Interactive Brokers | conector MCP disponible, **requiere autorización** | según cuenta | no conectado | autorizarlo en la configuración de conectores de claude.ai; solo lectura (regla 14) |
 | Alternativas pagas | FMP, Polygon, Koyfin, S&P CapIQ | pago | interfaz preparada (`providers/base.py`) | agregar una clase y registrarla en `providers/registry.py` |

@@ -249,7 +249,7 @@ with tabs[4]:
                     src = D.js(r["web_sources"]) or []
                     if src:
                         st.caption("Fuentes web: " + " · ".join(src[:15]))
-    dis = D.query("SELECT * FROM disagreements WHERE company_id = :cid ORDER BY created_at", cid=cid)
+    dis = D.complete_only(D.query("SELECT * FROM disagreements WHERE company_id = :cid ORDER BY created_at", cid=cid))
     st.markdown("**Discrepancias registradas entre agentes**")
     if dis.empty:
         st.write("Ninguna.")

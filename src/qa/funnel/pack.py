@@ -8,7 +8,7 @@ from datetime import date, datetime, time, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from qa.bottlenecks import BottleneckRecord, company_bottlenecks
+from qa.bottlenecks import BottleneckRecord, company_bottlenecks, registry_as_of
 from qa.config import RESEARCH_DIR, settings
 from qa.db import repo
 from qa.db.schema import FeedEvent, as_utc
@@ -81,6 +81,7 @@ def company_pack(s: Session, c: Company, m: IndustryMap, registry: dict[str, Bot
     mk = market_inputs(s, c, f, as_of)
     snap = repo.latest_snapshot(s, c.id, end_of_day(as_of))
     crit = m.structural_criticality()
+    registry = registry_as_of(registry, m, as_of)          # sin evidencia posterior a la fecha de decisión
     pack: dict = {
         "company": {"id": c.id, "name": c.name, "exchange": c.exchange, "country": c.country, "currency": c.currency,
                     "status": c.status, "tags": c.tags, "notes": c.notes, "identity_verification": c.verification.value},
@@ -97,7 +98,8 @@ def company_pack(s: Session, c: Company, m: IndustryMap, registry: dict[str, Bot
                  "supply_limit": registry[b["id"]].raw.get("supply_limit"),
                  "estimated_duration": registry[b["id"]].raw.get("estimated_duration"),
                  "evidence": registry[b["id"]].raw.get("evidence", [])[:3],
-                 "counter_evidence": registry[b["id"]].raw.get("counter_evidence", [])[:3]})}
+                 "counter_evidence": registry[b["id"]].raw.get("counter_evidence", [])[:3],
+                 **({"pit_note": registry[b["id"]].raw["pit_note"]} if "pit_note" in registry[b["id"]].raw else {})})}
             for b in company_bottlenecks(c.nodes, registry)],
         "market": None if snap is None else {
             "price": snap.price, "currency": snap.currency, "as_of": as_utc(snap.as_of).isoformat(), "source": snap.source,
@@ -131,9 +133,14 @@ def company_pack(s: Session, c: Company, m: IndustryMap, registry: dict[str, Bot
         sr = seed_research(c.id, as_of)
         if sr:
             pack["web_research"] = sr
-        ev = s.scalars(select(FeedEvent).where(FeedEvent.company_id == c.id, FeedEvent.event_date <= as_of,
-                                               FeedEvent.created_at <= end_of_day(as_of))
-                       .order_by(FeedEvent.event_date.desc(), FeedEvent.id.desc()).limit(10)).all()
+        # hasta 8 eventos de información (filings, re-expresiones, noticias) + los 2 últimos movimientos de precio:
+        # los movimientos de precio no pueden desplazar una re-expresión
+        base = select(FeedEvent).where(FeedEvent.company_id == c.id, FeedEvent.event_date <= as_of,
+                                       FeedEvent.created_at <= end_of_day(as_of))
+        order = (FeedEvent.event_date.desc(), FeedEvent.id.desc())
+        ev = (s.scalars(base.where(FeedEvent.event_type != "price_move").order_by(*order).limit(8)).all() +
+              s.scalars(base.where(FeedEvent.event_type == "price_move").order_by(*order).limit(2)).all())
+        ev.sort(key=lambda e: (e.event_date, e.id), reverse=True)
         pack["recent_events"] = [{"date": str(e.event_date), "type": e.event_type, "title": e.title, "url": e.url,
                                   "verification": e.verification} for e in ev]
     pack["_meta"] = {"decision_date": str(as_of)}

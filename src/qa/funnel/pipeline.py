@@ -21,10 +21,11 @@ from pathlib import Path
 
 from qa.agents import schemas as S
 from qa.agents.base import AgentResult, RunContext, run_agent
-from qa.bottlenecks import BottleneckRecord, company_bottlenecks
+from qa.bottlenecks import BottleneckRecord, company_bottlenecks, registry_as_of
 from qa.config import DATA_DIR, settings
 from qa.db import repo
-from qa.db.schema import as_utc, Disagreement, FunnelState, Recommendation, ScenarioSet as ScenarioRow, ScoreRow
+from qa.db.schema import (as_utc, Disagreement, FunnelState, PipelineRun, Recommendation, ScenarioSet as ScenarioRow,
+                          ScoreRow)
 from qa.fundamentals.metrics import Fundamentals, compute_fundamentals
 from qa.funnel.pack import company_pack, end_of_day, hash_view, market_inputs
 from qa.map.model import IndustryMap
@@ -88,7 +89,8 @@ class CycleReport:
 class Pipeline:
     def __init__(self, ctx: RunContext, m: IndustryMap, u: Universe, registry: dict[str, BottleneckRecord],
                  portfolio_name: str | None = None, mode: str = "real", runs_dir: Path | None = None):
-        self.ctx, self.m, self.u, self.reg = ctx, m, u, registry
+        self.ctx, self.m, self.u = ctx, m, u
+        self.reg = registry_as_of(registry, m, ctx.decision_date)     # sin evidencia posterior a la decisión
         self.cfg = settings()
         self.crit = m.structural_criticality()
         self.portfolio_name = portfolio_name or self.cfg["portfolio"]["name"]
@@ -96,6 +98,7 @@ class Pipeline:
         # los reportes de demo/test NO van a data/runs (historial real)
         self.runs_dir = runs_dir or (DATA_DIR / ("runs" if mode == "real" else "demo_runs"))
         self.eod = end_of_day(ctx.decision_date)
+        self._state_calls: list[tuple[Dossier, str]] = []    # FunnelState se escribe solo si la corrida termina
 
     # ================================================================== L0
     def screen(self, companies: list[Company]) -> list[Dossier]:
@@ -119,10 +122,11 @@ class Pipeline:
                 if c.id not in holdings and not c.seed:
                     passed = False
             else:
+                # sin montos exactos en el texto (cambian a diario y romperían la reutilización): van en mcap/adv
                 if mcap < c0["min_market_cap_usd"]:
-                    passed = False; reasons.append(f"market cap ${mcap/1e6:.0f}M < mínimo")
+                    passed = False; reasons.append(f"market cap < mínimo ${c0['min_market_cap_usd']/1e6:.0f}M")
                 if adv < c0["min_adv_usd"]:
-                    passed = False; reasons.append(f"liquidez ${adv/1e6:.1f}M/día < mínimo")
+                    passed = False; reasons.append(f"liquidez < mínimo ${c0['min_adv_usd']/1e6:.1f}M/día")
             if d.fundamentals is None:
                 reasons.append("sin fundamentales")
             if d.fundamentals and d.market:
@@ -269,9 +273,9 @@ class Pipeline:
             hv = hash_view(dossier_pack)
             d.agents["bear"] = run_agent(self.ctx, "bear", c.id,
                                          "Construí el bear case más fuerte posible con evidencia.", dossier_pack, hv)
-            if d.out("bear") and d.out("valuation"):
+            if (d.out("bear") and d.out("valuation")) or self.ctx.dry_run:   # dry-run: peor caso, se estima
                 rpack = dict(dossier_pack)
-                rpack["bear_case"] = d.out("bear").model_dump()
+                rpack["bear_case"] = d.out("bear").model_dump() if d.out("bear") else None
                 d.agents["valuation_rebuttal"] = run_agent(
                     self.ctx, "valuation_rebuttal", c.id,
                     "REVISIÓN: incorporá los argumentos válidos del Bear Case Analyst y re-proponé los tres escenarios. "
@@ -296,17 +300,21 @@ class Pipeline:
         return dossiers
 
     # ================================================================== comité
-    def committee(self, dossiers: list[Dossier], report: CycleReport) -> None:
+    def committee(self, dossiers: list[Dossier], report: CycleReport, scored: list[Dossier] | None = None) -> None:
+        """`dossiers`: candidatos que llegaron al comité (los ve el PM). `scored`: TODOS los dossiers con score de
+        la corrida; las posiciones en cartera que no llegaron al comité igual se evalúan con su scorecard."""
         s = self.ctx.session
         current = ledger.holdings(s, self.portfolio_name)
-        quotes = self._quotes([d.company for d in dossiers] + [self.u.companies[k] for k in current if k in self.u.companies])
+        candidates = [d for d in dossiers if d.scorecard]
+        extra = [d for d in (scored or []) if d.scorecard and d.company.id in current and d not in candidates]
+        quotes = self._quotes([d.company for d in candidates + extra] +
+                              [self.u.companies[k] for k in current if k in self.u.companies])
         try:
             cur_nav = ledger.nav(s, self.portfolio_name, quotes)
             cur_w = {k: q * quotes[k].price / cur_nav for k, q in current.items()}
         except ValueError as e:
             report.notes.append(f"no se puede valuar la cartera actual: {e}")
             return
-        candidates = [d for d in dossiers if d.scorecard]
         if not candidates and not current:
             report.notes.append("comité: sin candidatos con score")
             return
@@ -321,22 +329,42 @@ class Pipeline:
             report.notes.append(f"comité no ejecutado: {res.status} {res.error or ''}")
             return
         pm: S.PortfolioOutput = res.output
-        meta = {}
-        for d in candidates:
+        meta, incomplete_held = {}, set()
+        for d in candidates + extra:
+            cid = d.company.id
             kills = list(d.scorecard.kill_switches)
             if d.tier != "L3":
                 kills.append("K9: no completó L3 (bear case + auditoría) — no puede entrar a cartera")
-            meta[d.company.id] = PositionMeta(
-                company_id=d.company.id, layer=self.m.nodes[d.company.primary_node].layer,
-                primary_bottleneck=_primary_bottleneck(d, self.reg), eligible=not kills,
+            eligible = not kills
+            if kills and cur_w.get(cid, 0) > 0 and all(k.startswith("K9") for k in kills):
+                # análisis INCOMPLETO de una posición (error, presupuesto, --tiers sin L3): no es evidencia
+                # negativa -> no se vende por omisión, pero tampoco se aumenta
+                eligible = True
+                incomplete_held.add(cid)
+            meta[cid] = PositionMeta(
+                company_id=cid, layer=self.m.nodes[d.company.primary_node].layer,
+                primary_bottleneck=_primary_bottleneck(d, self.reg), eligible=eligible,
                 speculative=d.company.status == "candidate" or "speculative" in d.company.tags, kill_reasons=kills)
-        decided = {x.company_id for x in pm.decisions}
-        proposed = {x.company_id: x.target_weight for x in pm.decisions if x.action not in ("SELL", "AVOID")}
+        by_id = {d.company.id: d for d in candidates + extra}
+        pm_dec = {x.company_id: x for x in pm.decisions if x.company_id in by_id}
+        for x in pm.decisions:
+            if x.company_id not in by_id:
+                report.notes.append(f"PM decidió sobre {x.company_id} sin dossier: ignorado")
+        proposed = {k: x.target_weight for k, x in pm_dec.items() if x.action not in ("SELL", "AVOID")}
         # posiciones actuales con dossier pero no tratadas por el PM: se mantienen (sujeto a restricciones)
         for k, w in cur_w.items():
-            if k not in decided and k in meta:
+            if k not in pm_dec and k in meta:
                 proposed.setdefault(k, w)
-        targets, notes = enforce_constraints(proposed, meta)
+        notes_by: dict[str, list[str]] = {}
+        for k in sorted(incomplete_held):
+            if k in proposed:
+                txt = f"{k}: análisis incompleto ({'; '.join(meta[k].kill_reasons)}) -> sin aumentos"
+                if proposed[k] > cur_w[k] + 1e-9:
+                    proposed[k] = cur_w[k]
+                    txt += f", se mantiene {cur_w[k]:.1%}"
+                notes_by.setdefault(k, []).append(txt + " (revisar)")
+        targets, notes = enforce_constraints(proposed, meta, notes_by=notes_by)
+        notes = [n for k in sorted(incomplete_held) for n in notes_by.get(k, [])[:1]] + notes
         # posiciones actuales SIN dossier en esta corrida: nunca se venden por omisión; se mantienen y se avisa
         unanalyzed = {k: w for k, w in cur_w.items() if k not in meta}
         for k, w in unanalyzed.items():
@@ -348,36 +376,42 @@ class Pipeline:
             free = [k for k in targets if k not in unanalyzed]
             room = max(invest_max - sum(unanalyzed.values()), 0.0)
             f_sum = sum(targets[k] for k in free)
+            txt = f"total {tot:.1%} > {invest_max:.0%}: se escalan las posiciones analizadas"
             for k in free:
                 targets[k] = round(targets[k] * room / f_sum, 4) if f_sum else 0.0
-            notes.append(f"total {tot:.1%} > {invest_max:.0%}: se escalan las posiciones nuevas")
+                notes_by.setdefault(k, []).append(txt)
+            notes.append(txt)
         report.constraint_notes = notes
+        # Una recomendación por cada empresa con dossier cuyo peso decide este comité: las del PM y también las
+        # posiciones que el PM no mencionó pero cuyo peso cambia (venta por kill switch, recorte por topes).
         rec_ids = {}
-        by_id = {d.company.id: d for d in candidates}
-        for x in pm.decisions:
-            d = by_id.get(x.company_id)
-            if d is None:
-                report.notes.append(f"PM decidió sobre {x.company_id} sin dossier: ignorado")
+        band = ledger.min_trade_fraction()
+        for cid in sorted(set(pm_dec) | ({k for k in by_id if k in cur_w or k in targets})):
+            d, x = by_id[cid], pm_dec.get(cid)
+            cur, final_w = cur_w.get(cid, 0.0), targets.get(cid, 0.0)
+            final_action = _final_action(cur, final_w, band)
+            if x is None and final_action in ("HOLD", "AVOID"):
                 continue
-            q = quotes.get(x.company_id)
-            final_w = targets.get(x.company_id, 0.0)
-            final_action = _final_action(cur_w.get(x.company_id, 0.0), final_w)
-            my_notes = [n for n in notes if n.startswith(x.company_id + ":")]
+            q = quotes.get(cid)
+            my_notes = list(dict.fromkeys(notes_by.get(cid, [])))
             rec = Recommendation(
-                pipeline_run_id=self.ctx.pipeline_run_id, company_id=x.company_id, action=final_action,
-                pm_action=x.action, pm_target_weight=x.target_weight, constraint_notes=my_notes,
-                target_weight=final_w, conviction=x.conviction,
+                pipeline_run_id=self.ctx.pipeline_run_id, company_id=cid, action=final_action,
+                pm_action=x.action if x else None, pm_target_weight=x.target_weight if x else None,
+                constraint_notes=my_notes, target_weight=final_w, conviction=x.conviction if x else "low",
                 price_at_decision=q.price if q else None, price_time=q.time if q else None,
-                price_source=q.source if q else None, thesis=x.thesis, catalysts=x.catalysts, risks=x.risks,
+                price_source=q.source if q else None,
+                thesis=x.thesis if x else "Sin decisión explícita del PM: el peso lo fijan las reglas del código "
+                                          "(ver constraint_notes).",
+                catalysts=x.catalysts if x else [], risks=x.risks if x else [],
                 scenario_id=d.scenario_id, score_id=d.score_id, data_cutoff=self.ctx.decision_date,
-                invalidation_triggers=x.invalidation_triggers,
+                invalidation_triggers=x.invalidation_triggers if x else [],
                 sources=sorted({u for a in d.agents.values() for u in a.web_sources})[:50], mode="simulated")
             s.add(rec)
             s.flush()
-            rec_ids[x.company_id] = rec.id
-            report.decisions.append({"company": x.company_id, "action": final_action, "pm_action": x.action,
-                                     "pm_weight": x.target_weight, "final_weight": final_w,
-                                     "conviction": x.conviction, "thesis": x.thesis, "constraint_notes": my_notes})
+            rec_ids[cid] = rec.id
+            report.decisions.append({"company": cid, "action": final_action, "pm_action": x.action if x else None,
+                                     "pm_weight": x.target_weight if x else None, "final_weight": final_w,
+                                     "conviction": rec.conviction, "thesis": rec.thesis, "constraint_notes": my_notes})
         missing_q = [k for k in set(targets) | set(current) if k not in quotes]
         if missing_q:
             report.notes.append(f"sin cotización para {missing_q}: no se ejecuta rebalanceo simulado")
@@ -432,8 +466,9 @@ class Pipeline:
         if d.market:
             try:
                 age = (self.eod - datetime.fromisoformat(d.market.price_time)).days
-                if age > 3:
-                    chk.append(f"precio con {age} días de antigüedad")
+                bucket = next((b for b in (30, 7, 3) if age > b), None)   # por tramos: estable día a día
+                if bucket:
+                    chk.append(f"precio con más de {bucket} días de antigüedad")
             except ValueError:
                 chk.append("timestamp de precio ilegible")
         else:
@@ -529,6 +564,11 @@ class Pipeline:
         if fun is None:
             incomplete.append(f"K9: sin evaluación fundamental válida ({_status(d, 'fundamental')}): "
                               "going concern / financiamiento no evaluados")
+        if d.scenarios is None:
+            incomplete.append(f"K9: sin escenarios de valuación válidos ({_status(d, 'valuation')}): "
+                              "K5/K6 no evaluables")
+        if tier == "L3" and d.out("bear") is None:
+            incomplete.append(f"K9: sin bear case ({_status(d, 'bear')})")
         if tier == "L3" and aud is None:
             incomplete.append(f"K9: sin veredicto del Research Auditor ({_status(d, 'auditor')})")
         sc = combine(c.id, factors, fundamentals=d.fundamentals, scenarios=d.scenarios,
@@ -542,7 +582,7 @@ class Pipeline:
             d.scenario_id = None
         elif d.scenario_source is not None and d.scenario_source != d.scenario_row_source:
             author, assumptions = d.scenario_source        # supuestos y resultados del MISMO set
-            row = ScenarioRow(company_id=c.id, author=author,
+            row = ScenarioRow(company_id=c.id, author=author, pipeline_run_id=self.ctx.pipeline_run_id,
                               price_at_creation=d.market.price if d.market else None,
                               price_source=f"{d.market.price_source}@{d.market.price_time}" if d.market else None,
                               assumptions={"scenarios": assumptions},
@@ -565,6 +605,11 @@ class Pipeline:
         self._state(d, tier)
 
     def _state(self, d: Dossier, tier: str) -> None:
+        if self.ctx.dry_run:              # un dry-run no altera el estado persistido del embudo
+            return
+        self._state_calls.append((d, tier))
+
+    def _write_state(self, d: Dossier, tier: str) -> None:
         s = self.ctx.session
         st = s.get(FunnelState, d.company.id) or FunnelState(company_id=d.company.id, tier_reached=tier)
         order = {t: i for i, t in enumerate(TIERS)}
@@ -582,6 +627,12 @@ class Pipeline:
     def run(self, tiers: tuple[str, ...] = TIERS, only: list[str] | None = None) -> CycleReport:
         rep = CycleReport(run_id=self.ctx.pipeline_run_id, started_at=datetime.now(timezone.utc).isoformat(),
                           tiers_run=list(tiers))
+        run_row = None
+        if not self.ctx.dry_run:
+            run_row = PipelineRun(id=self.ctx.pipeline_run_id, status="running", mode=self.mode,
+                                  decision_date=self.ctx.decision_date, tiers=list(tiers))
+            self.ctx.session.add(run_row)
+            self.ctx.session.flush()
         held = set(ledger.holdings(self.ctx.session, self.portfolio_name))
         comps = [c for c in self.u.companies.values() if only is None or c.id in only or c.id in held]
         if only is not None and held - set(only):
@@ -608,10 +659,15 @@ class Pipeline:
                               "er36": d.scenarios.expected_return.get(36) if d.scenarios else None}
                              for d in dossiers if d.scorecard], key=lambda x: -x["total"])
         if "committee" in tiers and not self.ctx.dry_run:
-            self.committee(stage, rep)
+            self.committee(stage, rep, scored=dossiers)
         elif "committee" in tiers and stage:
             run_agent(self.ctx, "portfolio_manager", "portfolio", "Decidí la cartera modelo para este ciclo.",
                       {"candidates": [self._dossier_pack(d, brief=True) for d in stage]})
+        for d, tier in self._state_calls:
+            self._write_state(d, tier)
+        if run_row is not None:
+            run_row.status, run_row.finished_at = "completed", datetime.now(timezone.utc)
+            self.ctx.session.flush()
         rep.agent_log = self.ctx.log
         rep.cost_usd = round(self.ctx.budget.spent_run, 4)
         rep.est_cost_usd = round(sum(x.get("est_cost", 0) for x in self.ctx.log), 4)
@@ -633,15 +689,17 @@ def _from_rubric(r: S.RubricScore) -> FactorScore:
                        evidence=[e.source_url or e.claim[:120] for e in r.evidence], missing=r.missing_information)
 
 
-def _final_action(cur: float, final: float) -> str:
-    """Acción realmente ejecutada (después de restricciones), no la propuesta del PM."""
+def _final_action(cur: float, final: float, band: float | None = None) -> str:
+    """Acción realmente ejecutada (después de restricciones), no la propuesta del PM. La banda HOLD es la misma
+    que usa el rebalanceo para no operar (ledger.min_trade_fraction): HOLD nunca genera una operación."""
+    band = ledger.min_trade_fraction() if band is None else band
     if final <= 0:
         return "SELL" if cur > 0 else "AVOID"
     if cur <= 0:
         return "BUY"
-    if final > cur + 0.005:
+    if final >= cur + band:
         return "ADD"
-    if final < cur - 0.005:
+    if final <= cur - band:
         return "TRIM"
     return "HOLD"
 

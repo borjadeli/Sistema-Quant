@@ -18,14 +18,15 @@ la replicás manualmente. Nunca envía órdenes reales (`live_trading_enabled: f
   - múltiplos con reglas de aplicabilidad;
   - escenarios bear/base/bull a 12, 24 y 36 meses, con financiamiento y dilución;
   - sensibilidad y reverse DCF.
-- **Scoring** de 6 factores con rúbricas, topes y 8 kill switches.
+- **Scoring** de 6 factores con rúbricas, topes y 9 kill switches (K9 = análisis incompleto, falla cerrado).
 - **12 agentes** (Claude): Triage, Industrial, Fundamental, Valuation, Catalyst, Bear Case, Market Expectations,
   Valuation rebuttal, Research Auditor, Portfolio Manager, **Map Curator** y **Discovery**.
 - **Embudo de costos** L0→L3 + comité, con reutilización por hash y presupuesto duro: cota de unos US$68 por ciclo,
   contra unos US$1.350 si se analizara todo en profundidad.
 - **Opciones**: calls con probabilidades risk-neutral y por escenarios, comparadas siempre contra comprar la acción.
 - **Cartera simulada** append-only, métricas vs SPY/QQQ/sectoriales y calibración (Brier).
-- **Dashboard** Streamlit, export a Excel/CSV y 85 tests.
+- **Dashboard** Streamlit, export a Excel/CSV y 134 tests (incluye las regresiones de tres rondas de revisión
+  adversarial).
 
 ## Instalación
 ```bash

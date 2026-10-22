@@ -21,6 +21,7 @@ import re
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
+from qa.config import utc_today
 from qa.provenance import DataPoint
 
 FLOW_METRICS = ["revenue", "cost_of_revenue", "gross_profit", "operating_income", "net_income", "d_and_a",
@@ -30,9 +31,16 @@ STOCK_METRICS = ["cash", "short_term_investments", "debt_total", "debt_noncurren
                  "shares_outstanding"]
 SHARE_METRICS = {"diluted_shares", "shares_outstanding"}
 MONETARY = (set(FLOW_METRICS) | set(STOCK_METRICS)) - SHARE_METRICS
+# Cuentas que fijan la fecha de balance. Las acciones en circulación de portada (dei) llevan la fecha de la
+# PORTADA del filing (semanas después del cierre) y el RPO es una nota: no anclan el balance.
+BALANCE_ANCHORS = [m for m in STOCK_METRICS if m not in ("shares_outstanding", "rpo")]
+DEBT_METRICS = ("debt_total", "debt_noncurrent", "debt_current")
 SOURCE_PRECEDENCE = {"confirmed_by_filing": 0, "company_statement": 1, "media_report": 2, "search_summary": 3,
                      "analyst_prior": 4, "hypothesis": 5, "synthetic_test_data": 6}
 CLUSTER_DAYS = 10
+BALANCE_SOFT_STALE_DAYS = 200      # advertencia
+BALANCE_HARD_STALE_DAYS = 480      # > ~16 meses: falta al menos un reporte anual -> balance no utilizable
+DEBT_LOOKBACK_DAYS = 200           # deuda no nula reportada en los ~2 balances previos bloquea "suponer 0"
 _SCALED = re.compile(r"^([A-Z]{3})[_ ](thousands|millions|billions)$", re.I)
 _SCALE = {"thousands": 1e3, "millions": 1e6, "billions": 1e9}
 
@@ -57,7 +65,9 @@ class Fundamentals:
     has_synthetic: bool = False              # cualquier dato sintético contamina el resultado (K4)
     currency_conflict: bool = False          # puntos en varias monedas de reporte (se descartaron los minoritarios)
     balance_date: date | None = None
-    debt_elsewhere: bool = False             # hay deuda reportada, pero no a la fecha de balance
+    balance_stale: bool = False              # balance demasiado antiguo: apalancamiento y valuación no calculables
+    balance_rank: int | None = None          # precedencia de la fuente que ancla el balance (0 = filing)
+    debt_elsewhere: bool = False             # hay deuda reciente no nula, pero no a la fecha de balance
     warnings: list[str] = field(default_factory=list)
 
     def v(self, name: str) -> float | None:
@@ -244,14 +254,40 @@ def _quarters(points: list[DataPoint], metric: str, additive: bool = True, vint:
         if n9_end is not None:
             derive(end, fy, by["9M"][n9_end], "FY-9M")
             continue
-        if not slot(end, rank(fy)):
-            continue
         prior = sorted(d for d in q if timedelta(days=60) < end - d < timedelta(days=300))
         if len(prior) >= 3 and _contiguous(prior[-3:] + [end]):
             last3 = prior[-3:]
-            q[end] = (fy.value - sum(q[d][0] for d in last3), f"derived:FY-Q1Q2Q3({fy.key()})",
-                      max([rank(fy)] + [q[d][2] for d in last3]))
+            fy_use, subs, note = _consistent_sum(fy, [(d, q[d]) for d in last3], by["Q"], vint)
+            r = max([rank(fy_use)] + [q[d][2] for d in last3])
+            if slot(end, r):     # solo se reemplaza un trimestre directo si la derivación es posible y no peor
+                q[end] = (fy_use.value - sum(subs), f"derived:FY-Q1Q2Q3({fy_use.key()})", r)
+                if note and warnings is not None:
+                    warnings.append(f"{metric}: {note}")
     return {d: v[:2] for d, v in sorted(q.items())}
+
+
+def _consistent_sum(fy: DataPoint, quarters: list, direct: dict[date, DataPoint],
+                    vint: dict) -> tuple[DataPoint, list[float], str | None]:
+    """Q4 = FY - (Q1+Q2+Q3) con vintages compatibles: cada trimestre directo se toma en el vintage conocido al
+    presentar el FY; si el FY es una re-expresión y ningún trimestre se re-expresó después, se usa el FY original."""
+    fv = vint.get(fy.key(), [fy])
+    qv = []
+    for d, (val, key, _) in quarters:
+        p = direct.get(d)
+        qv.append(vint.get(key, [p]) if p is not None and p.key() == key else None)   # None = trimestre derivado
+    fy_use, note = fy, None
+    known = [x.known_at for vs in qv if vs for x in vs if x.known_at]
+    if len(fv) > 1 and fy.known_at and not any(k >= fy.known_at - timedelta(days=CLUSTER_DAYS) for k in known):
+        fy_use = fv[0]
+        note = f"re-expresión del FY {fy.period_end} sin re-expresión de los trimestres: vintages originales"
+    subs = []
+    for (d, (val, _, _)), vs in zip(quarters, qv):
+        if not vs:
+            subs.append(val)
+            continue
+        cands = [x for x in vs if x.known_at and fy_use.known_at and x.known_at <= fy_use.known_at]
+        subs.append((cands[-1] if cands else vs[0]).value)
+    return fy_use, subs, note
 
 
 def _contiguous(dates: list[date]) -> bool:
@@ -260,20 +296,41 @@ def _contiguous(dates: list[date]) -> bool:
 
 def _ttm(series: dict[date, tuple[float, str]], end: date | None = None,
          fy: dict[date, DataPoint] | None = None) -> Metric:
-    dates = [d for d in series if end is None or d <= end + timedelta(days=CLUSTER_DAYS)]
+    lim = end + timedelta(days=CLUSTER_DAYS) if end is not None else None
+    dates = [d for d in series if lim is None or d <= lim]
+    q_ttm = None
     if len(dates) >= 4 and _contiguous(dates[-4:]):
         last4 = dates[-4:]
-        return Metric(sum(series[d][0] for d in last4), period=f"TTM a {last4[-1]}",
-                      inputs=[series[d][1] for d in last4])
-    # Respaldo: si el último ejercicio cerrado coincide con el último período, el FY ES el TTM.
-    if fy:
+        q_ttm = Metric(sum(series[d][0] for d in last4), period=f"TTM a {last4[-1]}",
+                       inputs=[series[d][1] for d in last4])
+    # El FY ES el TTM cuando es el último período: sin trimestres que lo cubran, o más reciente que el último
+    # TTM trimestral (un ejercicio posterior que no se puede partir en trimestres reemplaza un TTM viejo).
+    fy_d = max((d for d in (fy or {}) if lim is None or d <= lim), default=None)
+    if fy_d is not None:
         last = dates[-1] if dates else None
-        cands = [d for d in fy if (end is None or d <= end + timedelta(days=CLUSTER_DAYS))
-                 and (last is None or d >= last - timedelta(days=7))]
-        if cands:
-            d = max(cands)
-            return Metric(fy[d].value, period=f"FY a {d}", inputs=[fy[d].key()], note="TTM = ejercicio fiscal")
-    return Metric(None, note="menos de 4 trimestres contiguos")
+        newer = q_ttm is None and (last is None or fy_d >= last - timedelta(days=7)) or \
+            q_ttm is not None and fy_d > last + timedelta(days=7)
+        if newer:
+            return Metric(fy[fy_d].value, period=f"FY a {fy_d}", inputs=[fy[fy_d].key()], note="TTM = ejercicio fiscal")
+    return q_ttm or Metric(None, note="menos de 4 trimestres contiguos")
+
+
+def _period_end(m: Metric) -> date | None:
+    try:
+        return date.fromisoformat((m.period or "").rsplit(" a ", 1)[1])
+    except (IndexError, ValueError):
+        return None
+
+
+def _ttm_year_ago(series: dict, fy: dict, cur: Metric, tol: int = 20) -> Metric | None:
+    """TTM (o FY) que termina ~365 días antes del fin del TTM actual; None si no hay uno comparable por fecha."""
+    cur_end = _period_end(cur)
+    if cur.value is None or cur_end is None:
+        return None
+    target = cur_end - timedelta(days=365)
+    prev = _ttm(series, end=target, fy=fy)
+    pe = _period_end(prev)
+    return prev if prev.value is not None and pe is not None and abs((pe - target).days) <= tol else None
 
 
 def _yoy_point(dates: list[date], last: date, tol: int = 20) -> date | None:
@@ -288,9 +345,46 @@ def _div(a: float | None, b: float | None) -> float | None:
     return a / b
 
 
+def _balance_date(f: Fundamentals, stocks: dict[str, dict[date, DataPoint]], as_of: date) -> int:
+    """Fija f.balance_date y devuelve la precedencia de la fuente que la ancla.
+
+    1. Ancla = la fecha más reciente de la MEJOR fuente entre cuentas patrimoniales (no la portada dei).
+    2. Si una fuente aceptable de menor precedencia (p.ej. el comunicado de resultados, antes del 10-Q) trae un
+       balance POSTERIOR con caja y deuda, ese balance completo es el vigente. Si es parcial, se conserva el
+       filing (los datos parciales nunca reemplazan deuda reportada) y se advierte.
+    3. Un balance de más de BALANCE_HARD_STALE_DAYS no es utilizable (balance_stale -> K4, valuación bloqueada).
+    """
+    anchors = [p for m in BALANCE_ANCHORS for p in stocks[m].values()]
+    if not anchors:
+        return 9
+    best = min(rank(p) for p in anchors)
+    f.balance_date = max(p.period_end for p in anchors if rank(p) == best)
+    newer = [p for p in anchors if rank(p) <= max(best, 3)
+             and p.period_end > f.balance_date + timedelta(days=CLUSTER_DAYS)]
+    if newer:
+        nd = max(p.period_end for p in newer)
+        at_nd = [p for p in anchors if abs((p.period_end - nd).days) <= CLUSTER_DAYS]
+        names = {p.metric for p in at_nd}
+        if "cash" in names and names & set(DEBT_METRICS):
+            f.warnings.append(f"balance al {nd} de una fuente de menor precedencia, posterior al último de la mejor "
+                              f"fuente ({f.balance_date}): se usa ese balance (caja y deuda a la misma fecha)")
+            f.balance_date, best = nd, min(rank(p) for p in at_nd)
+        else:
+            f.warnings.append(f"datos de balance posteriores ({nd}) pero parciales (sin caja o sin deuda): "
+                              f"se conserva el balance al {f.balance_date}")
+    age = (as_of - f.balance_date).days
+    if age > BALANCE_HARD_STALE_DAYS:
+        f.balance_stale = True
+        f.warnings.append(f"balance demasiado antiguo: {f.balance_date} (> {BALANCE_HARD_STALE_DAYS} días): "
+                          "apalancamiento y valuación no calculables")
+    elif age > BALANCE_SOFT_STALE_DAYS:
+        f.warnings.append(f"balance desactualizado: {f.balance_date} (> {BALANCE_SOFT_STALE_DAYS} días)")
+    return best
+
+
 # =========================================================================== cálculo principal
 def compute_fundamentals(entity: str, points: list[DataPoint], as_of: date | None = None) -> Fundamentals:
-    as_of = as_of or date.today()
+    as_of = as_of or utc_today()
     f = Fundamentals(entity=entity, as_of=as_of, currency=None)
     pts, vint = select_points(points, as_of, f)
     vers = {p.verification.value for p in pts}
@@ -306,13 +400,13 @@ def compute_fundamentals(entity: str, points: list[DataPoint], as_of: date | Non
     for m in FLOW_METRICS:
         M[f"{m}_ttm"] = _ttm(series[m], fy=fy_by[m])
 
-    # ---- balance: una sola fecha, la más reciente de la MEJOR fuente disponible (entre todas las cuentas)
+    # ---- balance: una sola fecha (ver _balance_date); las cuentas de otra fecha no se mezclan
     stocks = {m: {p.period_end: p for p in pts if p.metric == m and p.period_type == "instant"} for m in STOCK_METRICS}
-    all_bs = [p for m in STOCK_METRICS for p in stocks[m].values()]
-    if all_bs:
-        best = min(rank(p) for p in all_bs)
-        f.balance_date = max(p.period_end for p in all_bs if rank(p) == best)
+    anchor_rank = _balance_date(f, stocks, as_of)
+    f.balance_rank = anchor_rank if f.balance_date is not None else None
     for m in STOCK_METRICS:
+        if m == "shares_outstanding":
+            continue
         at = None
         if f.balance_date is not None:
             at = next((d for d in stocks[m] if abs((d - f.balance_date).days) <= CLUSTER_DAYS), None)
@@ -323,11 +417,17 @@ def compute_fundamentals(entity: str, points: list[DataPoint], as_of: date | Non
             older = max((d for d in stocks[m]), default=None)
             M[m] = Metric(None, note=f"sin dato a la fecha de balance {f.balance_date}" +
                           (f" (último disponible {older}, no se mezcla)" if older else ""))
+    so = stocks["shares_outstanding"]          # acciones de portada: última cifra conocida, con su propia fecha
+    if so:
+        r_so = min(rank(p) for p in so.values())
+        d_so = max(d for d, p in so.items() if rank(p) == r_so)
+        M["shares_outstanding"] = Metric(so[d_so].value, period=str(d_so), inputs=[so[d_so].key()],
+                                         note="última cifra conocida (fecha de portada del filing)")
+    else:
+        M["shares_outstanding"] = Metric(None, note="sin dato")
     if f.balance_date is not None and M["cash"].value is None:
         f.warnings.append(f"sin caja a la fecha de balance {f.balance_date}: valuación no calculable")
-    debt_points = [p for m in ("debt_total", "debt_noncurrent", "debt_current") for p in stocks[m].values()]
-    if f.balance_date and (as_of - f.balance_date).days > 200:
-        f.warnings.append(f"balance desactualizado: {f.balance_date} ({(as_of - f.balance_date).days} días)")
+    debt_points = [p for m in DEBT_METRICS for p in stocks[m].values()]
 
     # Si solo hay un trimestre (p.ej. investigación web), exponer el último trimestre sin anualizar.
     for m in ("revenue", "net_income"):
@@ -339,14 +439,14 @@ def compute_fundamentals(entity: str, points: list[DataPoint], as_of: date | Non
     rev_dates = list(series["revenue"])
     M["revenue_growth_yoy"] = Metric(None, note="historia insuficiente")
     M["revenue_growth_q_yoy"] = Metric(None, note="historia insuficiente")
+    prev = _ttm_year_ago(series["revenue"], fy_by["revenue"], M["revenue_ttm"])
+    if prev is not None and prev.value and rev is not None:
+        M["revenue_growth_yoy"] = Metric(rev / prev.value - 1, period=f"{M['revenue_ttm'].period} vs {prev.period}",
+                                         inputs=M["revenue_ttm"].inputs + prev.inputs)
     if rev_dates:
         last = rev_dates[-1]
         ya = _yoy_point(rev_dates, last)
         if ya is not None:
-            prev = _ttm(series["revenue"], end=ya)
-            if prev.value and rev is not None and prev.period and prev.period.startswith("TTM"):
-                M["revenue_growth_yoy"] = Metric(rev / prev.value - 1, period=f"TTM {last} vs TTM {ya}",
-                                                 inputs=M["revenue_ttm"].inputs + prev.inputs)
             if series["revenue"][ya][0]:
                 M["revenue_growth_q_yoy"] = Metric(series["revenue"][last][0] / series["revenue"][ya][0] - 1,
                                                    period=f"{last} vs {ya}")
@@ -375,9 +475,17 @@ def compute_fundamentals(entity: str, points: list[DataPoint], as_of: date | Non
     elif comp:
         debt = sum(M[m].value for m in comp)
         debt_note = "no corriente + corriente a la fecha de balance"
-    f.debt_elsewhere = debt is None and bool(debt_points)
-    if f.debt_elsewhere:
-        f.warnings.append("deuda reportada en otra fecha distinta del balance: no se asume 0 (valuación bloqueada)")
+    if debt is None and f.balance_date is not None:
+        # Deuda NO NULA reportada cerca (≈2 balances previos) o después del balance, de una fuente aceptable:
+        # no se puede suponer 0. Un dato viejo (deuda ya repagada) o un 0 explícito van por el camino "SUPONE 0".
+        lo = f.balance_date - timedelta(days=DEBT_LOOKBACK_DAYS)
+        recent = [p for p in debt_points if p.value and rank(p) <= max(anchor_rank, 3) and p.period_end >= lo
+                  and abs((p.period_end - f.balance_date).days) > CLUSTER_DAYS]
+        f.debt_elsewhere = bool(recent)
+        if recent:
+            p = max(recent, key=lambda x: x.period_end)
+            f.warnings.append(f"deuda {p.metric} reportada al {p.period_end} pero no a la fecha de balance "
+                              f"{f.balance_date}: no se asume 0 (valuación bloqueada)")
     M["gross_margin"] = Metric(_div(gp, rev), "TTM")
     M["ebitda_ttm"] = Metric(ebitda, "TTM", note="EBIT + D&A (no ajustado)")
     M["ebitda_margin"] = Metric(_div(ebitda, rev), "TTM")
@@ -399,8 +507,11 @@ def compute_fundamentals(entity: str, points: list[DataPoint], as_of: date | Non
     invested = None
     if M["equity"].value is not None and debt is not None and cash is not None:
         invested = M["equity"].value + debt - cash
-    M["roic"] = Metric(_div(ebit * (1 - tax_rate), invested) if ebit is not None and invested and invested > 0 else None,
-                       note=f"NOPAT/(equity+deuda-caja); tasa {tax_rate:.0%}")
+    if ebit is not None and ebit > 0 and invested is not None and invested <= 0:
+        M["roic"] = Metric(None, note="n.m.: EBIT > 0 con capital invertido (equity+deuda-caja) <= 0")
+    else:
+        M["roic"] = Metric(_div(ebit * (1 - tax_rate), invested) if ebit is not None and invested and invested > 0
+                           else None, note=f"NOPAT/(equity+deuda-caja); tasa {tax_rate:.0%}")
     if fcf is not None and fcf < 0 and cash is not None:
         M["cash_runway_quarters"] = Metric(max(cash, 0.0) / (-fcf / 4), note="caja / quema trimestral de FCF")
     else:
@@ -414,15 +525,12 @@ def compute_fundamentals(entity: str, points: list[DataPoint], as_of: date | Non
         M["dilution_yoy"] = (Metric(_div(sh[d[-1]][0], sh[ya][0]) - 1, period=f"{d[-1]} vs {ya}")
                              if ya is not None and sh[ya][0] else Metric(None, note="sin trimestre comparable"))
     # Margen incremental (apalancamiento operativo): ΔEBIT / ΔRevenue TTM interanual
-    oi_dates = list(series["operating_income"])
-    if rev_dates and oi_dates and rev is not None and ebit is not None:
-        ya_r = _yoy_point(rev_dates, rev_dates[-1])
-        ya_o = _yoy_point(oi_dates, oi_dates[-1])
-        if ya_r is not None and ya_o is not None:
-            prev_rev = _ttm(series["revenue"], end=ya_r).value
-            prev_oi = _ttm(series["operating_income"], end=ya_o).value
-            if None not in (prev_rev, prev_oi) and rev != prev_rev:
-                M["incremental_margin"] = Metric((ebit - prev_oi) / (rev - prev_rev), period="TTM vs TTM-1")
+    if rev is not None and ebit is not None and \
+            _period_end(M["revenue_ttm"]) == _period_end(M["operating_income_ttm"]):
+        p_rev = _ttm_year_ago(series["revenue"], fy_by["revenue"], M["revenue_ttm"])
+        p_oi = _ttm_year_ago(series["operating_income"], fy_by["operating_income"], M["operating_income_ttm"])
+        if p_rev is not None and p_oi is not None and _period_end(p_rev) == _period_end(p_oi) and rev != p_rev.value:
+            M["incremental_margin"] = Metric((ebit - p_oi.value) / (rev - p_rev.value), period="TTM vs TTM-1")
 
     key_needed = ["revenue_ttm", "operating_income_ttm", "ocf_ttm", "capex_ttm", "cash", "equity", "diluted_shares"]
     f.missing = [k for k in key_needed if (M.get(k) is None or M[k].value is None)]

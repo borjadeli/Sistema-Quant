@@ -67,4 +67,29 @@ Estado al 2026-10-21. ✅ hecho y verificado por tests · 🟡 implementado, fal
    reportaron 48 hallazgos, que dos escépticos por hallazgo intentaron refutar.
 2. **Corrección.** Se corrigieron todos (commit `bea9fdb`) y cada uno tiene un test de regresión que reproduce el
    escenario de falla original (`tests/test_review_regressions.py`).
-3. **Reverificación.** Una segunda ronda adversarial volvió a revisar las correcciones; resultado al pie de este plan.
+3. **Ronda 2 (commit `644954c`).** Una reverificación adversarial encontró residuales y regresiones introducidas por
+   los propios fixes (mezcla de vintages en trimestres YTD, ancla del balance, moneda por conteo, EV/FCF con FCF
+   apalancado, deuda de otra fecha, migración de bases viejas, reemplazo de filas manuales, cadencia de la
+   performance). Se corrigieron con tests `test_r2_*`.
+4. **Ronda 3 (2026-10-22).** Nueva reverificación de 9 frentes: 28 residuales o bugs nuevos, uno crítico (la fecha
+   de balance quedaba anclada a la fecha de portada `dei` de las acciones, lo que bloqueaba la valuación de todo
+   emisor SEC real). Correcciones principales:
+   - balance: ancla en cuentas patrimoniales, balance posterior completo de menor precedencia, balance de > 480
+     días bloquea, `debt_elsewhere` solo con deuda no nula reciente; derivación Q4 = FY − (Q1+Q2+Q3) con vintages
+     coherentes; un FY posterior reemplaza a un TTM viejo;
+   - reutilización: solo desde la misma fecha de decisión o anterior; Map Curator/Discovery sin reutilización;
+     hash estable (sin conteos de días ni montos); un reloj UTC; eventos de precio por episodio; registro de
+     bottlenecks point-in-time;
+   - comité: K9 de una posición en cartera no la vende (se mantiene sin aumentos); K9 por escenarios o bear
+     faltantes; recomendación registrada para todo cambio de peso; banda HOLD = umbral de operación (0.5% del NAV);
+     notas de restricción completas por empresa;
+   - costos: errores de transporte y Ctrl-C registran lo facturado y no abortan el embudo; tope de presupuesto por
+     solicitud y corte de `pause_turn`; dry-run sin efectos y con el rebuttal estimado; `pipeline_runs` para que el
+     dashboard ignore corridas cortadas;
+   - mapa: las propuestas se validan sobre el mapa/universo RESULTANTE con los loaders reales (claves reservadas,
+     tipos, duplicados sin distinguir mayúsculas ni símbolo de datos); Discovery conserva los nodos originales y la
+     moneda sale de la bolsa (nunca USD por defecto);
+   - datos manuales: BOM/codificación/CSV mal formado sin abortar, rechazo de saldos tipados como flujo,
+     reconciliación por proveedor (borra huérfanas), fechas de semillas estrictas.
+   Cada caso tiene su test en `tests/test_review_round3.py`; los scripts de reproducción de los verificadores
+   también se volvieron a correr contra el código corregido.

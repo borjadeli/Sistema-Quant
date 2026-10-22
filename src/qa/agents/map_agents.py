@@ -7,7 +7,9 @@ curada. Así el YAML humano queda limpio y todo cambio automático es auditable 
 from __future__ import annotations
 
 import json
-from datetime import date
+import shutil
+import tempfile
+from pathlib import Path
 
 import yaml
 from sqlalchemy import select
@@ -15,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from qa.agents.base import RunContext, run_agent
 from qa.bottlenecks import BottleneckRecord
-from qa.config import DATA_DIR
+from qa.config import DATA_DIR, MAP_PATH, RELATIONSHIPS_PATH, UNIVERSE_PATH
 from qa.db.schema import FeedEvent, MapChangeProposal
 from qa.map.model import IndustryMap
 from qa.universe.model import Universe, coverage_report
@@ -41,7 +43,7 @@ def run_map_curator(ctx: RunContext, m: IndustryMap, reg: dict[str, BottleneckRe
     pack = map_summary(m, reg, u)
     res = run_agent(ctx, "map_curator", "industry_map",
                     "Revisá el mapa y el registro de cuellos de botella con búsqueda web. Proponé cambios con evidencia.", pack)
-    if not res.ok:
+    if not res.ok or res.status == "reused":      # una salida reutilizada no son novedades: no se re-proponen
         return []
     ids = []
     for p in res.output.proposals:
@@ -54,7 +56,7 @@ def run_map_curator(ctx: RunContext, m: IndustryMap, reg: dict[str, BottleneckRe
         ctx.session.add(row)
         ctx.session.flush()
         ids.append(row.id)
-        ctx.session.add(FeedEvent(event_date=date.today(), event_type="map_change", title=f"Propuesta: {p.change_type}",
+        ctx.session.add(FeedEvent(event_date=ctx.decision_date, event_type="map_change", title=f"Propuesta: {p.change_type}",
                                   detail=p.rationale[:1000], verification="hypothesis", impact="unknown",
                                   url=(p.evidence[0].source_url if p.evidence else None)))
     return ids
@@ -88,21 +90,29 @@ def run_discovery(ctx: RunContext, m: IndustryMap, reg: dict[str, BottleneckReco
                 "all_universe_tickers": sorted(u.companies)}
         res = run_agent(ctx, "discovery", nid, f"Buscá empresas cotizantes que suministren el nodo '{node.name}' "
                                               "y no estén en el universo.", pack)
-        if not res.ok:
+        if not res.ok or res.status == "reused":
             continue
         pending_tickers = {(x.payload or {}).get("ticker") for x in ctx.session.scalars(
             select(MapChangeProposal).where(MapChangeProposal.change_type == "add_company",
                                             MapChangeProposal.status.in_(("pending", "applied"))))}
+        known = {t.upper() for t in u.companies} | {str(t).upper() for t in pending_tickers if t}
         for cand in res.output.candidates:
-            if cand.ticker and (cand.ticker in u.companies or cand.ticker in pending_tickers):
+            if cand.ticker and cand.ticker.upper() in known:
                 continue
+            payload = cand.model_dump()
+            rationale = f"{cand.role} — {cand.why_overlooked}"
             bad_nodes = [n for n in cand.map_nodes if n not in m.nodes]
             if bad_nodes:
-                cand = cand.model_copy(update={"map_nodes": [n for n in cand.map_nodes if n in m.nodes] or [nid]})
-            pending_tickers.add(cand.ticker)
-            row = MapChangeProposal(agent_run_id=res.run_id, change_type="add_company", payload=cand.model_dump(),
-                                    evidence=[e.model_dump() for e in cand.evidence],
-                                    rationale=f"{cand.role} — {cand.why_overlooked}")
+                # no se reasigna en silencio: se conserva lo que dijo el agente y un humano elige el nodo
+                payload["original_map_nodes"] = list(cand.map_nodes)
+                payload["map_nodes"] = [n for n in cand.map_nodes if n in m.nodes]
+                rationale += (f" [ATENCIÓN: nodos inexistentes {bad_nodes} descartados (buscado en '{nid}'); "
+                              "asignar nodo antes de aprobar]" if not payload["map_nodes"] else
+                              f" [nodos inexistentes descartados: {bad_nodes}]")
+            if cand.ticker:
+                known.add(cand.ticker.upper())
+            row = MapChangeProposal(agent_run_id=res.run_id, change_type="add_company", payload=payload,
+                                    evidence=[e.model_dump() for e in cand.evidence], rationale=rationale)
             ctx.session.add(row)
             ctx.session.flush()
             ids.append(row.id)
@@ -121,21 +131,58 @@ def review_proposal(s: Session, pid: int, approve: bool, reviewer: str, note: st
     return p
 
 
+NODE_KEYS = {"id", "name", "type", "segment", "concentration", "substitutability", "depends_on", "notes"}
+EDGE_KEYS = {"source", "target", "relation"}
+
+
+def _check_keys(entry: dict, allowed: set[str], what: str) -> None:
+    extra = sorted(k for k in entry if k not in allowed)
+    if extra:      # 'layer' lo deriva el segmento; '_*' son metadatos internos; el resto no existe en el modelo
+        raise ValueError(f"{what}: campos no permitidos {extra} (permitidos: {sorted(allowed)})")
+
+
+def _simulate(kind: str, entry: dict):  # noqa: ANN202
+    """Carga mapa y universo CON el cambio, en una copia temporal y con los loaders reales.
+    Devuelve (mapa, universo) resultantes; cualquier error de carga se reporta como ValueError."""
+    from qa.map.model import load_map  # noqa: PLC0415
+    from qa.universe.model import load_universe  # noqa: PLC0415
+
+    with tempfile.TemporaryDirectory() as tmp:
+        t = Path(tmp)
+        shutil.copy(MAP_PATH, t / "industry_map.yaml")
+        shutil.copy(UNIVERSE_PATH, t / "companies.yaml")
+        for src, name in ((MAP_OVERLAY, "map_overlay.yaml"), (DISCOVERED, "discovered.yaml")):
+            if src.exists():
+                shutil.copy(src, t / name)
+        target = t / ("discovered.yaml" if kind == "company" else "map_overlay.yaml")
+        data = (yaml.safe_load(target.read_text(encoding="utf-8")) if target.exists() else None) or {}
+        key = {"company": "companies", "node": "nodes", "edge": "edges"}[kind]
+        data.setdefault(key, [])
+        data[key].append(entry)
+        target.write_text(yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8")
+        try:
+            return load_map(t / "industry_map.yaml"), load_universe(t / "companies.yaml", RELATIONSHIPS_PATH)
+        except Exception as e:        # noqa: BLE001 — TypeError/ValidationError/KeyError del loader
+            raise ValueError(f"el cambio rompe la carga del mapa/universo: {type(e).__name__}: {e}") from e
+
+
 def _validate_overlay(kind: str, entry: dict) -> None:
-    """Simula el cambio sobre el mapa/universo actual y falla ANTES de escribir si rompe algo."""
+    """Simula el cambio y falla ANTES de escribir si el RESULTADO rompe algo. Los errores que el estado
+    actual ya tenía no bloquean (si no, un cambio malo impediría aplicar la corrección)."""
     from qa.map.model import load_map, validate_map  # noqa: PLC0415
-    from qa.universe.model import Company, load_universe, validate_universe  # noqa: PLC0415
+    from qa.universe.model import load_universe, validate_universe  # noqa: PLC0415
     import networkx as nx  # noqa: PLC0415
 
     m, u = load_map(), load_universe()
     if kind == "company":
-        if entry["ticker"] in u.companies:
+        t = str(entry["ticker"]).upper()
+        if t in {k.upper() for k in u.companies}:
             raise ValueError(f"{entry['ticker']} ya está en el universo")
         bad = [n for n in entry.get("nodes", []) if n not in m.nodes]
         if not entry.get("nodes") or bad:
             raise ValueError(f"nodos inexistentes en el mapa: {bad or 'ninguno indicado'}")
-        Company(**entry)                                   # valida tipos/campos
     elif kind == "node":
+        _check_keys(entry, NODE_KEYS, "add_node")
         for k in ("id", "name", "type", "segment"):
             if not entry.get(k):
                 raise ValueError(f"add_node requiere '{k}'")
@@ -147,16 +194,40 @@ def _validate_overlay(kind: str, entry: dict) -> None:
         if bad:
             raise ValueError(f"depends_on con nodos inexistentes: {bad}")
     elif kind == "edge":
+        _check_keys(entry, EDGE_KEYS, "add_edge")
         for k in ("source", "target"):
             if entry.get(k) not in m.nodes:
                 raise ValueError(f"add_edge: {k} inexistente ({entry.get(k)})")
-        g = m.graph()
-        g.add_edge(entry["source"], entry["target"])
-        if not nx.is_directed_acyclic_graph(g):
+        if any(e.source == entry["source"] and e.target == entry["target"] for e in m.edges):
+            raise ValueError("add_edge: la arista ya existe")
+    m2, u2 = _simulate(kind, entry)
+    if kind == "node" and entry["id"] not in m2.nodes:
+        raise ValueError(f"add_node: el nodo {entry['id']} no quedó incorporado")
+    if kind == "edge":
+        if not any(e.source == entry["source"] and e.target == entry["target"] for e in m2.edges):
+            raise ValueError("add_edge: la arista no quedó incorporada")
+        if not nx.is_directed_acyclic_graph(m2.graph()):
             raise ValueError("add_edge crearía un ciclo en el mapa")
-    errs = validate_map(m) + validate_universe(u, m)
-    if errs:
-        raise ValueError(f"el mapa/universo actual ya tiene errores; corregir antes de aplicar: {errs[:3]}")
+    if kind == "company" and str(entry["ticker"]) not in u2.companies:
+        raise ValueError(f"add_company: {entry['ticker']} no quedó incorporada")
+    before = set(validate_map(m) + validate_universe(u, m))
+    new = [e for e in validate_map(m2) + validate_universe(u2, m2) if e not in before]
+    if new:
+        raise ValueError(f"el cambio introduce errores de validación: {new[:5]}")
+
+
+def _company_currency(c: dict) -> str:
+    """Moneda de cotización: la del agente si coincide con la bolsa; si falta, la de la bolsa. Nunca USD por defecto."""
+    from qa.universe.model import EXCHANGE_CURRENCY  # noqa: PLC0415
+    exch = str(c.get("exchange") or "").upper()
+    by_exch = EXCHANGE_CURRENCY.get(exch)
+    given = (c.get("currency") or "").upper() or None
+    if given and by_exch and given != by_exch:
+        raise ValueError(f"moneda {given} contradice la bolsa {exch} ({by_exch}): verificar y editar antes de aprobar")
+    ccy = given or by_exch
+    if not ccy:
+        raise ValueError(f"moneda desconocida para la bolsa {exch!r}: indicar 'currency' antes de aprobar")
+    return ccy
 
 
 def apply_proposal(p: MapChangeProposal) -> None:
@@ -166,21 +237,24 @@ def apply_proposal(p: MapChangeProposal) -> None:
         if not c.get("ticker") or not c.get("exchange"):
             raise ValueError("add_company requiere ticker y bolsa verificados antes de aplicar")
         entry = {"ticker": c["ticker"], "name": c["name"], "exchange": c["exchange"],
-                 "country": c.get("country") or "??", "currency": c.get("currency") or "USD",
+                 "country": c.get("country") or "??", "currency": _company_currency(c),
                  "nodes": c.get("map_nodes") or [],
                  "exposure": {"ai": c.get("estimated_exposure") if c.get("estimated_exposure") in ("H", "M", "L") else "M",
                               "energy": "N", "commodities": "N"},
                  "status": "candidate", "verification": "search_summary", "notes": f"discovery proposal #{p.id}"}
         _validate_overlay("company", entry)
-        data = yaml.safe_load(DISCOVERED.read_text(encoding="utf-8")) if DISCOVERED.exists() else {"companies": []}
-        data["companies"].append(entry)
+        data = (yaml.safe_load(DISCOVERED.read_text(encoding="utf-8")) if DISCOVERED.exists() else None) or {}
+        data.setdefault("companies", []).append(entry)
         DISCOVERED.write_text(yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8")
     elif p.change_type in ("add_node", "add_edge"):
         if not isinstance(p.payload, dict) or "raw" in p.payload:
             raise ValueError("payload no estructurado (JSON inválido del agente): editar antes de aprobar")
-        _validate_overlay("node" if p.change_type == "add_node" else "edge", p.payload)
-        data = yaml.safe_load(MAP_OVERLAY.read_text(encoding="utf-8")) if MAP_OVERLAY.exists() else {"nodes": [], "edges": []}
-        data["nodes" if p.change_type == "add_node" else "edges"].append(p.payload | {"_proposal": p.id})
+        kind = "node" if p.change_type == "add_node" else "edge"
+        _validate_overlay(kind, p.payload)
+        data = (yaml.safe_load(MAP_OVERLAY.read_text(encoding="utf-8")) if MAP_OVERLAY.exists() else None) or {}
+        data.setdefault("nodes", [])
+        data.setdefault("edges", [])
+        data["nodes" if kind == "node" else "edges"].append(p.payload | {"_proposal": p.id})
         MAP_OVERLAY.write_text(yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8")
     else:
         raise ValueError(f"{p.change_type}: aplicar manualmente en data/bottlenecks (requiere revisión de evidencia)")

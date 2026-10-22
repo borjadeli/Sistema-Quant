@@ -21,29 +21,39 @@ class PositionMeta:
     kill_reasons: list[str] = field(default_factory=list)
 
 
-def enforce_constraints(targets: dict[str, float], meta: dict[str, PositionMeta],
-                        cfg: dict | None = None) -> tuple[dict[str, float], list[str]]:
+def enforce_constraints(targets: dict[str, float], meta: dict[str, PositionMeta], cfg: dict | None = None,
+                        notes_by: dict[str, list[str]] | None = None) -> tuple[dict[str, float], list[str]]:
+    """`notes_by` (opcional) recibe, por empresa, TODAS las restricciones que cambiaron su peso (incluidas las
+    de grupo: capa, bottleneck, caja mínima), para registrarlas en su recomendación."""
     cfg = cfg or settings()["portfolio"]
     notes: list[str] = []
+    by = notes_by if notes_by is not None else {}
+
+    def note(cid: str, txt: str) -> None:
+        notes.append(f"{cid}: {txt}")
+        by.setdefault(cid, []).append(f"{cid}: {txt}")
+
     w = {k: max(0.0, float(v)) for k, v in targets.items() if v and v > 0}
     for cid in list(w):
         m = meta.get(cid)
         if m is None:
-            notes.append(f"{cid}: sin dossier -> 0")
+            note(cid, "sin dossier -> 0")
             w.pop(cid)
         elif not m.eligible:
-            notes.append(f"{cid}: kill switch ({'; '.join(m.kill_reasons)}) -> 0")
+            note(cid, f"kill switch ({'; '.join(m.kill_reasons)}) -> 0")
             w.pop(cid)
         elif m.speculative and w[cid] > SPECULATIVE_MAX:
-            notes.append(f"{cid}: especulativa, {w[cid]:.1%} -> {SPECULATIVE_MAX:.0%}")
+            note(cid, f"especulativa, {w[cid]:.1%} -> {SPECULATIVE_MAX:.0%}")
             w[cid] = SPECULATIVE_MAX
     for cid in list(w):
         if w[cid] > cfg["max_weight"]:
-            notes.append(f"{cid}: {w[cid]:.1%} -> tope {cfg['max_weight']:.0%}")
+            note(cid, f"{w[cid]:.1%} -> tope {cfg['max_weight']:.0%}")
             w[cid] = cfg["max_weight"]
     if len(w) > cfg["max_positions"]:
         keep = sorted(w, key=w.get, reverse=True)[: cfg["max_positions"]]
-        notes += [f"{cid}: fuera por máximo de {cfg['max_positions']} posiciones" for cid in w if cid not in keep]
+        for cid in w:
+            if cid not in keep:
+                note(cid, f"fuera por máximo de {cfg['max_positions']} posiciones")
         w = {k: w[k] for k in keep}
     for group_key, cap in (("layer", cfg["max_weight_per_layer"]), ("primary_bottleneck", cfg["max_weight_per_bottleneck"])):
         groups: dict[str, list[str]] = {}
@@ -55,15 +65,20 @@ def enforce_constraints(targets: dict[str, float], meta: dict[str, PositionMeta]
             tot = sum(w[c] for c in members)
             if tot > cap + 1e-9:
                 f = cap / tot
+                txt = f"{group_key}={g}: {tot:.1%} -> {cap:.0%} (escalado proporcional)"
                 for c in members:
                     w[c] *= f
-                notes.append(f"{group_key}={g}: {tot:.1%} -> {cap:.0%} (escalado proporcional)")
+                    by.setdefault(c, []).append(txt)
+                notes.append(txt)
     invest_max = 1 - cfg["min_cash"]
     tot = sum(w.values())
     if tot > invest_max:
         f = invest_max / tot
         w = {k: v * f for k, v in w.items()}
-        notes.append(f"total {tot:.1%} -> {invest_max:.0%} (caja mínima)")
+        txt = f"total {tot:.1%} -> {invest_max:.0%} (caja mínima)"
+        notes.append(txt)
+        for c in w:
+            by.setdefault(c, []).append(txt)
     if 0 < len(w) < cfg["min_positions"]:
         notes.append(f"solo {len(w)} posiciones (< mínimo {cfg['min_positions']}): se mantiene el resto en caja")
     return {k: round(v, 4) for k, v in w.items()}, notes

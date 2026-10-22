@@ -63,7 +63,7 @@ def test_reverse_dcf_monotonic_in_price():
     assert lo.implied_revenue_cagr_10y < hi.implied_revenue_cagr_10y
 
 
-def test_valuation_rule_anchor():
+def test_valuation_rule_range_and_none():  # anclas exactas: test_r3_valuation_rule_anchors_and_penalty
     ss = run_scenarios(scen(), fund("TEST_ALPHA"), MK)
     fs = score_valuation(ss)
     assert 0 <= fs.score <= 10 and fs.method == "rule"
@@ -95,5 +95,5 @@ def test_kill_switches():
     assert any(k.startswith("K5") for k in sc2.kill_switches)
 
 
-def test_financial_quality_penalizes_missing():
+def test_financial_quality_orders_quality_over_burner():  # faltantes: test_r3_missing_core_metric_*
     assert score_financial_quality(fund("TEST_ALPHA")).score > score_financial_quality(fund("TEST_BURN")).score

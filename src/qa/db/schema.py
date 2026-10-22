@@ -166,6 +166,7 @@ class DataPointRow(Base):
     inputs: Mapped[list] = mapped_column(JSON, default=list)
     author: Mapped[str | None] = mapped_column(String(80))
     note: Mapped[str | None] = mapped_column(Text)
+    provider: Mapped[str | None] = mapped_column(String(40), index=True)   # quién la cargó (reconciliación)
     # Una fila por VINTAGE (known_at): los valores re-expresados no pisan lo que se sabía antes.
     __table_args__ = (UniqueConstraint("entity", "metric", "period_type", "period_end", "kind",
                                        "source_name", "known_at", name="uq_datapoint"),)
@@ -222,6 +223,20 @@ class OptionQuote(Base):
 
 
 # --------------------------------------------------------------------------- agentes y análisis
+class PipelineRun(Base):
+    """Estado de cada corrida del embudo. Los costos (AgentRun) se persisten llamada a llamada, así que una corrida
+    que se corta deja filas parciales: el dashboard solo muestra scores/escenarios/recomendaciones de corridas
+    `completed` (o de bases anteriores a esta tabla)."""
+    __tablename__ = "pipeline_runs"
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(12), default="running")   # running | completed
+    mode: Mapped[str | None] = mapped_column(String(20))
+    decision_date: Mapped[date | None] = mapped_column(Date)
+    tiers: Mapped[list] = mapped_column(JSON, default=list)
+
+
 class AgentRun(Base):
     """Cada llamada de agente queda registrada: modelo, prompt version, input hash, salida, costo."""
     __tablename__ = "agent_runs"
@@ -295,6 +310,7 @@ class ScenarioSet(Base):
     __tablename__ = "scenarios"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    pipeline_run_id: Mapped[str | None] = mapped_column(String(40))
     company_id: Mapped[str] = mapped_column(String(40), index=True)
     author: Mapped[str] = mapped_column(String(60))
     price_at_creation: Mapped[float | None] = mapped_column(Float)

@@ -22,7 +22,7 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-from qa.config import DATA_DIR, settings
+from qa.config import DATA_DIR, settings, utc_today
 
 
 def _ctx(s, args, llm=None):  # noqa: ANN001, ANN202
@@ -52,7 +52,7 @@ def cmd_init(args) -> None:  # noqa: ANN001
         repo.sync_map(s, m)
         repo.sync_universe(s, u, m)
         repo.sync_bottlenecks(s, [b.as_dict() for b in reg.values()])
-        n = repo.upsert_datapoints(s, import_seed_research())
+        n = repo.upsert_datapoints(s, import_seed_research(), provider="web_research_seed")   # reconcilia todo
     print(f"OK: mapa v{m.version} ({len(m.nodes)} nodos), {len(u.companies)} empresas, {len(reg)} bottlenecks, "
           f"{n} datapoints de investigación semilla (search_summary)")
 
@@ -83,7 +83,7 @@ def cmd_ingest(args) -> None:  # noqa: ANN001
             s.commit()
         if args.benchmarks:
             ingest_benchmarks(s, rep)
-        nf = detect_new_filings(s, date.today() - timedelta(days=30))
+        nf = detect_new_filings(s, utc_today() - timedelta(days=30))
         nr = detect_restatements(s, date.min)          # todas (deduplicadas): también backfills y re-expresiones viejas
         npm = detect_price_moves(s)
     print(f"OK {len(rep.ok)} | con errores {len(rep.failed)} | feed: {nf} filings, {nr} re-expresiones, "
@@ -167,7 +167,7 @@ def cmd_options(args) -> None:  # noqa: ANN001
     from qa.db.session import session_scope
     from qa.options.analyzer import analyze_calls
     from qa.providers.base import ProviderUnavailable
-    from qa.providers.yahoo import YahooProvider
+    from qa.providers.registry import options_provider
     from qa.valuation.core import ScenarioSet
     m, u, reg = _load()
     tk = args.ticker.strip().upper()
@@ -176,7 +176,7 @@ def cmd_options(args) -> None:  # noqa: ANN001
         print(f"Ticker desconocido en el universo: {args.ticker}")
         sys.exit(2)
     try:
-        chain = YahooProvider().chain(c.yahoo_symbol)
+        chain = options_provider().chain(c.yahoo_symbol)
     except ProviderUnavailable as e:
         print(f"Sin cadena de opciones verificable: {e}. No se evalúan calls sin datos actuales.")
         sys.exit(2)

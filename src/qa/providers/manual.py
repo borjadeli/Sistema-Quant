@@ -9,7 +9,7 @@ from __future__ import annotations
 import csv
 import json
 import re
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 from qa.config import DATA_DIR, FIXTURES_DIR, RESEARCH_DIR
@@ -23,23 +23,36 @@ NON_MONETARY = {"diluted_shares", "shares_outstanding"}
 
 class ManualCsvProvider:
     """Datos cargados a mano con fuente. Filas inválidas se RECHAZAN individualmente (quedan en `rejected`)
-    sin abortar la ingesta del resto del universo."""
+    sin abortar la ingesta del resto del universo.
+
+    Proveedor EDITABLE: el contenido actual de los CSV es la verdad; la ingesta reconcilia la base (borra filas
+    que ya no están o que ahora se rechazan). Si un archivo no se pudo leer entero (`file_errors`), no se
+    reconcilia (no se borran datos por un archivo ilegible) y se avisa."""
     name = "manual_csv"
+    editable = True
 
     def __init__(self, folder: Path = DATA_DIR / "manual"):
         self.folder = folder
         self._cache: list[DataPoint] | None = None
         self.rejected: list[str] = []
+        self.file_errors: list[str] = []
 
     def _load(self) -> list[DataPoint]:
         if self._cache is None:
             out = []
             for path in sorted(self.folder.glob("*.csv")) if self.folder.exists() else []:
-                pts, bad = load_manual_csv(path)
+                pts, bad, file_err = load_manual_csv(path)
                 out += pts
                 self.rejected += bad
+                if file_err:
+                    self.file_errors.append(file_err)
             self._cache = out
         return self._cache
+
+    @property
+    def reconcile_safe(self) -> bool:
+        self._load()
+        return not self.file_errors
 
     def supports(self, company: Company) -> bool:
         return any(p.entity == company.id for p in self._load())
@@ -49,6 +62,7 @@ class ManualCsvProvider:
 
 
 def _parse_row(row: dict, where: str) -> DataPoint:
+    from qa.fundamentals.metrics import FLOW_METRICS, STOCK_METRICS  # noqa: PLC0415 — mismo vocabulario
     missing = [k for k in REQUIRED if not (row.get(k) or "").strip()]
     metric = (row.get("metric") or "").strip()
     if metric not in NON_MONETARY and not (row.get("currency") or "").strip():
@@ -58,6 +72,12 @@ def _parse_row(row: dict, where: str) -> DataPoint:
     ptype = row["period_type"].strip()
     if ptype not in PERIOD_TYPES:
         raise ValueError(f"{where}: period_type '{ptype}' inválido (usar {sorted(PERIOD_TYPES)})")
+    if metric not in set(FLOW_METRICS) | set(STOCK_METRICS) | {"diluted_shares"}:
+        raise ValueError(f"{where}: métrica desconocida '{metric}'")
+    if metric in STOCK_METRICS and ptype != "instant":
+        raise ValueError(f"{where}: {metric} es un saldo de balance: period_type debe ser 'instant' (no '{ptype}')")
+    if metric not in STOCK_METRICS and ptype == "instant":
+        raise ValueError(f"{where}: {metric} es un flujo del período: period_type no puede ser 'instant'")
     period_end = date.fromisoformat(row["period_end"].strip())
     known_at = date.fromisoformat(row["known_at"].strip())
     if known_at < period_end:
@@ -74,16 +94,31 @@ def _parse_row(row: dict, where: str) -> DataPoint:
         known_at=known_at, author=row.get("author") or "manual_entry")
 
 
-def load_manual_csv(path: Path) -> tuple[list[DataPoint], list[str]]:
-    """Devuelve (datapoints válidos, motivos de rechazo por fila)."""
+def load_manual_csv(path: Path) -> tuple[list[DataPoint], list[str], str | None]:
+    """Devuelve (datapoints válidos, motivos de rechazo por fila con archivo:línea, error de archivo o None).
+
+    Acepta UTF-8 con o sin BOM (Excel "CSV UTF-8"). Un archivo en otra codificación o con comillas mal cerradas
+    no aborta la ingesta: se reporta y se conservan las filas válidas leídas antes del error."""
     out, rejected = [], []
-    with open(path, encoding="utf-8") as f:
-        for i, row in enumerate(csv.DictReader(f), start=2):
-            try:
-                out.append(_parse_row(row, f"{path.name}:{i}"))
-            except (ValueError, KeyError) as e:
-                rejected.append(str(e))
-    return out, rejected
+    line = 1
+    try:
+        with open(path, encoding="utf-8-sig", newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                line = reader.line_num
+                where = f"{path.name}:{line}"
+                try:
+                    out.append(_parse_row(row, where))
+                except (ValueError, KeyError) as e:
+                    msg = str(e)
+                    rejected.append(msg if msg.startswith(where) else f"{where}: {type(e).__name__}: {msg}")
+    except UnicodeDecodeError as e:
+        err = f"{path.name}: no es UTF-8 ({e.reason} en el byte {e.start}): guardar como 'CSV UTF-8'"
+        return out, rejected + [err], err
+    except csv.Error as e:
+        err = f"{path.name}:{line}: CSV mal formado ({e}): se descarta el resto del archivo"
+        return out, rejected + [err], err
+    return out, rejected, None
 
 
 # --------------------------------------------------------------------------- research import
@@ -112,8 +147,8 @@ def import_seed_research(path: Path = RESEARCH_DIR / "seed_companies_verified.js
         ccy, scale = m.group(1).upper(), _SCALE[(m.group(2) or "").lower() or None]
         period_end = date.fromisoformat(q["period_end_date"])
         known = _parse_date(q.get("source_date"))
-        if known is None or known < period_end:
-            continue          # sin fecha de publicación confiable no hay point-in-time: no se importa
+        if known is None or known <= period_end:
+            continue          # sin fecha de publicación confiable (posterior al cierre) no hay point-in-time
         # flujos = trimestre; caja y deuda = saldos (instant) a la fecha de cierre
         for metric, field, ptype in (("revenue", "revenue", "Q"), ("net_income", "gaap_net_income", "Q"),
                                      ("cash", "cash_and_equivalents", "instant"),
@@ -132,21 +167,29 @@ def import_seed_research(path: Path = RESEARCH_DIR / "seed_companies_verified.js
     return out
 
 
+_YMD = re.compile(r"^(\d{4})-(\d{2})-(\d{2})(?!\d)")
+_YM = re.compile(r"^(\d{4})-(\d{2})(?![\d-])")
+
+
 def _parse_date(s: str | None) -> date | None:
-    """YYYY-MM-DD exacto; YYYY-MM se interpreta como el ÚLTIMO día del mes (conservador: nunca antes de lo real)."""
+    """YYYY-MM-DD exacto; YYYY-MM se interpreta como el ÚLTIMO día del mes (conservador: nunca antes de lo real).
+    Mes o día inválidos -> None (no se importa)."""
     if not s:
         return None
     s = str(s).strip()
-    try:
-        return date.fromisoformat(s[:10])
-    except ValueError:
-        pass
-    try:
-        y, mth = int(s[:4]), int(s[5:7])
-        nxt = date(y + (mth == 12), mth % 12 + 1, 1)
-        return date.fromordinal(nxt.toordinal() - 1)
-    except (ValueError, IndexError):
+    m = _YMD.match(s)
+    if m:
+        try:
+            return date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        except ValueError:
+            return None
+    m = _YM.match(s)
+    if not m:
         return None
+    y, mth = int(m.group(1)), int(m.group(2))
+    if not 1 <= mth <= 12:
+        return None
+    return date(y + (mth == 12), mth % 12 + 1, 1) - timedelta(days=1)
 
 
 # --------------------------------------------------------------------------- fixtures sintéticos
@@ -156,6 +199,8 @@ class FixtureProvider:
     Nunca representan a una empresa real: las entidades usan el prefijo `TEST_`.
     """
     name = "fixture"
+    editable = True
+    reconcile_safe = True
 
     def __init__(self, path: Path = FIXTURES_DIR / "synthetic_companies.json"):
         self.path = path

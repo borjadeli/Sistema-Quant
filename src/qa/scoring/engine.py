@@ -144,8 +144,12 @@ def score_valuation(ss: ScenarioSet | None) -> FactorScore:
                        evidence=ss.warnings)
 
 
+FQ_CORE = ("gross_margin", "fcf_margin", "roic", "leverage", "dilution")
+
+
 def score_financial_quality(f: Fundamentals) -> FactorScore:
-    """Regla: promedio de sub-puntajes disponibles (cada uno 0-10)."""
+    """Regla: promedio de sub-puntajes (cada uno 0-10). Una métrica NÚCLEO faltante cuenta como 0 (peor caso):
+    ocultar o no tener un dato nunca mejora el puntaje. Runway (solo para quien quema caja) suma si existe."""
     subs, miss = {}, []
 
     def add(name: str, v: float | None, fn) -> None:  # noqa: ANN001
@@ -156,7 +160,11 @@ def score_financial_quality(f: Fundamentals) -> FactorScore:
 
     add("gross_margin", f.v("gross_margin"), lambda x: 20 * x)                    # 50% -> 10
     add("fcf_margin", f.v("fcf_margin"), lambda x: 5 + 33 * x)                   # 15% -> 10, -15% -> 0
-    add("roic", f.v("roic"), lambda x: 5 + 25 * (x - 0.10))                       # 30% -> 10
+    roic_m = f.metrics.get("roic")
+    if f.v("roic") is None and roic_m is not None and (roic_m.note or "").startswith("n.m."):
+        subs["roic"] = 10.0          # EBIT > 0 con capital invertido <= 0: retorno no acotado, no es un faltante
+    else:
+        add("roic", f.v("roic"), lambda x: 5 + 25 * (x - 0.10))                   # 30% -> 10
     nd = f.v("net_debt_to_ebitda")
     if f.v("net_debt") is not None and f.v("net_debt") <= 0:
         subs["leverage"] = 10.0
@@ -168,12 +176,12 @@ def score_financial_quality(f: Fundamentals) -> FactorScore:
         subs["runway"] = _clamp(runway * 10 / 12)                                # 12 trimestres -> 10
     if not subs:
         return FactorScore(score=0, rationale="sin datos financieros", method="rule", missing=miss)
-    s = sum(subs.values()) / len(subs)
-    # penaliza cobertura incompleta para no premiar la falta de datos
-    coverage = len(subs) / 5
-    s = s * min(1.0, 0.5 + 0.5 * coverage)
-    return FactorScore(score=round(_clamp(s), 2), method="rule",
-                       rationale="; ".join(f"{k}={v:.1f}" for k, v in subs.items()), missing=miss)
+    core_missing = [k for k in FQ_CORE if k not in subs]
+    s = (sum(subs.values()) + 0.0 * len(core_missing)) / (len(subs) + len(core_missing))
+    why = "; ".join(f"{k}={v:.1f}" for k, v in subs.items())
+    if core_missing:
+        why += f"; sin dato (cuentan 0): {', '.join(core_missing)}"
+    return FactorScore(score=round(_clamp(s), 2), method="rule", rationale=why, missing=miss)
 
 
 def edge_proxy(market_cap_usd: float | None, is_us_listed: bool, analyst_count: int | None) -> FactorScore:
@@ -253,6 +261,8 @@ def kill_switches(f: Fundamentals | None, ss: ScenarioSet | None, adv_usd: float
                          "liquidez y apalancamiento no verificables")
         if getattr(f, "debt_elsewhere", False):
             kills.append("K7: deuda reportada en otra fecha que el balance: apalancamiento no verificable")
+        if getattr(f, "balance_stale", False):
+            kills.append(f"K4: balance demasiado antiguo ({f.balance_date}): liquidez y apalancamiento no verificables")
         if f.currency_conflict:
             kills.append("K4: monedas de reporte mezcladas en datos recientes")
     if f is not None:

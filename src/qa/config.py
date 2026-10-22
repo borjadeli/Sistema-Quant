@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+from datetime import date, datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -30,7 +31,21 @@ def settings() -> dict[str, Any]:
     db = os.environ.get("QA_DATABASE_URL")
     if db:
         cfg["database_url"] = db
+    _validate(cfg)
     return cfg
+
+
+def _validate(cfg: dict) -> None:
+    """Errores de configuración que romperían una corrida a mitad de camino: se detectan al cargar."""
+    mv = cfg.get("funnel", {}).get("reuse", {}).get("price_move_trigger_pct")
+    if mv is not None and not (isinstance(mv, (int, float)) and mv > 0):
+        raise ValueError(f"funnel.reuse.price_move_trigger_pct debe ser > 0 (es {mv!r}); "
+                         "para re-analizar ante cualquier movimiento usar --no-reuse")
+
+
+def utc_today() -> date:
+    """Fecha de hoy en UTC: el mismo reloj con que se sellan precios, eventos y análisis."""
+    return datetime.now(timezone.utc).date()
 
 
 def config_hash() -> str:

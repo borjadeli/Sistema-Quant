@@ -7,8 +7,8 @@ from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from qa.config import settings
-from qa.db.schema import DataPointRow, FeedEvent, MarketSnapshot
+from qa.config import settings, utc_today
+from qa.db.schema import DataPointRow, FeedEvent, MarketSnapshot, as_utc
 
 
 def detect_new_filings(s: Session, since: date) -> int:
@@ -48,37 +48,52 @@ def detect_restatements(s: Session, since: date) -> int:
     return n
 
 
+def end_of_day_utc(d: date) -> datetime:
+    return datetime.combine(d, datetime.max.time(), tzinfo=timezone.utc)
+
+
 def detect_price_moves(s: Session, threshold_pct: float | None = None, lookback_days: int = 30) -> int:
+    """Un evento por EPISODIO de movimiento: si ya hay un price_move de la empresa dentro de la ventana, solo se
+    registra otro cuando el precio se movió de nuevo >= umbral desde el precio de ese último evento. Así una
+    suba sostenida no genera un evento por día (ni cambia el hash de reutilización a diario)."""
     if threshold_pct is None:
         threshold_pct = settings()["funnel"]["reuse"]["price_move_trigger_pct"]
-    cutoff = datetime.now(timezone.utc) - timedelta(days=lookback_days)
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=lookback_days)
     n = 0
     for cid in s.scalars(select(MarketSnapshot.company_id).distinct()):
         snaps = s.scalars(select(MarketSnapshot).where(MarketSnapshot.company_id == cid)
                           .order_by(MarketSnapshot.as_of.desc())).all()
         if len(snaps) < 2 or not snaps[0].price:
             continue
-        old = next((x for x in snaps[1:] if x.as_of.replace(tzinfo=x.as_of.tzinfo or timezone.utc) <= cutoff), snaps[-1])
+        old = next((x for x in snaps[1:] if as_utc(x.as_of) <= cutoff), snaps[-1])
         if not old.price:
             continue
         move = snaps[0].price / old.price - 1
-        title = f"Movimiento de precio {move:+.0%} desde {old.as_of.date()}"
-        dup = s.scalars(select(FeedEvent).where(FeedEvent.company_id == cid, FeedEvent.event_type == "price_move",
-                                                FeedEvent.event_date == snaps[0].as_of.date())).first()
-        if abs(move) * 100 >= threshold_pct and dup is None:
-            s.add(FeedEvent(event_date=snaps[0].as_of.date(), company_id=cid, event_type="price_move",
-                            title=title,
-                            verification="market_data",
-                            detail=f"{old.price:.2f} -> {snaps[0].price:.2f} ({snaps[0].source})",
-                            impact="unknown", triggers_review=True))
-            n += 1
+        if abs(move) * 100 < threshold_pct:
+            continue
+        last = s.scalars(select(FeedEvent).where(FeedEvent.company_id == cid, FeedEvent.event_type == "price_move",
+                                                 FeedEvent.event_date >= cutoff.date())
+                         .order_by(FeedEvent.event_date.desc(), FeedEvent.id.desc())).first()
+        if last is not None:
+            seen = as_utc(last.created_at) if last.created_at else end_of_day_utc(last.event_date)
+            ref = next((x for x in snaps if as_utc(x.as_of) <= seen and x.price), None)   # precio al último evento
+            if ref is None or abs(snaps[0].price / ref.price - 1) * 100 < threshold_pct:
+                continue          # mismo episodio: sin nuevo tramo >= umbral desde el último evento
+        s.add(FeedEvent(event_date=as_utc(snaps[0].as_of).date(), company_id=cid, event_type="price_move",
+                        title=f"Movimiento de precio {move:+.0%} desde {as_utc(old.as_of).date()}",
+                        verification="market_data",
+                        detail=f"{old.price:.2f} -> {snaps[0].price:.2f} ({snaps[0].source})",
+                        impact="unknown", triggers_review=True))
+        s.flush()
+        n += 1
     return n
 
 
 def add_manual(s: Session, title: str, company_id: str | None = None, url: str | None = None,
                event_type: str = "news", verification: str = "media_report", detail: str | None = None,
                bottleneck_id: str | None = None, event_date: date | None = None, impact: str = "unknown") -> FeedEvent:
-    e = FeedEvent(event_date=event_date or date.today(), company_id=company_id, bottleneck_id=bottleneck_id,
+    e = FeedEvent(event_date=event_date or utc_today(), company_id=company_id, bottleneck_id=bottleneck_id,
                   event_type=event_type, title=title, detail=detail, url=url, verification=verification,
                   impact=impact, triggers_review=True)
     s.add(e)

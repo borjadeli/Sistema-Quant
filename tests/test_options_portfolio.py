@@ -53,7 +53,8 @@ def test_constraints():
     w, notes = enforce_constraints({"A": 0.3, "B": 0.2, "C": 0.1, "D": 0.1}, meta)
     assert "C" not in w and w["D"] <= 0.03
     assert all(v <= 0.10 + 1e-9 for v in w.values())
-    assert w["A"] + w["B"] <= 0.25 + 1e-9                     # tope por bottleneck
+    assert w["A"] + w["B"] <= 0.25 + 1e-9    # aquí lo garantiza el tope por posición; los topes por capa y por
+    #                                          bottleneck se ejercitan en test_r3_layer_and_bottleneck_caps_and_notes
     assert sum(w.values()) <= 0.98 + 1e-9
 
 

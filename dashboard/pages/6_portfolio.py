@@ -22,7 +22,7 @@ comp = D.companies()
 names = dict(zip(comp["id"], comp["name"])) if not comp.empty else {}
 snaps = D.query("SELECT * FROM portfolio_snapshots ORDER BY date")
 trades = D.query("SELECT * FROM paper_trades ORDER BY created_at")
-recs = D.query("SELECT * FROM recommendations ORDER BY created_at DESC, id DESC")
+recs = D.complete_only(D.query("SELECT * FROM recommendations ORDER BY created_at DESC, id DESC"))
 pf_names = (set(snaps["portfolio"]) if not snaps.empty else set()) | (set(trades["portfolio"]) if not trades.empty else set())
 default = D.cfg()["portfolio"]["name"]
 

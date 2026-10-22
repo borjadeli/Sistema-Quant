@@ -22,6 +22,10 @@ verification, source{name, url, document_type, published_at, retrieved_at}, know
 - **Vintages y re-expresiones.** Cada presentación que cambia el valor de un período es una fila nueva (vintage) con su
   propio `known_at` y la nota `restates=...`. Los comparativos idénticos no generan filas nuevas. Una decisión en t usa el
   vintage más reciente con `known_at ≤ t`. Las re-expresiones generan un evento `restatement` en el feed.
+- **Proveedores editables** (CSV manual, investigación semilla, fixtures): cada fila guarda su `provider`. En cada
+  ingesta el contenido actual del proveedor es la verdad para esa entidad: se borran las filas que ya no están, las que
+  ahora se rechazan y las que cambiaron de fuente citada, aunque el lote quede vacío. Si un archivo no se pudo leer
+  entero, no se borra nada (se avisa).
 - **Selección al calcular** (`fundamentals/metrics.py`):
   1. point-in-time;
   2. unidades normalizadas (por ejemplo `USD_millions`);
@@ -30,7 +34,11 @@ verification, source{name, url, document_type, published_at, retrieved_at}, know
   4. moneda de reporte dominante: los puntos en otra moneda se descartan, `currency_conflict` bloquea la valuación;
   5. trimestres reconstruidos desde los acumulados YTD del 10-Q (Q2=H−Q1, Q3=9M−H, Q4=FY−9M), con TTM solo sobre 4
      trimestres contiguos;
-  6. todas las cuentas de balance a **una** fecha de balance;
+  6. todas las cuentas de balance a **una** fecha de balance. La fecha la fija la mejor fuente entre cuentas
+     patrimoniales (no las acciones de portada `dei`, que llevan la fecha de la portada). Un balance posterior de una
+     fuente de menor precedencia se usa solo si trae caja y deuda; uno de más de 480 días bloquea (K4). Si falta
+     deuda a esa fecha pero hay deuda no nula reciente, se bloquea (K7); un dato viejo o un 0 explícito va al
+     supuesto "deuda 0" con alerta, y solo si el balance viene de un filing;
   7. comparaciones interanuales por fecha (±20 días).
 
 ## Tablas principales
@@ -43,6 +51,7 @@ verification, source{name, url, document_type, published_at, retrieved_at}, know
   - `bottlenecks`: evidencia, contra-evidencia y severidad calculada
 - **Agentes:**
   - `agent_runs`: agente, capa, modelo, versión de prompt, `input_hash`, `config_hash`, `decision_time`, salida, estado, tokens, USD, fuentes web
+  - `pipeline_runs`: estado de cada corrida (`running`/`completed`); lo de corridas cortadas no se muestra
   - `disagreements`
   - `funnel_state`
   - `scores`: factores con rationale y evidencia, topes, kill switches, alertas, faltantes, confianza

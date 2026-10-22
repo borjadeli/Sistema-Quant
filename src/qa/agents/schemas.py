@@ -176,6 +176,7 @@ class DiscoveredCompany(BaseModel):
     ticker: str | None
     exchange: str | None
     country: str | None
+    currency: str | None = Field(None, description="moneda de cotización ISO-4217 (p.ej. JPY en TSE)")
     map_nodes: list[str]
     role: str
     estimated_exposure: Literal["H", "M", "L", "unknown"]

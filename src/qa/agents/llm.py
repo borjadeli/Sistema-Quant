@@ -16,9 +16,18 @@ from pydantic import BaseModel
 
 from qa.config import settings
 
+try:                                       # transporte del SDK (errores de lectura del stream SSE no se envuelven)
+    import httpx2 as _httpx
+except ImportError:                        # pragma: no cover
+    try:
+        import httpx as _httpx
+    except ImportError:
+        _httpx = None
+
 log = logging.getLogger(__name__)
 
 WEB_SEARCH_USD_PER_REQUEST = 0.01          # USD 10 / 1.000 búsquedas
+SEARCH_RESULT_TOKENS = 6000                # tokens de input por resultado de búsqueda (estimación)
 FALLBACK_MODELS = {"claude-opus-5-5", "claude-sonnet-5-5", "claude-opus-5", "claude-fable-5-1"}
 UNSUPPORTED_SCHEMA_KEYS = {"minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "minLength", "maxLength",
                            "pattern", "default", "minItems", "maxItems", "format", "multipleOf", "uniqueItems"}
@@ -52,7 +61,7 @@ class LLMResponse:
 
 class LLMClient(Protocol):
     def complete(self, *, agent: str, model: str, system: str, user: str, schema: dict, effort: str,
-                 max_tokens: int, web_search_uses: int = 0) -> LLMResponse: ...
+                 max_tokens: int, web_search_uses: int = 0, budget_usd: float | None = None) -> LLMResponse: ...
 
 
 def price_tokens(model: str, input_tokens: int, output_tokens: int, web_searches: int = 0,
@@ -90,9 +99,22 @@ def usage_cost(usage: Any, model: str) -> tuple[float, int, int, int]:
 
 
 def estimate_cost(model: str, prompt_chars: int, max_tokens: int, web_search_uses: int) -> float:
-    """Estimación previa (pesimista) para el control de presupuesto: ~3.5 chars/token, 60% de max_tokens."""
-    est_in = prompt_chars / 3.5 + web_search_uses * 6000      # resultados de búsqueda entran como input
+    """Costo ESPERADO de una llamada (estimaciones y dry-run): ~3.5 chars/token, 60% de max_tokens."""
+    est_in = prompt_chars / 3.5 + web_search_uses * SEARCH_RESULT_TOKENS   # resultados de búsqueda = input
     return price_tokens(model, int(est_in), int(max_tokens * 0.6), web_search_uses)
+
+
+def request_bound(model: str, input_tokens: float, max_tokens: int, web_search_uses: int) -> float:
+    """Cota superior de UNA solicitud: todo max_tokens de salida, todas las búsquedas y sus resultados con el
+    recargo de escritura de caché. Se usa para el control de presupuesto (antes de cada solicitud)."""
+    return price_tokens(model, int(input_tokens), max_tokens, web_search_uses,
+                        cache_write=web_search_uses * SEARCH_RESULT_TOKENS)
+
+
+def max_cost(model: str, prompt_chars: int, max_tokens: int, web_search_uses: int) -> float:
+    """Cota de la PRIMERA solicitud de una llamada (~3 chars/token). Las continuaciones `pause_turn` se
+    controlan dentro de `complete` con el presupuesto restante."""
+    return request_bound(model, prompt_chars / 3.0, max_tokens, web_search_uses)
 
 
 # --------------------------------------------------------------------------- esquemas estrictos
@@ -133,8 +155,12 @@ class AnthropicLLM:
         self.server_side_fallback = settings()["llm"].get("server_side_fallback", True)
 
     def complete(self, *, agent: str, model: str, system: str, user: str, schema: dict, effort: str,
-                 max_tokens: int, web_search_uses: int = 0) -> LLMResponse:
+                 max_tokens: int, web_search_uses: int = 0, budget_usd: float | None = None) -> LLMResponse:
+        """`budget_usd`: gasto máximo de ESTA llamada. Antes de cada continuación `pause_turn` se verifica que lo
+        gastado más la cota de la próxima solicitud no lo supere; si no, se corta con LLMError (costo incluido)."""
         import anthropic  # noqa: PLC0415
+
+        transport = (anthropic.APIError,) + ((_httpx.HTTPError,) if _httpx is not None else ()) + (OSError,)
 
         tools = []
         if web_search_uses > 0:
@@ -159,17 +185,46 @@ class AnthropicLLM:
         def fail(cls: type[LLMError], msg: str) -> LLMError:  # el costo ya facturado viaja en la excepción
             return cls(msg, cost_usd=cost, input_tokens=tot_in, output_tokens=tot_out, web_searches=searches)
 
-        for _ in range(self.max_pause_turns + 1):
+        def add_partial(st: Any) -> None:
+            """Stream cortado a mitad: lo ya consumido (input + output emitido) se factura igual; se toma del
+            snapshot parcial del SDK si existe."""
+            nonlocal cost, tot_in, tot_out, searches
+            try:
+                snap = st.current_message_snapshot if st is not None else None
+                if snap is not None and getattr(snap, "usage", None) is not None:
+                    c, ti, to, ns = usage_cost(snap.usage, model)
+                    cost, tot_in, tot_out, searches = cost + c, tot_in + ti, tot_out + to, searches + ns
+            except Exception:  # noqa: BLE001 — sin snapshot (falló antes de message_start)
+                pass
+
+        last_in = last_out = 0
+        for i in range(self.max_pause_turns + 1):
+            if i and budget_usd is not None:
+                nxt = request_bound(model, last_in + last_out, max_tokens, web_search_uses)
+                if cost + nxt > budget_usd:
+                    raise fail(LLMError, f"{agent}: presupuesto — se corta la continuación pause_turn "
+                                         f"(gastado ${cost:.3f} + cota ${nxt:.3f} > ${budget_usd:.3f})")
+            stream = None
             try:
                 with self.client.beta.messages.stream(messages=messages, betas=betas, **kwargs) as stream:
                     final = stream.get_final_message()
             except anthropic.RateLimitError as e:
                 raise fail(LLMError, f"rate limit: {e}") from e
             except anthropic.APIStatusError as e:
+                add_partial(stream)
                 raise fail(LLMError, f"API {e.status_code}: {e.message}") from e
             except anthropic.APIConnectionError as e:
+                add_partial(stream)
                 raise fail(LLMError, f"conexión: {e}") from e
+            except transport as e:            # p.ej. stream SSE cortado a mitad del cuerpo
+                add_partial(stream)
+                raise fail(LLMError, f"transporte: {type(e).__name__}: {e}") from e
+            except BaseException as e:        # Ctrl-C, etc.: el costo ya facturado viaja en la excepción
+                add_partial(stream)
+                e.qa_cost = (cost, tot_in, tot_out, searches)
+                raise
             c, ti, to, ns = usage_cost(final.usage, model)
+            last_in, last_out = ti, to
             cost, tot_in, tot_out, searches = cost + c, tot_in + ti, tot_out + to, searches + ns
             for block in final.content:
                 if getattr(block, "type", "") == "web_search_tool_result" and isinstance(block.content, list):
@@ -209,7 +264,7 @@ class ScriptedLLM:
         self.calls: list[str] = []
 
     def complete(self, *, agent: str, model: str, system: str, user: str, schema: dict, effort: str,
-                 max_tokens: int, web_search_uses: int = 0) -> LLMResponse:
+                 max_tokens: int, web_search_uses: int = 0, budget_usd: float | None = None) -> LLMResponse:
         self.calls.append(agent)
         r = self.responses.get(agent)
         if r is None:

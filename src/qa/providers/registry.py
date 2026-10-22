@@ -45,13 +45,38 @@ def price_provider():
     return PRICES[settings()["providers"]["prices"][0]]()
 
 
+OPTIONS = {"yahoo": YahooProvider}
+
+
+def options_provider():
+    """Proveedor de cadenas de opciones según settings.providers.options (el primero configurado y conocido)."""
+    names = settings()["providers"].get("options") or []
+    for n in names:
+        if n in OPTIONS:
+            return OPTIONS[n]()
+    raise ProviderUnavailable(f"sin proveedor de opciones configurado/soportado (providers.options={names}; "
+                              f"disponibles: {sorted(OPTIONS)})")
+
+
 def ingest_company(s: Session, c: Company, report: IngestReport, history_days: int = 3 * 365) -> None:
     for prov in fundamentals_providers():
         try:
+            if getattr(prov, "editable", False):
+                # proveedor editable: se reconcilia SIEMPRE (también con lote vacío) para borrar filas huérfanas
+                pts = prov.get_facts(c) if prov.supports(c) else []
+                if prov.reconcile_safe:
+                    repo.upsert_datapoints(s, pts, provider=prov.name, entities={c.id})
+                else:
+                    repo.upsert_datapoints(s, pts)
+                    report.add(c.id, f"fundamentals[{prov.name}]", "archivos ilegibles: no se reconcilian filas viejas "
+                                                                    f"({'; '.join(prov.file_errors)[:300]})")
+                if pts:
+                    report.add(c.id, f"fundamentals[{prov.name}]={len(pts)}")
+                continue
             if not prov.supports(c):
                 continue
             pts = prov.get_facts(c)
-            repo.upsert_datapoints(s, pts)
+            repo.upsert_datapoints(s, pts, provider=prov.name)
             report.add(c.id, f"fundamentals[{prov.name}]={len(pts)}")
         except ProviderUnavailable as e:
             report.add(c.id, f"fundamentals[{prov.name}]", str(e))

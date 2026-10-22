@@ -36,15 +36,15 @@ Pérdida permanente = escenario con retorno a 36 meses < −30%. Las probabilida
 etiquetadas así. La calibración se mide ex post con el Brier score.
 
 ### Calidad financiera (regla)
-Es el promedio de sub-puntajes disponibles:
+Es el promedio de los sub-puntajes. Las cinco métricas **núcleo** son:
 - margen bruto: 20×GM
 - margen FCF: 5+33×m
-- ROIC: 5+25×(ROIC−10%)
+- ROIC: 5+25×(ROIC−10%); si el EBIT es positivo y el capital invertido ≤ 0, vale 10 (n.m., no es un faltante)
 - apalancamiento: 10−2.5×ND/EBITDA, o 10 si tiene caja neta
 - dilución: 10−100×dilución
-- runway: trimestres×10/12
 
-Se penaliza la cobertura incompleta: con pocos datos el puntaje no puede ser alto.
+Una métrica núcleo **faltante cuenta como 0** (peor caso): ocultar o no tener un dato nunca sube el puntaje. El
+runway (trimestres×10/12) se suma solo para quien quema caja y no reemplaza a una métrica núcleo.
 
 ### Rúbricas de agentes (bandas)
 Están en `RUBRICS`; se inyectan en el prompt de cada agente.
@@ -75,12 +75,16 @@ Un factor **no evaluado** (agente fallido u omitido) cuenta como 0 para los tope
 | K1 | duda de empresa en marcha (going concern) |
 | K2 | runway de caja < 4 trimestres sin financiamiento comprometido |
 | K3 | liquidez diaria < mínimo de configuración (US$2M) |
-| K4 | sin datos fundamentales verificables, o **cualquier** dato sintético mezclado |
+| K4 | sin datos fundamentales verificables, **cualquier** dato sintético mezclado, balance incompleto (sin caja), monedas mezcladas, o balance de más de 480 días |
 | K5 | retorno esperado ponderado a 24 meses negativo |
 | K6 | P(pérdida permanente) > 50% |
-| K7 | deuda neta/EBITDA > 6x |
+| K7 | deuda neta/EBITDA > 6x, o deuda no nula reportada en los ~200 días previos (o después) pero no a la fecha de balance |
 | K8 | el Research Auditor rechazó el análisis |
-| K9 | análisis incompleto: sin evaluación fundamental válida (red flags/going concern no evaluados), sin veredicto del auditor en L3, o candidato que no completó L3 (bear case + auditoría) |
+| K9 | análisis incompleto: sin evaluación fundamental válida (red flags/going concern no evaluados), sin escenarios de valuación válidos (K5/K6 no evaluables), sin bear case o sin veredicto del auditor en L3, o candidato que no completó L3 |
+
+**K9 en una posición que ya está en cartera.** Un análisis incompleto (error del agente, presupuesto agotado,
+`--tiers` sin L3) no es evidencia negativa. Si los únicos bloqueos de una posición son K9, se mantiene con su peso
+actual como máximo (puede recortarse, nunca aumentarse) y se anota "revisar". Solo K1–K8 la llevan a 0.
 
 ## Alertas (no bloquean, se muestran y bajan la confianza)
 - dilución > 8% anual

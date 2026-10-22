@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+import re
+from dataclasses import dataclass, field, replace
+from datetime import date, timedelta
 from functools import lru_cache
 
 import yaml
@@ -29,6 +31,7 @@ class BottleneckRecord:
     severity: float = 0.0
     severity_explain: str = ""
     companies: list[str] = field(default_factory=list)
+    reviewed_at: date | None = None     # fecha de compilación del registro (todo se conocía a esta fecha)
 
     def as_dict(self) -> dict:
         d = dict(self.raw)
@@ -62,13 +65,18 @@ def load_bottlenecks(m: IndustryMap, u: Universe | None = None) -> dict[str, Bot
     reg = yaml.safe_load(BOTTLENECKS_PATH.read_text(encoding="utf-8"))
     ev_path = DATA_DIR / reg["evidence_file"]
     evidence = {b["id"]: b for b in json.loads(ev_path.read_text(encoding="utf-8"))} if ev_path.exists() else {}
+    try:
+        reviewed = date.fromisoformat(str(reg.get("evidence_reviewed_at"))[:10])
+    except ValueError:
+        reviewed = None
     out = {}
     for bid, nodes in reg["mapping"].items():
         raw = evidence.get(bid)
         if raw is None:
             continue
         rec = BottleneckRecord(id=bid, name=raw["name"], layer=raw.get("layer", ""), status=raw["status"],
-                               confidence=str(raw.get("confidence", "low")), map_nodes=nodes, raw=raw)
+                               confidence=str(raw.get("confidence", "low")), map_nodes=nodes, raw=raw,
+                               reviewed_at=reviewed)
         rec.severity, rec.severity_explain = severity(raw, m, nodes)
         ov = (reg.get("overrides") or {}).get(bid)
         if ov:
@@ -85,6 +93,74 @@ def default_bottlenecks():
     from qa.map.model import default_map
     from qa.universe.model import default_universe
     return load_bottlenecks(default_map(), default_universe())
+
+
+# Fecha al INICIO del campo: "2026-10-16", "2026-08 (approx.)", "2026", y rangos "2026-10-16/19", "2026-08/09",
+# "2025-2026". Las menciones posteriores en el texto (p.ej. "Q1 FY2026") no se interpretan.
+_LEAD = re.compile(r"^\s*(\d{4})(?:-(\d{2})(?!\d))?(?:-(\d{2})(?!\d))?(?:\s*/\s*(\d{2})(?!\d)|-(\d{4})(?!\d))?")
+
+
+def evidence_date(e: dict) -> date | None:
+    """Fecha de publicación de una evidencia. Fechas parciales o rangos se llevan al FINAL del período
+    (conservador para point-in-time). None si no hay fecha interpretable."""
+    m = _LEAD.match(str(e.get("date") or ""))
+    if not m:
+        return None
+    y, mth, d, rng, y2 = m.groups()
+    try:
+        if y2:
+            return date(int(y2), 12, 31)
+        if d:
+            return date(int(y), int(mth), int(rng or d))
+        if mth:
+            mm = int(rng or mth)
+            if not 1 <= mm <= 12:
+                return None
+            return date(int(y) + (mm == 12), mm % 12 + 1, 1) - timedelta(days=1)
+        return date(int(y), 12, 31)
+    except ValueError:
+        return None
+
+
+def known_date(e: dict, reviewed_at: date | None) -> date | None:
+    """Desde cuándo el sistema puede usar una evidencia: su fecha (fin del período si es parcial), nunca después de
+    la revisión del registro (lo que está en el registro se conocía al compilarlo)."""
+    d = evidence_date(e)
+    if reviewed_at is None:
+        return d
+    return reviewed_at if d is None else min(d, reviewed_at)
+
+
+def registry_as_of(registry: dict[str, BottleneckRecord], m: IndustryMap, as_of: date) -> dict[str, BottleneckRecord]:
+    """Vista point-in-time del registro (replays/backtests). Determinista: depende solo de as_of y de las fechas.
+
+    - Evidencia y contra-evidencia: solo las conocidas a as_of (ver known_date); sin fecha ni revisión, se excluyen.
+    - Si se excluyó algo, la severidad se recalcula con la evidencia visible y los textos sin fecha del registro
+      actual (límite de oferta, duración estimada) no se pasan; el estado se marca como 'registro actual'.
+    - Un bottleneck sin evidencia visible a esa fecha no existía para el sistema: se omite.
+    Con as_of posterior a la revisión del registro devuelve el registro sin cambios.
+    """
+    out = {}
+    for bid, b in registry.items():
+        def seen(e: dict) -> bool:
+            k = known_date(e, b.reviewed_at)
+            return k is not None and k <= as_of
+        ev = [e for e in b.raw.get("evidence", []) if seen(e)]
+        ce = [e for e in b.raw.get("counter_evidence", []) if seen(e)]
+        if len(ev) == len(b.raw.get("evidence", [])) and len(ce) == len(b.raw.get("counter_evidence", [])):
+            out[bid] = b
+            continue
+        if not ev:
+            continue
+        raw = {k: v for k, v in b.raw.items() if k not in ("supply_limit", "estimated_duration")}
+        raw.update(evidence=ev, counter_evidence=ce,
+                   pit_note="vista point-in-time: evidencia posterior a la fecha de decisión excluida; estado y "
+                            "confianza son del registro actual (no reconstruibles a esa fecha)")
+        rec = replace(b, raw=raw)
+        rec.severity, rec.severity_explain = severity(raw, m, b.map_nodes)
+        rec.severity_explain += "; recalculada con la evidencia visible a la fecha de decisión"
+        out[bid] = rec
+    return out
 
 
 def company_bottlenecks(company_nodes: list[str], registry: dict[str, BottleneckRecord]) -> list[dict]:

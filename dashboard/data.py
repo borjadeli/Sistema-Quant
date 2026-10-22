@@ -239,6 +239,25 @@ def query(sql: str, **params) -> pd.DataFrame:
         return pd.DataFrame()
 
 
+@st.cache_data(ttl=60, show_spinner=False)
+def _incomplete_runs(url: str) -> frozenset:
+    eng = _engine(url)
+    with eng.connect() as c:
+        if "pipeline_runs" not in inspect(c).get_table_names():
+            return frozenset()          # base anterior a la tabla de corridas: no hay forma de distinguir
+        rows = c.execute(text("SELECT id FROM pipeline_runs WHERE status != 'completed'")).all()
+    return frozenset(r[0] for r in rows)
+
+
+def complete_only(df: pd.DataFrame) -> pd.DataFrame:
+    """Descarta filas de corridas que no terminaron (cortadas o en curso): sus scores/escenarios/recomendaciones
+    son parciales y podrían ocultar el resultado de la última corrida completa."""
+    if df.empty or "pipeline_run_id" not in df or engine() is None:
+        return df
+    bad = _incomplete_runs(db_url(current_db()))
+    return df[~df["pipeline_run_id"].isin(bad)] if bad else df
+
+
 def js(v):  # noqa: ANN001, ANN201
     """Columnas JSON de SQLite -> objetos Python."""
     if isinstance(v, (dict, list)) or v is None:
@@ -306,7 +325,7 @@ def node_company_counts() -> Counter:
 
 def scenarios() -> pd.DataFrame:
     """Todos los sets de escenarios (JSON parseado + ER por horizonte)."""
-    df = query("SELECT * FROM scenarios ORDER BY created_at, id")
+    df = complete_only(query("SELECT * FROM scenarios ORDER BY created_at, id"))
     if df.empty:
         return df
     for col in ("assumptions", "results", "expected_return", "reverse_dcf"):
@@ -332,7 +351,7 @@ def latest_scores() -> pd.DataFrame:
     Un score sin escenarios (scenario_id NULL, o base vieja sin la columna) deja ER y P(pérdida) en NaN: la UI
     los muestra como '—' en lugar de tomar "el último escenario de la empresa", que podría ser posterior.
     """
-    df = query("SELECT * FROM scores ORDER BY created_at, id")
+    df = complete_only(query("SELECT * FROM scores ORDER BY created_at, id"))
     if df.empty:
         return df
     df = df.groupby("company_id", as_index=False).tail(1)

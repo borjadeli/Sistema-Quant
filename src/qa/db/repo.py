@@ -5,7 +5,7 @@ from datetime import date, datetime, timezone
 
 import pandas as pd
 from sqlalchemy import delete, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, defer
 
 from qa.db.schema import (Bottleneck, Company as CompanyRow, CompanyRelationship, DataPointRow, MapEdge,
                           MapNode, MarketSnapshot, Price)
@@ -88,25 +88,50 @@ def _d(s: str | None) -> date | None:
 # --------------------------------------------------------------------------- datapoints
 # Fuentes cuyos vintages son documentos inmutables (cada presentación es un hecho histórico): append-only.
 APPEND_ONLY_SOURCES = {"sec_edgar"}
+# filas viejas sin `provider`: se infiere por la fuente (todo lo editable que no es seed/fixture vino del CSV manual)
+LEGACY_PROVIDER_BY_SOURCE = {"web_research_seed": "web_research_seed", "synthetic_fixture": "fixture"}
 
 
-def upsert_datapoints(s: Session, points: list[DataPoint]) -> int:
+def row_provider(row: DataPointRow) -> str:
+    if row.provider:
+        return row.provider
+    if row.source_name in APPEND_ONLY_SOURCES:
+        return row.source_name
+    return LEGACY_PROVIDER_BY_SOURCE.get(row.source_name, "manual_csv")
+
+
+def upsert_datapoints(s: Session, points: list[DataPoint], provider: str | None = None,
+                      entities: set[str] | None = None) -> int:
     """Guarda datapoints.
 
     - Fuentes con vintages inmutables (SEC): una fila por (período, vintage); nunca se pisa el pasado.
-    - Fuentes editables (CSV manual, investigación web, fixtures): el lote ES la verdad actual de esa fuente para
-      esa entidad; las filas previas de esa fuente/entidad que no vienen en el lote se eliminan, así una corrección
-      reemplaza al valor erróneo en lugar de quedar como un 'vintage' fantasma.
+    - Proveedores editables (CSV manual, investigación web, fixtures), con `provider`: el lote ES la verdad actual
+      de ese proveedor para `entities` (por defecto: TODAS las entidades que ese proveedor tiene cargadas). Las
+      filas previas que no vienen en el lote se eliminan aunque el lote esté vacío (fila ahora rechazada, entidad
+      borrada del CSV, semilla que dejó de calificar) o aunque cambie la fuente citada.
+    - Sin `provider` (compatibilidad): reemplazo por (entidad, nombre de fuente).
     """
-    editable: dict[tuple[str, str], set[tuple]] = {}
-    for p in points:
-        if p.source.name not in APPEND_ONLY_SOURCES:
-            editable.setdefault((p.entity, p.source.name), set()).add(
-                (p.metric, p.period_type, p.period_end, p.kind.value, p.known_at))
-    for (entity, src), keep in editable.items():
-        for row in s.scalars(select(DataPointRow).where(DataPointRow.entity == entity, DataPointRow.source_name == src)):
-            if (row.metric, row.period_type, row.period_end, row.kind, row.known_at) not in keep:
+    if provider is not None and provider not in APPEND_ONLY_SOURCES:
+        keep = {(p.entity, p.metric, p.period_type, p.period_end, p.kind.value, p.source.name, p.known_at)
+                for p in points}
+        q = select(DataPointRow).where(DataPointRow.source_name.notin_(APPEND_ONLY_SOURCES))
+        if entities is not None:
+            q = q.where(DataPointRow.entity.in_(set(entities) | {p.entity for p in points}))
+        for row in s.scalars(q):
+            if row_provider(row) == provider and (row.entity, row.metric, row.period_type, row.period_end, row.kind,
+                                                  row.source_name, row.known_at) not in keep:
                 s.delete(row)
+    else:
+        editable: dict[tuple[str, str], set[tuple]] = {}
+        for p in points:
+            if p.source.name not in APPEND_ONLY_SOURCES:
+                editable.setdefault((p.entity, p.source.name), set()).add(
+                    (p.metric, p.period_type, p.period_end, p.kind.value, p.known_at))
+        for (entity, src), keep_e in editable.items():
+            for row in s.scalars(select(DataPointRow).where(DataPointRow.entity == entity,
+                                                            DataPointRow.source_name == src)):
+                if (row.metric, row.period_type, row.period_end, row.kind, row.known_at) not in keep_e:
+                    s.delete(row)
     s.flush()
     n = 0
     for p in points:
@@ -122,6 +147,7 @@ def upsert_datapoints(s: Session, points: list[DataPoint]) -> int:
         row.source_name, row.source_url, row.document_type = p.source.name, p.source.url, p.source.document_type
         row.known_at, row.retrieved_at = p.known_at, p.source.retrieved_at
         row.inputs, row.author, row.note = p.inputs, p.author, p.note
+        row.provider = provider or row.provider or (p.source.name if p.source.name in APPEND_ONLY_SOURCES else None)
         s.add(row)
         n += 1
     return n
@@ -129,7 +155,9 @@ def upsert_datapoints(s: Session, points: list[DataPoint]) -> int:
 
 def load_datapoints(s: Session, entity: str, kinds: tuple[str, ...] = ("original",),
                     as_of: date | None = None) -> list[DataPoint]:
-    q = select(DataPointRow).where(DataPointRow.entity == entity, DataPointRow.kind.in_(kinds))
+    # `provider` no se lee (no forma parte del DataPoint): bases sin migrar abiertas en solo lectura siguen andando
+    q = select(DataPointRow).options(defer(DataPointRow.provider)).where(DataPointRow.entity == entity,
+                                                                          DataPointRow.kind.in_(kinds))
     if as_of is not None:
         q = q.where(DataPointRow.known_at <= as_of)
     out = []

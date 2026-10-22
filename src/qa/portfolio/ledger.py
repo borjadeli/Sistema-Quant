@@ -55,6 +55,12 @@ def nav(s: Session, portfolio: str, quotes: dict[str, Quote]) -> float:
     return cash(s, portfolio) + sum(q * quotes[k].price for k, q in h.items())
 
 
+def min_trade_fraction() -> float:
+    """Ajustes menores a esta fracción del NAV no se operan. Es la MISMA banda que define HOLD en las
+    recomendaciones: una recomendación HOLD nunca genera una operación."""
+    return float(settings()["portfolio"].get("min_trade_pct_nav", 0.5)) / 100
+
+
 def rebalance(s: Session, portfolio: str, targets: dict[str, float], quotes: dict[str, Quote],
               rec_ids: dict[str, int] | None = None, now: datetime | None = None) -> list[PaperTrade]:
     """Lleva la cartera a los pesos objetivo. Ventas primero, luego compras (sin apalancamiento)."""
@@ -71,7 +77,7 @@ def rebalance(s: Session, portfolio: str, targets: dict[str, float], quotes: dic
         q = quotes[k]
         target_qty = targets.get(k, 0.0) * total / q.price
         diff = target_qty - h.get(k, 0.0)
-        if abs(diff * q.price) < 0.001 * total:      # ignora ajustes < 0.1% del NAV
+        if abs(diff * q.price) < min_trade_fraction() * total:   # banda sin operación (= banda HOLD)
             continue
         orders.append((k, diff))
     orders.sort(key=lambda x: x[1])                   # ventas (negativas) primero

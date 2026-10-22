@@ -5,7 +5,7 @@ import json
 import logging
 import uuid
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -14,8 +14,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from qa.agents import schemas as S
-from qa.agents.llm import LLMClient, LLMError, LLMRefusal, estimate_cost, strict_schema
-from qa.config import config_hash, settings
+from qa.agents.llm import LLMClient, LLMError, LLMRefusal, estimate_cost, max_cost, strict_schema
+from qa.config import config_hash, settings, utc_today
 from qa.db.schema import AgentRun
 from qa.provenance import stable_hash
 from qa.scoring.engine import RUBRICS
@@ -30,7 +30,8 @@ class BudgetExceeded(RuntimeError):
 
 @dataclass
 class Budget:
-    """Presupuesto por corrida y mensual. La estimación previa es pesimista; el gasto real se registra."""
+    """Presupuesto por corrida y mensual. Antes de cada solicitud se verifica una COTA SUPERIOR (todo max_tokens,
+    todas las búsquedas); las continuaciones pause_turn se cortan dentro del cliente. El gasto real se registra."""
     per_run_usd: float
     monthly_usd: float
     spent_run: float = 0.0
@@ -60,7 +61,8 @@ class RunContext:
     session: Session
     llm: LLMClient
     budget: Budget
-    decision_date: date = field(default_factory=date.today)
+    # fecha de decisión en UTC: es el mismo reloj con que se sellan precios y eventos (ver funnel.pack.end_of_day)
+    decision_date: date = field(default_factory=utc_today)
     pipeline_run_id: str = field(default_factory=lambda: datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:6])
     reuse: bool = True
     dry_run: bool = False            # no llama al LLM: solo estima costos
@@ -92,6 +94,7 @@ class AgentSpec:
     output: type[BaseModel]
     prompt_version: str = "v1"
     rubric: str | None = None        # factor cuya rúbrica se inyecta
+    reusable: bool = True            # False: su trabajo ES buscar novedades (curador del mapa, discovery)
 
 
 AGENTS: dict[str, AgentSpec] = {a.name: a for a in [
@@ -105,8 +108,8 @@ AGENTS: dict[str, AgentSpec] = {a.name: a for a in [
     AgentSpec("valuation_rebuttal", "valuation.md", "L3_deep", S.ValuationOutput),
     AgentSpec("auditor", "auditor.md", "L3_deep", S.AuditOutput),
     AgentSpec("portfolio_manager", "portfolio_manager.md", "committee", S.PortfolioOutput),
-    AgentSpec("map_curator", "map_curator.md", "map_curator", S.MapCuratorOutput),
-    AgentSpec("discovery", "discovery.md", "discovery", S.DiscoveryOutput),
+    AgentSpec("map_curator", "map_curator.md", "map_curator", S.MapCuratorOutput, reusable=False),
+    AgentSpec("discovery", "discovery.md", "discovery", S.DiscoveryOutput, reusable=False),
 ]}
 
 
@@ -143,35 +146,48 @@ def run_agent(ctx: RunContext, agent: str, subject: str, task: str, pack: dict,
                               "data": hash_payload if hash_payload is not None else pack})
     s = ctx.session
     max_age = settings()["funnel"]["reuse"]["max_age_days"].get(spec.tier.split("_")[0], 30)
-    if ctx.reuse:
+    if ctx.reuse and spec.reusable:
+        # Solo análisis hechos con información de la MISMA fecha de decisión o anterior (un replay no puede
+        # reutilizar búsquedas web hechas después) y con antigüedad medida en fechas de decisión.
         prev = s.scalars(select(AgentRun).where(AgentRun.agent == agent, AgentRun.input_hash == input_hash,
-                                                AgentRun.status == "ok").order_by(AgentRun.created_at.desc())).first()
-        if prev is not None and _age_days(prev.created_at) <= max_age:
+                                                AgentRun.status == "ok",
+                                                AgentRun.decision_time <= ctx.decision_date)
+                         .order_by(AgentRun.decision_time.desc(), AgentRun.created_at.desc())).first()
+        if prev is not None and (ctx.decision_date - prev.decision_time).days <= max_age:
             try:
                 out = spec.output.model_validate(prev.output)
             except ValidationError:
                 out = None
             if out is not None:
-                _record(ctx, spec, subject, prev.model, input_hash, None, "reused", None, reused_from=prev.id)
+                if not ctx.dry_run:       # un dry-run no deja rastros (ni "reutilizadas" fantasma)
+                    _record(ctx, spec, subject, prev.model, input_hash, None, "reused", None, reused_from=prev.id)
                 ctx.log.append({"agent": agent, "subject": subject, "status": "reused", "cost": 0.0})
                 return AgentResult(agent, subject, "reused", out, run_id=prev.id, web_sources=prev.web_sources or [])
     est = estimate_cost(model, len(sysmsg) + len(user), max_tokens, ws)
     if ctx.dry_run:
         ctx.log.append({"agent": agent, "subject": subject, "status": "dry_run", "est_cost": est})
         return AgentResult(agent, subject, "dry_run", None, est_cost_usd=est)
-    if not ctx.budget.can_spend(est):
+    bound = max_cost(model, len(sysmsg) + len(user), max_tokens, ws)
+    if not ctx.budget.can_spend(bound):
         _record(ctx, spec, subject, model, input_hash, None, "skipped_budget",
-                f"estimado ${est:.3f} > restante ${ctx.budget.remaining():.3f}")
+                f"cota ${bound:.3f} > restante ${ctx.budget.remaining():.3f}")
         return AgentResult(agent, subject, "skipped_budget", None, est_cost_usd=est, error="presupuesto")
     schema = strict_schema(spec.output)
     try:
         resp = ctx.llm.complete(agent=agent, model=model, system=sysmsg, user=user, schema=schema, effort=effort,
-                                max_tokens=max_tokens, web_search_uses=ws)
+                                max_tokens=max_tokens, web_search_uses=ws, budget_usd=ctx.budget.remaining())
     except LLMError as e:                     # incluye LLMRefusal; lo ya facturado se cuenta igual
         ctx.budget.spent_run += e.cost_usd
         status = "refusal" if isinstance(e, LLMRefusal) else "error"
         rid = _record(ctx, spec, subject, model, input_hash, None, status, str(e), e)
         return AgentResult(agent, subject, status, None, run_id=rid, cost_usd=e.cost_usd, error=str(e))
+    except BaseException as e:                # Ctrl-C u otro: se registra lo facturado y se propaga
+        c = getattr(e, "qa_cost", None)
+        if c and c[0]:
+            ctx.budget.spent_run += c[0]
+            _record(ctx, spec, subject, model, input_hash, None, "error", f"interrumpido: {type(e).__name__}",
+                    LLMError("", cost_usd=c[0], input_tokens=c[1], output_tokens=c[2], web_searches=c[3]))
+        raise
     ctx.budget.spent_run += resp.cost_usd
     try:
         out = spec.output.model_validate(resp.data)
@@ -182,12 +198,6 @@ def run_agent(ctx: RunContext, agent: str, subject: str, task: str, pack: dict,
     ctx.log.append({"agent": agent, "subject": subject, "status": "ok", "cost": resp.cost_usd})
     return AgentResult(agent, subject, "ok", out, run_id=rid, cost_usd=resp.cost_usd, est_cost_usd=est,
                        web_sources=resp.web_sources)
-
-
-def _age_days(ts: datetime) -> float:
-    if ts.tzinfo is None:
-        ts = ts.replace(tzinfo=timezone.utc)
-    return (datetime.now(timezone.utc) - ts) / timedelta(days=1)
 
 
 def _record(ctx: RunContext, spec: AgentSpec, subject: str, model: str, input_hash: str, output: Any,

@@ -30,18 +30,37 @@ Promoción L2 → L3: `score ≥ 6.0`, los 8 mejores, más la cartera.
    - el precio entra en *buckets* logarítmicos de `price_move_trigger_pct`.
 
    Sin cambio material (filing nuevo, re-expresión, evento o movimiento mayor al umbral) no hay llamada. Cada
-   reutilización queda registrada en `agent_runs` con costo 0.
-3. **Presupuesto duro** por corrida (US$30) y mensual (US$60). Se estima el costo antes de cada llamada; si no
-   alcanza, se salta y queda registrado como `skipped_budget`.
+   reutilización queda registrada en `agent_runs` con costo 0. Reglas que mantienen el hash estable y honesto:
+   - ningún texto del pack depende del día: la advertencia de balance viejo dice "> 200 días", la antigüedad del
+     precio va por tramos (> 3, > 7, > 30 días) y los motivos de L0 no llevan montos (van en campos volátiles);
+   - **solo se reutiliza un análisis hecho a la misma fecha de decisión o antes** (`decision_time`), y la antigüedad
+     se mide entre fechas de decisión: un replay nunca recibe búsquedas web hechas después;
+   - **Map Curator y Discovery nunca se reutilizan**: su trabajo es buscar novedades;
+   - los movimientos de precio generan **un evento por episodio** (otro solo si el precio se mueve de nuevo más que
+     el umbral desde el último evento), y en el pack entran como máximo 2, así no desplazan a una re-expresión;
+   - el registro de bottlenecks es point-in-time: en un replay solo entra la evidencia conocida a la fecha de
+     decisión (`evidence_reviewed_at` acota las fechas parciales) y la severidad se recalcula.
+   - Todo usa **un solo reloj, UTC**: la fecha de decisión por defecto es la fecha UTC, la misma con que se sellan
+     precios y eventos.
+3. **Presupuesto duro** por corrida (US$30) y mensual (US$60). Antes de cada llamada se verifica una **cota
+   superior** de la primera solicitud (todo `max_tokens`, todas las búsquedas y sus resultados); dentro de la
+   llamada, cada continuación `pause_turn` se corta si lo gastado más la cota de la próxima supera el restante. Si no
+   alcanza, la llamada se salta y queda como `skipped_budget`.
 4. **Modelo, effort y búsquedas por capa**, configurables en `config/settings.yaml`. Se puede probar Opus a
    effort bajo en lugar de la cascada de modelos.
 5. **Prompt caching** del system prompt de cada agente.
 6. **`qa funnel --dry-run`** y **`qa estimate`**: muestran el costo antes de gastar. El dry-run simula el peor caso: la
-   capa se llena hasta su tope por pre-score, e incluye L2, L3 y el comité.
+   capa se llena hasta su tope por pre-score, e incluye L2, L3 (bear, rebuttal y auditor) y el comité. No deja
+   rastros: no escribe filas en `agent_runs` ni cambia el estado del embudo.
 7. Las capas costosas reciben data packs ya calculados: el LLM no busca números que el pipeline ya tiene.
 8. **Contabilidad completa.** También se registran las llamadas fallidas que se facturaron (max_tokens, rechazos).
    Las escrituras de caché y los intentos de fallback se valúan al precio de su modelo. El costo se commitea después de
-   cada llamada, así que un corte a mitad de corrida no lo borra del presupuesto mensual.
+   cada llamada, así que un corte a mitad de corrida no lo borra del presupuesto mensual. Un stream cortado (error de
+   transporte) o un Ctrl-C registran lo ya facturado, incluido el input del pedido cortado, y el embudo sigue con la
+   próxima empresa.
+9. **Corridas incompletas.** Cada corrida queda en `pipeline_runs` (`running` → `completed`). El dashboard ignora
+   scores, escenarios, discrepancias y recomendaciones de corridas que no terminaron, y el estado del embudo solo
+   se escribe al final.
 
 ## Estimación (salida real de `qa estimate`)
 

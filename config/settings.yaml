@@ -93,6 +93,7 @@ portfolio:
   min_cash: 0.02
   rebalance: "monthly"            # + revisiones por evento (earnings, cambios de tesis)
   commission_bps: 5
+  min_trade_pct_nav: 0.5          # ajustes < 0.5% del NAV no se operan (= banda HOLD de las recomendaciones)
   slippage_bps_by_liquidity: {large: 5, mid: 15, small: 40}
   benchmarks: ["SPY", "QQQ", "SMH", "URA", "COPX", "XLU", "GRID"]
   live_trading_enabled: false     # Regla 14: no se conecta trading real sin autorización explícita

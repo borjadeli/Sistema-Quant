@@ -148,12 +148,14 @@ def balance_inputs(f: Fundamentals) -> tuple[float, float, list[str]]:
     cash, debt = f.v("cash_total"), f.v("debt")
     if cash is None or f.balance_date is None:
         raise ValueError("caja desconocida: no se asume 0 — valuación no calculable hasta tener balance")
+    if getattr(f, "balance_stale", False):
+        raise ValueError(f"balance demasiado antiguo ({f.balance_date}): valuación no calculable")
     notes = []
     if debt is None:
         if getattr(f, "debt_elsewhere", False):
             raise ValueError("deuda reportada en otra fecha que el balance: no se asume 0 — valuación no calculable")
-        if f.data_quality != "filing":
-            raise ValueError("deuda no reportada en una fuente que no es filing completo: no se asume 0")
+        if getattr(f, "balance_rank", None) != 0:
+            raise ValueError("deuda no reportada en un balance que no proviene de un filing: no se asume 0")
         debt = 0.0
         notes.append(f"sin deuda financiera en el balance XBRL al {f.balance_date}: se SUPONE 0 (verificar)")
     return cash, debt, notes
