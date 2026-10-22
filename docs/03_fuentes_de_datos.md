@@ -30,5 +30,7 @@
   de cotización: en ese caso el sistema **no valúa** hasta que exista un FX explícito (no se asume).
 - ADRs: el ratio ADR/acción subyacente (`adr_ratio`) no se obtiene automáticamente todavía.
 - yfinance puede cambiar o bloquearse; por eso todo queda etiquetado con fuente y timestamp.
-- Las cifras de `seed_companies_verified.json` y `bottlenecks_evidence.json` salieron de resúmenes de buscador.
-  Antes de operar, el auditor debe contrastarlas con los documentos primarios.
+- Las cifras de `seed_companies_verified.json` (20/20 semillas investigadas) y de `bottlenecks_evidence.json` salieron
+  de resúmenes de buscador. Antes de operar, el auditor debe contrastarlas con los documentos primarios. Los lotes
+  crudos de la segunda ronda están en `data/research/raw/`.
+- La investigación web solo se pasa a los agentes si su `research_date` ≤ la fecha de decisión.

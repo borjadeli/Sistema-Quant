@@ -66,6 +66,8 @@ Están en `RUBRICS`; se inyectan en el prompt de cada agente.
 | valuación/asimetría < 3 | 5.5 |
 | captura económica < 2 | 5.0 |
 
+Un factor **no evaluado** (agente fallido u omitido) cuenta como 0 para los topes: los controles fallan cerrados.
+
 ## Condiciones eliminatorias (kill switches): bloquean la cartera
 
 | Código | Condición |
@@ -73,11 +75,12 @@ Están en `RUBRICS`; se inyectan en el prompt de cada agente.
 | K1 | duda de empresa en marcha (going concern) |
 | K2 | runway de caja < 4 trimestres sin financiamiento comprometido |
 | K3 | liquidez diaria < mínimo de configuración (US$2M) |
-| K4 | sin datos fundamentales verificables, o datos sintéticos |
+| K4 | sin datos fundamentales verificables, o **cualquier** dato sintético mezclado |
 | K5 | retorno esperado ponderado a 24 meses negativo |
 | K6 | P(pérdida permanente) > 50% |
 | K7 | deuda neta/EBITDA > 6x |
 | K8 | el Research Auditor rechazó el análisis |
+| K9 | análisis incompleto: sin evaluación fundamental válida (red flags/going concern no evaluados), sin veredicto del auditor en L3, o candidato que no completó L3 (bear case + auditoría) |
 
 ## Alertas (no bloquean, se muestran y bajan la confianza)
 - dilución > 8% anual

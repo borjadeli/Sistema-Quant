@@ -41,7 +41,10 @@ with st.sidebar:
         st.session_state["db"] = "real"
     st.radio("Base de datos", list(data.DB_OPTIONS), key="db", format_func=data.DB_OPTIONS.get)
     p = data.db_path(st.session_state["db"])
-    st.caption(f"`{p.relative_to(data.ROOT)}` · {'✅ existe' if p.exists() else '❌ no existe'}")
+    if p is None:   # URL no-SQLite (p.ej. Postgres): el dashboard solo lee SQLite en archivo
+        st.error(data.db_error(st.session_state["db"]))
+    else:           # ruta absoluta: QA_DATABASE_URL puede apuntar fuera del repo
+        st.caption(f"`{p}` · {'✅ existe' if p.exists() else '❌ no existe'}")
     st.divider()
     st.caption("Cartera **simulada**: el sistema nunca envía órdenes reales. Probabilidades de escenarios = "
                "juicios subjetivos, no estadísticas calibradas.")

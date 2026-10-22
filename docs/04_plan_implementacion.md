@@ -16,7 +16,7 @@ Estado al 2026-10-21. ✅ hecho y verificado por tests · 🟡 implementado, fal
 |---|---|---|
 | Clasificación por función | cada empresa mapeada a ≥1 nodo existente (test) | ✅ |
 | 150-250 empresas | test 150 ≤ n ≤ 250; sin market cap cargado a mano (test) | ✅ 245 |
-| Relaciones | solo con URL; sin URL = hipótesis (validador) | ✅ semillas (12/20 investigadas) |
+| Relaciones | solo con URL; sin URL = hipótesis (validador) | ✅ semillas (20/20 investigadas, calidad `search_summary`) |
 | Radar de bottlenecks | ≥15 bottlenecks con evidencia, contra-evidencia y severidad reproducible (test) | ✅ 21 |
 | Datos de mercado del universo | `qa ingest` completa market cap y ADV para ≥90% del universo | 🟡 bloqueado por la red |
 
@@ -61,3 +61,10 @@ Estado al 2026-10-21. ✅ hecho y verificado por tests · 🟡 implementado, fal
    - mensual: embudo completo + comité;
    - por evento: re-análisis.
 7. Alpha multifactor (Fama-French + momentum + semis), calibración de probabilidades por cohorte, Batch API para L1.
+
+## Revisión adversarial (2026-10-22)
+1. **Revisión.** 4 revisores independientes (matemática financiera, procedencia/point-in-time, orquestación, CLI/dashboard)
+   reportaron 48 hallazgos, que dos escépticos por hallazgo intentaron refutar.
+2. **Corrección.** Se corrigieron todos (commit `bea9fdb`) y cada uno tiene un test de regresión que reproduce el
+   escenario de falla original (`tests/test_review_regressions.py`).
+3. **Reverificación.** Una segunda ronda adversarial volvió a revisar las correcciones; resultado al pie de este plan.

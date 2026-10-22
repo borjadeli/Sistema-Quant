@@ -17,7 +17,7 @@ st.title("💲 Embudo y costos")
 D.banner()
 
 cfg = D.cfg()
-fun = D.query("SELECT * FROM funnel_state")
+fun = D.funnel_state()
 runs = D.query("SELECT * FROM agent_runs")
 
 st.subheader("Embudo")
@@ -39,14 +39,15 @@ else:
                            marker=dict(color=ramp, cornerradius=4), text=vals, textposition="outside",
                            hovertemplate="%{y}: %{x} empresas<extra></extra>"))
     fig.update_yaxes(autorange="reversed")
-    fig.update_xaxes(range=[0, max(vals) * 1.15])
+    fig.update_xaxes(range=[0, max(vals) * 1.15], dtick=1 if max(vals) <= 12 else None, title="empresas")
     fig.update_layout(bargap=0.5)
     st.plotly_chart(D.plotly_layout(fig, height=260, legend=False), width="stretch")
-    reasons = fun["l0_reasons"].map(lambda r: D.js(r) or []).explode().dropna()
+    reasons = fun["l0_reasons"].explode().dropna()
     if not reasons.empty:
         top = reasons.str.replace(r"\$[\d.,]+M?", "$X", regex=True).value_counts().head(8)
         st.markdown("**Motivos más frecuentes en L0**")
-        st.dataframe(top.rename("empresas").to_frame(), width="stretch")
+        st.dataframe(top.rename_axis("motivo").rename("empresas").reset_index(), hide_index=True, width="stretch", placeholder="—",
+                     column_config={"motivo": st.column_config.TextColumn("motivo", width="large")})
     st.caption("Promoción por valor de la información: prioridad + incertidumbre (L1), score (L2) y siempre las "
                "posiciones en cartera. Análisis reutilizado si el data pack no cambió materialmente.")
 
@@ -58,15 +59,25 @@ else:
     runs["created_at"] = pd.to_datetime(runs["created_at"])
     runs["mes"] = runs["created_at"].dt.strftime("%Y-%m")
     this_month = runs[runs["mes"] == pd.Timestamp.now("UTC").strftime("%Y-%m")]["cost_usd"].sum()
-    k1, k2, k3, k4 = st.columns(4)
+    # status 'reused' = análisis reutilizado (el data pack no cambió): no hubo llamada al LLM ni costo.
+    reused = runs[runs["status"] == "reused"]
+    llm_calls = runs[~runs["status"].isin(["reused", "skipped_budget", "dry_run"])]
+    saved = 0.0
+    if not reused.empty and "reused_from" in runs:
+        cost_by_id = runs.set_index("id")["cost_usd"]
+        saved = float(pd.to_numeric(reused["reused_from"], errors="coerce").map(cost_by_id).fillna(0).sum())
+    k1, k2, k3, k4, k5 = st.columns(5)
     k1.metric("Gasto total", f"${runs['cost_usd'].sum():,.2f}")
     k2.metric("Gasto este mes", f"${this_month:,.2f}", help=f"presupuesto mensual ${budget['monthly_budget_usd']:.0f}")
-    k3.metric("Llamadas", len(runs))
-    k4.metric("Reutilizadas / salteadas por presupuesto",
-              f"{int((runs['status'] == 'reused').sum())} / {int((runs['status'] == 'skipped_budget').sum())}")
+    k3.metric("Llamadas al LLM", len(llm_calls), help="corridas de agentes que llamaron al modelo (ok, error o "
+                                                      "rechazo); excluye reutilizadas y salteadas")
+    k4.metric("Reutilizadas", len(reused),
+              help="análisis reutilizados porque el data pack no cambió materialmente (sin llamada al LLM)."
+                   + (f" Costo evitado ≈ ${saved:,.2f} (costo de las corridas originales)." if len(reused) else ""))
+    k5.metric("Salteadas por presupuesto", int((runs["status"] == "skipped_budget").sum()))
     st.progress(min(this_month / budget["monthly_budget_usd"], 1.0),
-                text=f"{this_month / budget['monthly_budget_usd']:.0%} del presupuesto mensual "
-                     f"(${budget['monthly_budget_usd']:.0f}; por corrida ${budget['per_run_budget_usd']:.0f})")
+                text=f"{this_month / budget['monthly_budget_usd']:.0%} del presupuesto mensual "   # \$: no es LaTeX
+                     f"(\\${budget['monthly_budget_usd']:.0f}; por corrida \\${budget['per_run_budget_usd']:.0f})")
     by_agent = runs.groupby(["agent", "model"], as_index=False).agg(llamadas=("id", "count"), usd=("cost_usd", "sum"),
                                                                      tokens_in=("input_tokens", "sum"),
                                                                      tokens_out=("output_tokens", "sum"))
@@ -79,14 +90,17 @@ else:
     fig.update_xaxes(range=[0, by_agent["usd"].max() * 1.3 or 1])
     st.plotly_chart(D.plotly_layout(fig, height=max(240, 32 * len(by_agent) + 100), legend=False),
                     width="stretch")
-    st.dataframe(runs.groupby(["mes", "status"], as_index=False).agg(llamadas=("id", "count"), usd=("cost_usd", "sum")),
-                 hide_index=True, width="stretch", column_config={"usd": st.column_config.NumberColumn(format="$%.4f")})
+    by_status = runs.groupby(["mes", "status"], as_index=False).agg(corridas=("id", "count"), usd=("cost_usd", "sum"))
+    by_status["status"] = by_status["status"].map(lambda v: D.es(D.RUN_STATUS_ES, v))
+    st.dataframe(by_status, hide_index=True, width="stretch", placeholder="—",
+                 column_config={"status": "estado", "usd": st.column_config.NumberColumn("costo (USD)", format="$%.4f")})
 
 st.subheader("Estimación de un ciclo completo (cota superior)")
 est = estimate_cycle()
-st.dataframe(pd.DataFrame(est["rows"]), hide_index=True, width="stretch",
-             column_config={"usd_per_call": st.column_config.NumberColumn("USD/llamada", format="$%.4f"),
-                            "usd_total": st.column_config.NumberColumn("USD total", format="$%.2f")})
+est_df = pd.DataFrame(est["rows"])
+st.dataframe(est_df, hide_index=True, width="stretch", placeholder="—",
+             column_config=D.colcfg(est_df, usd_per_call=st.column_config.NumberColumn("USD/llamada", format="$%.4f"),
+                                    usd_total=st.column_config.NumberColumn("USD total", format="$%.2f")))
 c1, c2 = st.columns(2)
 c1.metric("Embudo por capas", f"${est['total_usd_upper_bound']:,.2f} / ciclo")
 c2.metric("Sin embudo (todo el universo en profundidad)", f"${est['naive_all_deep_usd']:,.0f} / ciclo")

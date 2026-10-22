@@ -23,11 +23,20 @@ if not comp.empty:
     for b in reg.values():
         in_db[b.id] = sorted(comp.loc[comp["nodes"].map(lambda ns, b=b: bool(set(ns) & set(b.map_nodes))), "id"])
 
+# capas del registro de bottlenecks (no siempre coinciden con los ids de capa del mapa)
+BN_LAYER = {"grid_power": "Red eléctrica", "packaging": "Advanced packaging",
+            "datacenter_power_thermal": "Datacenter: energía y térmica"}
+
+
+def bn_layer(lid: str) -> str:
+    return BN_LAYER.get(lid) or D.layer_name(lid)
+
+
 rows = []
 for b in sorted(reg.values(), key=lambda x: -x.severity):
-    rows.append({"id": b.id, "cuello de botella": b.name, "capa": b.layer,
+    rows.append({"id": b.id, "cuello de botella": b.name, "capa": bn_layer(b.layer), "_layer": b.layer,
                  "estado": D.BN_STATUS_LABEL.get(b.status, b.status), "_status": b.status,
-                 "confianza": b.confidence.split()[0], "severidad": b.severity,
+                 "confianza": D.es(D.LEVEL_ES, b.confidence.split()[0]), "severidad": b.severity,
                  "empresas": len(in_db.get(b.id, [])), "evidencia": len(b.raw.get("evidence", [])),
                  "contra-evidencia": len(b.raw.get("counter_evidence", [])),
                  "duración estimada": b.raw.get("estimated_duration")})
@@ -46,11 +55,14 @@ st.caption("Severidad 0-10 calculada por regla reproducible (estado, confianza, 
 
 f1, f2 = st.columns([2, 2])
 with f1:
-    layers = st.multiselect("Capa", sorted(df["capa"].unique()), default=sorted(df["capa"].unique()))
+    layers = st.multiselect("Capa", sorted(df["_layer"].unique(), key=bn_layer), default=[], format_func=bn_layer,
+                            placeholder="Todas las capas")
 with f2:
-    stats = st.multiselect("Estado", list(D.BN_STATUS_LABEL), default=list(D.BN_STATUS_LABEL),
-                           format_func=D.BN_STATUS_LABEL.get)
-view = df[df["capa"].isin(layers) & df["_status"].isin(stats)]
+    stats = st.multiselect("Estado", list(D.BN_STATUS_LABEL), default=[], format_func=D.BN_STATUS_LABEL.get,
+                           placeholder="Todos los estados")
+layers = layers or sorted(df["_layer"].unique())     # vacío = todas
+stats = stats or list(D.BN_STATUS_LABEL)
+view = df[df["_layer"].isin(layers) & df["_status"].isin(stats)]
 
 fig = go.Figure()
 for st_key, label in D.BN_STATUS_LABEL.items():
@@ -70,7 +82,7 @@ fig.update_xaxes(range=[0, 10], title="severidad (0-10)")
 fig.update_layout(barmode="overlay", bargap=0.55)
 st.plotly_chart(D.plotly_layout(fig, height=max(320, 30 * len(view) + 120)), width="stretch")
 
-st.dataframe(view.drop(columns=["_status"]), hide_index=True, width="stretch",
+st.dataframe(view.drop(columns=["_status", "_layer"]), hide_index=True, width="stretch", placeholder="—",
              column_config={"severidad": st.column_config.ProgressColumn("severidad", min_value=0, max_value=10,
                                                                          format="%.1f")})
 
@@ -85,21 +97,22 @@ for b in sorted(reg.values(), key=lambda x: -x.severity):
                     f"{r.get('estimated_duration', '—')}")
         st.caption(f"Nodos del mapa: {', '.join(b.map_nodes)} · Regla de severidad: {b.severity_explain}")
         if r.get("confidence_reason"):
-            st.caption(f"Confianza ({b.confidence}): {r['confidence_reason']}")
+            st.caption(f"Confianza ({D.es(D.LEVEL_ES, b.confidence)}): {r['confidence_reason']}")
         ev = pd.DataFrame(r.get("evidence", []))
         if not ev.empty:
             st.markdown("**Evidencia**")
-            st.dataframe(ev, hide_index=True, width="stretch",
-                         column_config={"source_url": st.column_config.LinkColumn("fuente")})
+            st.dataframe(ev, hide_index=True, width="stretch", placeholder="—",
+                         column_config=D.colcfg(ev, source_url=st.column_config.LinkColumn("enlace"),
+                                                secondary_url=st.column_config.LinkColumn("enlace secundario")))
         ce = pd.DataFrame(r.get("counter_evidence", []))
         if not ce.empty:
             st.markdown("**Contra-evidencia** (la mostramos siempre: no ocultar evidencia contradictoria)")
-            st.dataframe(ce, hide_index=True, width="stretch",
-                         column_config={"source_url": st.column_config.LinkColumn("fuente")})
+            st.dataframe(ce, hide_index=True, width="stretch", placeholder="—",
+                         column_config=D.colcfg(ce, source_url=st.column_config.LinkColumn("enlace")))
         sup = pd.DataFrame(r.get("known_suppliers", []))
         if not sup.empty:
             st.markdown("**Proveedores conocidos (según evidencia)**")
-            st.dataframe(sup, hide_index=True, width="stretch")
+            st.dataframe(sup, hide_index=True, width="stretch", placeholder="—", column_config=D.colcfg(sup))
         st.markdown("**Empresas del universo expuestas:** " + (", ".join(in_db.get(b.id, [])) or "—"))
         if r.get("access_note"):
             st.caption(f"Nota de acceso: {r['access_note']}")

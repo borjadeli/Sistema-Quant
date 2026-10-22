@@ -1,0 +1,3 @@
+# Tema del dashboard: acento azul de la paleta (dashboard/data.py SERIES[0]) en lugar del rojo por defecto.
+[theme]
+primaryColor = "#2a78d6"

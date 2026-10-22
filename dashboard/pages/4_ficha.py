@@ -39,16 +39,18 @@ pts, f = fundamentals(D.db_url(D.current_db()), cid)
 
 # ----------------------------------------------------------------------------- identidad
 st.markdown(f"## {c['name']}  `{cid}`")
-st.caption(f"{c['exchange']} · {c['country']} · {c['currency']} · estado: {c['status']} · identidad: {c['verification']}"
+st.caption(f"{c['exchange']} · {c['country']} · {c['currency']} · estado: {D.es(D.COMPANY_STATUS_ES, c['status'])} · "
+           f"identidad: {D.es(D.VERIFICATION_ES, c['verification'])}"
            + (f" · {c['notes']}" if c.get("notes") else ""))
 snap = D.latest_snapshots()
 snap = snap[snap["company_id"] == cid] if not snap.empty else snap
 a, b, cc, d = st.columns(4)
 if not snap.empty:
     s0 = snap.iloc[-1]
-    a.metric("Precio", f"{s0['price']:,.2f} {s0['currency'] or ''}", help=f"{s0['source']} @ {s0['as_of']}")
-    b.metric("Market cap (USD)", D.fmt_money(s0["market_cap_usd"]))
-    cc.metric("Liquidez diaria 20d (USD)", D.fmt_money(s0["adv_usd_20d"]))
+    a.metric("Precio", f"{s0['price']:,.2f} {s0['currency'] or ''}",
+             help=f"fuente {s0['source']} · al {D.fmt_dt(s0['as_of'])}")
+    b.metric("Market cap", D.fmt_money(s0["market_cap_usd"], "USD"))
+    cc.metric("Liquidez diaria 20d", D.fmt_money(s0["adv_usd_20d"], "USD"))
 else:
     a.metric("Precio", "—", help="sin datos de mercado: `qa ingest`")
     b.metric("Market cap (USD)", "—")
@@ -65,7 +67,7 @@ with tabs[0]:
     nodes = [n for n in c["nodes"] if n in m.nodes]
     st.dataframe(pd.DataFrame([{"nodo": n, "nombre": m.nodes[n].name, "capa": m.layers[m.nodes[n].layer],
                                 "concentración": m.nodes[n].concentration, "sustituibilidad": m.nodes[n].substitutability}
-                               for n in nodes]), hide_index=True, width="stretch")
+                               for n in nodes]), hide_index=True, width="stretch", placeholder="—")
     if nodes:
         path = m.path_to_demand(nodes[0])
         if path:
@@ -75,8 +77,9 @@ with tabs[0]:
     st.markdown("**Cuellos de botella vinculados**")
     if bl:
         st.dataframe(pd.DataFrame([{"id": x.id, "nombre": x.name, "estado": D.BN_STATUS_LABEL.get(x.status, x.status),
-                                    "severidad": x.severity, "confianza": x.confidence.split()[0]} for x in bl])
-                     .sort_values("severidad", ascending=False), hide_index=True, width="stretch")
+                                    "severidad": x.severity, "confianza": D.es(D.LEVEL_ES, x.confidence.split()[0])}
+                                   for x in bl])
+                     .sort_values("severidad", ascending=False), hide_index=True, width="stretch", placeholder="—")
     else:
         st.write("Ninguno registrado.")
 
@@ -90,17 +93,19 @@ with tabs[1]:
         st.markdown(f"**Calidad de datos:** {q.get(f.data_quality, f.data_quality)} · moneda {f.currency or '—'} · "
                     f"as of {f.as_of}")
         if f.missing:
-            st.caption("Faltantes clave (no se rellenan): " + ", ".join(f.missing))
+            st.caption("Faltantes clave (no se rellenan): " + ", ".join(map(D.metric_label, f.missing)))
         rows = []
         pct = {"gross_margin", "ebit_margin", "ebitda_margin", "net_margin", "fcf_margin", "capex_intensity", "roic",
                "revenue_growth_yoy", "revenue_growth_q_yoy", "dilution_yoy", "sbc_pct_revenue", "incremental_margin"}
         for k, mt in f.metrics.items():
             if mt.value is None:
                 continue
-            val = f"{mt.value:.1%}" if k in pct else (f"{mt.value:.2f}" if abs(mt.value) < 100 else D.fmt_money(mt.value))
-            rows.append({"métrica": k, "valor": val, "período": mt.period, "nota": mt.note,
+            ccy = None if k.startswith(("shares", "diluted_shares")) else f.currency
+            val = (f"{mt.value:.1%}" if k in pct else
+                   f"{mt.value:.2f}" if abs(mt.value) < 100 else D.fmt_money(mt.value, ccy))
+            rows.append({"métrica": D.metric_label(k), "valor": val, "período": mt.period, "nota": mt.note,
                          "insumos": "; ".join(mt.inputs[:2]) + (" …" if len(mt.inputs) > 2 else "")})
-        st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+        st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch", placeholder="—")
         rev = f.quarterly.get("revenue", {})
         if rev:
             ser = pd.Series(rev).sort_index().tail(12)
@@ -110,11 +115,12 @@ with tabs[1]:
             fig.update_yaxes(title=f.currency or "")
             st.plotly_chart(D.plotly_layout(fig, height=320, legend=False), width="stretch")
         with st.expander(f"Datapoints originales con fuente ({len(pts)})"):
-            dp = pd.DataFrame([{"métrica": p.metric, "valor": p.value, "unidad": p.unit, "período": p.period_type,
-                                "fin": p.period_end, "conocido": p.known_at, "verificación": p.verification.value,
+            dp = pd.DataFrame([{"métrica": D.metric_label(p.metric), "valor": p.value, "unidad": p.unit, "período": p.period_type,
+                                "fin": p.period_end, "conocido": p.known_at,
+                                "verificación": D.es(D.VERIFICATION_ES, p.verification.value),
                                 "fuente": p.source.name, "doc": p.source.document_type, "url": p.source.url,
                                 "nota": p.note} for p in pts]).sort_values(["métrica", "fin"])
-            st.dataframe(dp, hide_index=True, width="stretch",
+            st.dataframe(dp, hide_index=True, width="stretch", placeholder="—",
                          column_config={"url": st.column_config.LinkColumn("url")})
 
 # ----------------------------------------------------------------------------- escenarios
@@ -151,7 +157,7 @@ with tabs[2]:
         fig.update_xaxes(title="meses", tickvals=[0, 12, 24, 36])
         fig.update_yaxes(title="precio objetivo")
         st.plotly_chart(D.plotly_layout(fig, height=360), width="stretch")
-        st.dataframe(pd.DataFrame(tab), hide_index=True, width="stretch", column_config={
+        st.dataframe(pd.DataFrame(tab), hide_index=True, width="stretch", placeholder="—", column_config={
             "prob.": st.column_config.NumberColumn(format="percent"),
             **{f"ret {h}m": st.column_config.NumberColumn(format="percent") for h in (12, 24, 36)},
             **{f"PO {h}m": st.column_config.NumberColumn(format="%.2f") for h in (12, 24, 36)},
@@ -184,24 +190,32 @@ with tabs[3]:
         k1, k2, k3, k4 = st.columns(4)
         k1.metric("Score total", f"{s['total']:.2f}", help=f"sin topes: {s['total_uncapped']:.2f}")
         k2.metric("Capa", s["tier"])
-        k3.metric("Confianza", s["confidence"])
+        k3.metric("Confianza", D.es(D.LEVEL_ES, s["confidence"]))
         k4.metric("Elegible para cartera", "sí" if s["eligible"] else "no")
+        if pd.notna(s["scenario_id"]):
+            st.caption(f"Calculado el {D.fmt_dt(s['created_at'])} con los escenarios #{int(s['scenario_id'])} "
+                       f"({D.fmt_dt(s['scenario_created_at'])}): ER 36m {D.fmt_pct(s['er36'])} · "
+                       f"P(pérdida perm.) {D.fmt_pct(s['prob_loss']).lstrip('+')}.")
+        else:
+            st.caption(f"Calculado el {D.fmt_dt(s['created_at'])} **sin escenarios**: retorno esperado y "
+                       "P(pérdida) no aplican a este score.")
         fac = s["factors"] or {}
         names = list(w)
-        fig = go.Figure(go.Bar(y=names, x=[(fac.get(n) or {}).get("score", 0) for n in names], orientation="h",
+        flabels = [D.FACTOR_ES.get(n, n) for n in names]
+        fig = go.Figure(go.Bar(y=flabels, x=[(fac.get(n) or {}).get("score", 0) for n in names], orientation="h",
                                marker=dict(color=D.SERIES[0], cornerradius=4),
                                text=[f"{(fac.get(n) or {}).get('score', 0):.1f} · peso {w[n]:.0%}" for n in names],
                                textposition="outside", hovertemplate="%{y}: %{x:.2f}<extra></extra>"))
-        fig.update_xaxes(range=[0, 11], title="puntaje 0-10")
+        fig.update_xaxes(range=[0, 12.5], tickvals=[0, 2, 4, 6, 8, 10], title="puntaje 0-10")
         fig.update_layout(bargap=0.45)
-        fig.update_yaxes(categoryorder="array", categoryarray=names[::-1])
+        fig.update_yaxes(categoryorder="array", categoryarray=flabels[::-1])
         st.plotly_chart(D.plotly_layout(fig, height=300, legend=False), width="stretch")
-        st.dataframe(pd.DataFrame([{"factor": n, "puntaje": (fac.get(n) or {}).get("score"), "peso": w[n],
+        st.dataframe(pd.DataFrame([{"factor": D.FACTOR_ES.get(n, n), "puntaje": (fac.get(n) or {}).get("score"), "peso": w[n],
                                     "método": (fac.get(n) or {}).get("method"),
                                     "fundamento": (fac.get(n) or {}).get("rationale"),
                                     "evidencia": "; ".join(map(str, (fac.get(n) or {}).get("evidence", [])[:4])),
                                     "faltante": "; ".join((fac.get(n) or {}).get("missing", []))} for n in names]),
-                     hide_index=True, width="stretch",
+                     hide_index=True, width="stretch", placeholder="—",
                      column_config={"peso": st.column_config.NumberColumn(format="percent")})
         for k in s["kill_switches"] or []:
             st.error(f"⛔ {k}")
@@ -218,13 +232,19 @@ with tabs[4]:
     if runs.empty:
         st.info("Ningún agente analizó esta empresa todavía.")
     else:
-        st.dataframe(runs[["created_at", "agent", "tier", "model", "status", "cost_usd", "input_tokens",
-                           "output_tokens", "prompt_version", "input_hash", "error"]], hide_index=True,
-                     width="stretch", column_config={"cost_usd": st.column_config.NumberColumn(format="$%.4f")})
+        rv = runs.assign(status=runs["status"].map(lambda v: D.es(D.RUN_STATUS_ES, v)),
+                         created_at=pd.to_datetime(runs["created_at"], utc=True, errors="coerce"))
+        cols = ["created_at", "agent", "tier", "model", "status", "cost_usd", "input_tokens", "output_tokens",
+                "prompt_version", "input_hash", "error"] + (["reused_from"] if "reused_from" in rv else [])
+        st.dataframe(rv[cols], hide_index=True, width="stretch", placeholder="—", column_config=D.colcfg(
+            rv, tier="capa", cost_usd=st.column_config.NumberColumn("costo (USD)", format="$%.4f"),
+            created_at=st.column_config.DatetimeColumn("fecha", format="YYYY-MM-DD HH:mm"),
+            reused_from=st.column_config.NumberColumn("reutiliza corrida #", format="%d")))
         for _, r in runs.iterrows():
             out = D.js(r["output"])
             if out:
-                with st.expander(f"{r['agent']} · {r['model']} · {r['status']} · {r['created_at']}"):
+                with st.expander(f"{r['agent']} · {r['model']} · {D.es(D.RUN_STATUS_ES, r['status'])} · "
+                                 f"{D.fmt_dt(r['created_at'])}"):
                     st.json(out, expanded=False)
                     src = D.js(r["web_sources"]) or []
                     if src:
@@ -235,8 +255,9 @@ with tabs[4]:
         st.write("Ninguna.")
     else:
         dis["positions"] = dis["positions"].map(lambda x: json.dumps(D.js(x), ensure_ascii=False))
-        st.dataframe(dis[["created_at", "topic", "positions", "resolving_evidence", "status"]], hide_index=True,
-                     width="stretch")
+        dv = dis[["created_at", "topic", "positions", "resolving_evidence", "status"]]
+        dv = dv.assign(status=dv["status"].map({"open": "abierta", "resolved": "resuelta"}).fillna(dv["status"]))
+        st.dataframe(dv, hide_index=True, width="stretch", placeholder="—", column_config=D.colcfg(dv))
 
 # ----------------------------------------------------------------------------- research semilla
 with tabs[5]:
@@ -251,18 +272,19 @@ with tabs[5]:
         rel = pd.DataFrame(sr.get("confirmed_relationships") or [])
         if not rel.empty:
             st.markdown("**Relaciones (según fuente)**")
-            st.dataframe(rel, hide_index=True, width="stretch",
-                         column_config={"source_url": st.column_config.LinkColumn("fuente")})
+            st.dataframe(rel, hide_index=True, width="stretch", placeholder="—",
+                         column_config=D.colcfg(rel, source_url=st.column_config.LinkColumn("fuente")))
         ev = pd.DataFrame(sr.get("key_recent_events") or [])
         if not ev.empty:
             st.markdown("**Eventos recientes**")
-            st.dataframe(ev, hide_index=True, width="stretch",
-                         column_config={"source_url": st.column_config.LinkColumn("fuente")})
+            st.dataframe(ev, hide_index=True, width="stretch", placeholder="—",
+                         column_config=D.colcfg(ev, source_url=st.column_config.LinkColumn("fuente")))
         rf = sr.get("red_flags") or []
         if rf:
             st.markdown("**Red flags**")
-            st.dataframe(pd.DataFrame(rf) if isinstance(rf[0], dict) else pd.DataFrame({"red flag": rf}),
-                         hide_index=True, width="stretch")
+            rfd = pd.DataFrame(rf) if isinstance(rf[0], dict) else pd.DataFrame({"red flag": rf})
+            st.dataframe(rfd, hide_index=True, width="stretch", placeholder="—",
+                         column_config=D.colcfg(rfd, source_url=st.column_config.LinkColumn("fuente")))
         if sr.get("notes_unverified"):
             st.caption("No verificado: " + (json.dumps(sr["notes_unverified"], ensure_ascii=False)
                                             if not isinstance(sr["notes_unverified"], str) else sr["notes_unverified"]))

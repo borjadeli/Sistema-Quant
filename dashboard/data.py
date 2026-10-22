@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from collections import Counter
 from pathlib import Path
@@ -14,12 +15,12 @@ import pandas as pd
 import streamlit as st
 from sqlalchemy import create_engine, inspect, text
 
-ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT / "src") not in sys.path:
-    sys.path.insert(0, str(ROOT / "src"))
+_REPO = Path(__file__).resolve().parents[1]
+if str(_REPO / "src") not in sys.path:
+    sys.path.insert(0, str(_REPO / "src"))
 
 from qa.bottlenecks import load_bottlenecks  # noqa: E402
-from qa.config import RESEARCH_DIR, database_url, settings  # noqa: E402
+from qa.config import RESEARCH_DIR, ROOT, database_url, settings  # noqa: E402,F401  (ROOT = raíz del proyecto qa)
 from qa.map.model import load_map  # noqa: E402
 from qa.universe.model import load_universe  # noqa: E402
 
@@ -33,8 +34,120 @@ BN_STATUS_COLOR = {"current_shortage": STATUS["critical"], "projected_shortage":
                    "speculative_hypothesis": STATUS["warning"], "easing": STATUS["good"]}
 BN_STATUS_LABEL = {"current_shortage": "⛔ escasez actual", "projected_shortage": "⚠️ escasez proyectada",
                    "speculative_hypothesis": "❔ hipótesis especulativa", "easing": "✅ aliviándose"}
+# Rampa ordinal de severidad (azul, pasos >= 250 sobre fondo claro). Sin bottleneck = gris neutro.
+# La comparten el treemap/sunburst y la red del mapa industrial.
+SEV_BINS = [(8.5, "#184f95", "≥ 8.5"), (7.5, "#2a78d6", "7.5 – 8.5"), (6.0, "#5598e7", "6 – 7.5"),
+            (0.0, "#86b6ef", "< 6")]
+SEV_NONE_COLOR = "#e1e0d9"
 
-DB_OPTIONS = {"real": "Base real (data/qa.sqlite)", "demo": "Demo sintética (data/demo.sqlite)"}
+
+def sev_color(severity: float | None) -> str:
+    if severity is None:
+        return SEV_NONE_COLOR
+    return next(c for lo, c, _ in SEV_BINS if severity >= lo)
+
+
+DB_OPTIONS = {"real": "Base real", "demo": "Demo sintética"}
+
+# ----------------------------------------------------------------------------- etiquetas en español
+# Cabeceras de tablas: nombre crudo de columna -> etiqueta visible (st.column_config acepta str como label).
+LABELS = {
+    "company_id": "empresa", "name": "nombre", "exchange": "bolsa", "country": "país", "currency": "moneda",
+    "status": "estado", "verification": "verificación", "created_at": "fecha", "tier": "capa del embudo",
+    "tier_reached": "capa alcanzada", "qty": "cantidad", "quantity": "cantidad", "price": "precio",
+    "value": "valor", "weight": "peso", "price_source": "fuente del precio", "price_time": "hora del precio",
+    "symbol": "símbolo", "side": "operación", "fees": "comisiones", "slippage": "slippage", "mode": "modo",
+    "recommendation_id": "recomendación #", "agent": "agente", "model": "modelo", "cost_usd": "costo",
+    "input_tokens": "tokens entrada", "output_tokens": "tokens salida", "prompt_version": "versión prompt",
+    "input_hash": "hash de entrada", "error": "error", "topic": "tema", "positions": "posiciones",
+    "resolving_evidence": "evidencia que lo resolvería", "claim": "afirmación", "source_name": "fuente",
+    "source_url": "enlace", "secondary_url": "enlace secundario", "source_date": "fecha de la fuente",
+    "date": "fecha", "evidence_type": "tipo de evidencia", "company": "empresa", "ticker_if_listed": "ticker",
+    "note": "nota", "event_date": "fecha del evento", "bottleneck_id": "cuello de botella", "event_type": "tipo",
+    "title": "título", "detail": "detalle", "impact": "impacto", "triggers_review": "dispara revisión",
+    "processed": "procesado", "url": "enlace", "change_type": "tipo de cambio", "rationale": "fundamento",
+    "reviewed_by": "revisado por", "calls": "llamadas", "usd_per_call": "USD/llamada", "usd_total": "USD total",
+    "event": "evento", "flag": "red flag", "counterparty": "contraparte", "relationship": "relación",
+    "reused_from": "reutiliza corrida #", "pipeline_run_id": "corrida", "id": "id",
+}
+LEVEL_ES = {"low": "baja", "medium": "media", "high": "alta"}
+ACTION_ES = {"BUY": "Comprar", "ADD": "Aumentar", "HOLD": "Mantener", "TRIM": "Reducir", "SELL": "Vender",
+             "AVOID": "Evitar"}
+SIDE_ES = {"BUY": "compra", "SELL": "venta"}
+MODE_ES = {"simulated": "simulado", "operated": "operado"}
+COMPANY_STATUS_ES = {"active": "activa", "candidate": "candidata", "delisted": "deslistada", "excluded": "excluida"}
+VERIFICATION_ES = {"confirmed_by_filing": "✅ documento regulatorio", "company_statement": "declaración corporativa",
+                   "media_report": "prensa / terceros", "search_summary": "🔎 resumen de buscador",
+                   "analyst_prior": "prior del analista", "hypothesis": "hipótesis",
+                   "synthetic_test_data": "🧪 sintético"}
+RUN_STATUS_ES = {"ok": "ok", "reused": "reutilizada", "skipped_budget": "salteada (presupuesto)", "error": "error",
+                 "refusal": "rechazada por el modelo", "dry_run": "simulación (dry run)"}
+IMPACT_ES = {"thesis_positive": "▲ a favor de la tesis", "thesis_negative": "▼ contra la tesis",
+             "neutral": "neutral", "unknown": "sin evaluar"}
+EVENT_TYPE_ES = {"filing": "filing regulatorio", "earnings": "resultados", "contract": "contrato",
+                 "capacity": "capacidad", "price_move": "movimiento de precio", "regulation": "regulación",
+                 "news": "noticia", "map_change": "cambio de mapa"}
+PROPOSAL_STATUS_ES = {"pending": "pendiente", "approved": "aprobada", "rejected": "rechazada", "applied": "aplicada"}
+FACTOR_ES = {"bottleneck_importance": "importancia del bottleneck", "economic_capture": "captura económica",
+             "valuation_asymmetry": "asimetría de valuación", "catalysts": "catalizadores",
+             "financial_quality": "calidad financiera", "informational_edge": "ventaja informativa"}
+METRIC_ES = {
+    "revenue": "ingresos", "cost_of_revenue": "costo de ventas", "gross_profit": "utilidad bruta",
+    "operating_income": "resultado operativo (EBIT)", "net_income": "resultado neto", "d_and_a": "D&A",
+    "ocf": "flujo de caja operativo", "capex": "capex", "sbc": "compensación en acciones",
+    "rd_expense": "gasto en I+D", "interest_expense": "intereses", "income_tax": "impuestos",
+    "pretax_income": "resultado antes de impuestos", "cash": "caja", "short_term_investments": "inversiones CP",
+    "debt_total": "deuda total", "debt_noncurrent": "deuda no corriente", "debt_current": "deuda corriente",
+    "equity": "patrimonio", "total_assets": "activos totales", "current_assets": "activos corrientes",
+    "current_liabilities": "pasivos corrientes", "inventory": "inventarios", "receivables": "cuentas por cobrar",
+    "rpo": "backlog (RPO)", "shares_outstanding": "acciones en circulación", "diluted_shares": "acciones diluidas",
+    "revenue_growth_yoy": "crecimiento ingresos a/a (TTM)", "revenue_growth_q_yoy": "crecimiento ingresos a/a (trim.)",
+    "gross_margin": "margen bruto", "ebitda": "EBITDA", "ebitda_margin": "margen EBITDA", "ebit_margin": "margen EBIT",
+    "net_margin": "margen neto", "fcf": "flujo de caja libre", "fcf_margin": "margen FCF",
+    "capex_intensity": "capex / ingresos", "sbc_pct_revenue": "SBC / ingresos", "cash_total": "caja + inversiones",
+    "debt": "deuda", "net_debt": "deuda neta", "net_debt_to_ebitda": "deuda neta / EBITDA",
+    "interest_coverage": "cobertura de intereses", "current_ratio": "liquidez corriente", "roic": "ROIC",
+    "cash_runway_quarters": "runway de caja (trimestres)", "incremental_margin": "margen incremental",
+}
+
+
+def metric_label(k: str) -> str:
+    """Nombre legible de una métrica fundamental (sufijos _ttm / _last_q incluidos)."""
+    for suf, lab in (("_ttm", " (TTM)"), ("_last_q", " (último trimestre)")):
+        if k.endswith(suf) and k[: -len(suf)] in METRIC_ES:
+            return METRIC_ES[k[: -len(suf)]] + lab
+    return METRIC_ES.get(k, k.replace("_", " "))
+
+
+CHANGE_TYPE_ES = {"add_node": "agregar nodo", "add_edge": "agregar dependencia", "add_company": "agregar empresa",
+                  "link_company": "vincular empresa", "add_bottleneck": "agregar bottleneck",
+                  "update_bottleneck": "actualizar bottleneck"}
+
+
+def es(mapping: dict, v):  # noqa: ANN001, ANN201
+    """Traduce un valor con el diccionario; deja el original si no está (nunca oculta un valor desconocido)."""
+    if v is None or (isinstance(v, float) and pd.isna(v)):
+        return None
+    return mapping.get(v, v)
+
+
+def colcfg(df: pd.DataFrame, **extra) -> dict:
+    """column_config con etiquetas en español para las columnas crudas presentes + overrides explícitos."""
+    return {c: LABELS[c] for c in df.columns if c in LABELS} | extra
+
+
+def table_height(n_rows: int, max_rows: int = 40) -> int:
+    """Altura de st.dataframe que muestra todas las filas (hasta max_rows) sin scroll interno."""
+    return 38 + 35 * max(1, min(n_rows, max_rows))
+
+
+def company_label(cid: str, name: str | None) -> str:
+    """'TICKER — Nombre', sin repetir el ticker cuando el nombre ya lo contiene (empresas sintéticas)."""
+    if not name or name.strip().upper() == cid.upper():
+        return cid
+    if name.upper().startswith(cid.upper()):
+        return name
+    return f"{cid} — {name}"
 
 
 def plotly_layout(fig, height: int | None = None, legend: bool = True):  # noqa: ANN001, ANN201
@@ -55,15 +168,37 @@ def plotly_layout(fig, height: int | None = None, legend: bool = True):  # noqa:
 
 
 # ----------------------------------------------------------------------------- selección de base
+_SQLITE_URL = re.compile(r"^sqlite(?:\+\w+)?:///(?P<path>[^?]+)")
+
+
 def db_url(key: str) -> str:
     if key == "demo":
         from qa.demo import DEMO_DB
         return DEMO_DB
-    return database_url()
+    return database_url()   # resuelve rutas sqlite relativas contra qa.config.ROOT (y respeta QA_DATABASE_URL)
 
 
-def db_path(key: str) -> Path:
-    return Path(db_url(key).removeprefix("sqlite:///"))
+def db_path(key: str) -> Path | None:
+    """Ruta absoluta del archivo SQLite, o None si la URL no es SQLite en archivo (el dashboard solo lee SQLite)."""
+    mt = _SQLITE_URL.match(db_url(key))
+    if not mt or mt["path"] in ("", ":memory:"):
+        return None
+    p = Path(mt["path"])
+    return (p if p.is_absolute() else ROOT / p).resolve()
+
+
+def db_error(key: str) -> str | None:
+    """Mensaje para st.error cuando la base no es utilizable por el dashboard (None = OK)."""
+    url = db_url(key)
+    if db_path(key) is None:
+        shown = re.sub(r"//[^/@]*@", "//***@", url)          # no mostrar credenciales
+        return (f"La URL de base `{shown}` no es un archivo SQLite. El dashboard solo lee bases SQLite en archivo "
+                "(`sqlite:///ruta/a/base.sqlite`). Revisá `QA_DATABASE_URL` o `database_url` en "
+                "`config/settings.yaml`.")
+    if not db_path(key).exists():
+        return (f"La base `{db_path(key)}` no existe. Ejecutá `{'qa demo' if key == 'demo' else 'qa init'}` "
+                f"en la raíz del proyecto (`{ROOT}`).")
+    return None
 
 
 def current_db() -> str:
@@ -72,16 +207,17 @@ def current_db() -> str:
 
 @st.cache_resource
 def _engine(url: str):  # noqa: ANN202
-    path = url.removeprefix("sqlite:///")
+    mt = _SQLITE_URL.match(url)
+    path = mt["path"] if mt else url.removeprefix("sqlite:///")
     # modo solo lectura de SQLite: el dashboard no puede escribir aunque quisiera
     return create_engine(f"sqlite:///file:{path}?mode=ro&uri=true", future=True)
 
 
 def engine():  # noqa: ANN201
-    p = db_path(current_db())
-    if not p.exists():
+    key = current_db()
+    if db_error(key):
         return None
-    return _engine(db_url(current_db()))
+    return _engine(db_url(key))
 
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -141,6 +277,12 @@ def cfg() -> dict:
     return settings()
 
 
+def layer_name(lid: str | None) -> str | None:
+    if lid is None or (isinstance(lid, float) and pd.isna(lid)):
+        return None
+    return industry_map().layers.get(lid, lid)
+
+
 # ----------------------------------------------------------------------------- tablas de la base
 def companies() -> pd.DataFrame:
     df = query("SELECT * FROM companies")
@@ -162,26 +304,49 @@ def node_company_counts() -> Counter:
     return cnt
 
 
+def scenarios() -> pd.DataFrame:
+    """Todos los sets de escenarios (JSON parseado + ER por horizonte)."""
+    df = query("SELECT * FROM scenarios ORDER BY created_at, id")
+    if df.empty:
+        return df
+    for col in ("assumptions", "results", "expected_return", "reverse_dcf"):
+        df[col] = df[col].map(js)
+    for h in (12, 24, 36):
+        df[f"er{h}"] = df["expected_return"].map(lambda d, h=h: (d or {}).get(str(h)))
+    return df
+
+
+def latest_scenarios() -> pd.DataFrame:
+    df = scenarios()
+    if df.empty:
+        return df
+    return df.groupby("company_id", as_index=False).tail(1).reset_index(drop=True)
+
+
+SCEN_COLS = ["er12", "er24", "er36", "prob_loss", "scenario_created_at"]
+
+
 def latest_scores() -> pd.DataFrame:
-    df = query("SELECT * FROM scores ORDER BY created_at")
+    """Último score por empresa, unido a los escenarios EXACTOS que usó (scores.scenario_id).
+
+    Un score sin escenarios (scenario_id NULL, o base vieja sin la columna) deja ER y P(pérdida) en NaN: la UI
+    los muestra como '—' en lugar de tomar "el último escenario de la empresa", que podría ser posterior.
+    """
+    df = query("SELECT * FROM scores ORDER BY created_at, id")
     if df.empty:
         return df
     df = df.groupby("company_id", as_index=False).tail(1)
     for col in ("factors", "caps_applied", "kill_switches", "alerts", "missing_data"):
         df[col] = df[col].map(js)
-    return df.reset_index(drop=True)
-
-
-def latest_scenarios() -> pd.DataFrame:
-    df = query("SELECT * FROM scenarios ORDER BY created_at")
-    if df.empty:
-        return df
-    df = df.groupby("company_id", as_index=False).tail(1)
-    for col in ("assumptions", "results", "expected_return", "reverse_dcf"):
-        df[col] = df[col].map(js)
-    df["er36"] = df["expected_return"].map(lambda d: (d or {}).get("36"))
-    df["er24"] = df["expected_return"].map(lambda d: (d or {}).get("24"))
-    df["er12"] = df["expected_return"].map(lambda d: (d or {}).get("12"))
+    if "scenario_id" not in df:
+        df["scenario_id"] = None
+    df["scenario_id"] = pd.to_numeric(df["scenario_id"], errors="coerce")
+    sc = scenarios()
+    if sc.empty:
+        df = df.assign(**{c: float("nan") for c in SCEN_COLS})
+    else:
+        sc = sc.rename(columns={"created_at": "scenario_created_at"}).assign(scenario_id=sc["id"].astype(float))
+        df = df.merge(sc[["scenario_id", *SCEN_COLS]], on="scenario_id", how="left")
     return df.reset_index(drop=True)
 
 
@@ -190,6 +355,26 @@ def latest_snapshots() -> pd.DataFrame:
     if df.empty:
         return df
     return df.groupby("company_id", as_index=False).tail(1).reset_index(drop=True)
+
+
+def funnel_state() -> pd.DataFrame:
+    df = query("SELECT * FROM funnel_state")
+    if not df.empty:
+        df["l0_reasons"] = df["l0_reasons"].map(lambda r: js(r) or [])
+    return df
+
+
+def funnel_explain(row) -> str:  # noqa: ANN001
+    """Texto corto del estado de una empresa en el embudo (por qué no tiene score, etc.)."""
+    if row is None:
+        return "sin estado de embudo (`qa funnel --tiers L0`)"
+    tier = row.get("tier_reached") or "L0"
+    if row.get("l0_pass") in (0, False):
+        why = "; ".join(row.get("l0_reasons") or []) or "sin motivo registrado"
+        return f"{tier} · no pasa L0: {why}"
+    if pd.isna(row.get("last_score")):
+        return f"{tier} · pasa L0, sin score todavía (L2/L3)"
+    return f"{tier} · score {row['last_score']:.2f}"
 
 
 def data_quality_flags() -> dict:
@@ -201,9 +386,9 @@ def data_quality_flags() -> dict:
 # ----------------------------------------------------------------------------- UI común
 def banner() -> None:
     key = current_db()
-    if not db_path(key).exists():
-        st.error(f"La base `{db_path(key).relative_to(ROOT)}` no existe. Ejecutá "
-                 f"`{'qa demo' if key == 'demo' else 'qa init'}` en la raíz del proyecto.")
+    err = db_error(key)
+    if err:
+        st.error(err)
         return
     flags = data_quality_flags()
     if key == "demo" or "synthetic_test_data" in flags:
@@ -223,14 +408,25 @@ def fmt_pct(x, digits: int = 0) -> str:  # noqa: ANN001
     return f"{x:+.{digits}%}"
 
 
-def fmt_money(x) -> str:  # noqa: ANN001
+def fmt_money(x, currency: str | None = None) -> str:  # noqa: ANN001
     if x is None or (isinstance(x, float) and pd.isna(x)):
         return "—"
     a = abs(x)
+    out = f"{x:,.0f}"
     for div, suf in ((1e12, "T"), (1e9, "B"), (1e6, "M"), (1e3, "K")):
         if a >= div:
-            return f"{x / div:,.1f}{suf}"
-    return f"{x:,.0f}"
+            out = f"{x / div:,.1f}{suf}"
+            break
+    return f"{out} {currency}" if currency else out
+
+
+def fmt_dt(x, with_time: bool = True) -> str:  # noqa: ANN001
+    if x is None or (isinstance(x, float) and pd.isna(x)):
+        return "—"
+    t = pd.to_datetime(x, errors="coerce", utc=True)
+    if pd.isna(t):
+        return str(x)
+    return t.strftime("%Y-%m-%d %H:%M UTC" if with_time else "%Y-%m-%d")
 
 
 def company_select(label: str = "Empresa", key: str = "company", default: str | None = None) -> str | None:
@@ -246,4 +442,4 @@ def company_select(label: str = "Empresa", key: str = "company", default: str | 
     wkey = f"{key}_{current_db()}"          # una selección por base: cambiar de base no deja valores huérfanos
     if wkey in st.session_state and st.session_state[wkey] not in opts:
         del st.session_state[wkey]
-    return st.selectbox(label, opts, index=idx, key=wkey, format_func=lambda x: f"{x} — {names.get(x, '')}")
+    return st.selectbox(label, opts, index=idx, key=wkey, format_func=lambda x: company_label(x, names.get(x)))

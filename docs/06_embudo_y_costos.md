@@ -25,15 +25,23 @@ Promoción L2 → L3: `score ≥ 6.0`, los 8 mejores, más la cartera.
 
 ## Palancas de costo implementadas
 1. **Embudo con topes por capa** (`funnel.L*.max_promoted`).
-2. **Reutilización por hash.** El hash del input usa una vista estable del data pack, con el precio agrupado
-   en *buckets* logarítmicos del 15%. Sin cambio material no hay llamada.
+2. **Reutilización por hash.** El hash usa la plantilla del prompt, sin la fecha, y una vista estable del data pack:
+   - se quitan la fecha de corrida, el market cap/ADV del día y el pre-score;
+   - el precio entra en *buckets* logarítmicos de `price_move_trigger_pct`.
+
+   Sin cambio material (filing nuevo, re-expresión, evento o movimiento mayor al umbral) no hay llamada. Cada
+   reutilización queda registrada en `agent_runs` con costo 0.
 3. **Presupuesto duro** por corrida (US$30) y mensual (US$60). Se estima el costo antes de cada llamada; si no
    alcanza, se salta y queda registrado como `skipped_budget`.
 4. **Modelo, effort y búsquedas por capa**, configurables en `config/settings.yaml`. Se puede probar Opus a
    effort bajo en lugar de la cascada de modelos.
 5. **Prompt caching** del system prompt de cada agente.
-6. **`qa funnel --dry-run`** y **`qa estimate`**: muestran el costo antes de gastar.
+6. **`qa funnel --dry-run`** y **`qa estimate`**: muestran el costo antes de gastar. El dry-run simula el peor caso: la
+   capa se llena hasta su tope por pre-score, e incluye L2, L3 y el comité.
 7. Las capas costosas reciben data packs ya calculados: el LLM no busca números que el pipeline ya tiene.
+8. **Contabilidad completa.** También se registran las llamadas fallidas que se facturaron (max_tokens, rechazos).
+   Las escrituras de caché y los intentos de fallback se valúan al precio de su modelo. El costo se commitea después de
+   cada llamada, así que un corte a mitad de corrida no lo borra del presupuesto mensual.
 
 ## Estimación (salida real de `qa estimate`)
 

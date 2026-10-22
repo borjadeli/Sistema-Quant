@@ -19,7 +19,19 @@ verification, source{name, url, document_type, published_at, retrieved_at}, know
   datos con `known_at ≤ t`. Los datos sin `known_at` se excluyen de las decisiones históricas.
 - **`verification`** puede ser `confirmed_by_filing`, `company_statement`, `media_report`, `search_summary`,
   `analyst_prior`, `hypothesis` o `synthetic_test_data`.
-- **Re-expresiones.** Ante varias presentaciones del mismo período, se conserva la primera (lo que sabía el mercado).
+- **Vintages y re-expresiones.** Cada presentación que cambia el valor de un período es una fila nueva (vintage) con su
+  propio `known_at` y la nota `restates=...`. Los comparativos idénticos no generan filas nuevas. Una decisión en t usa el
+  vintage más reciente con `known_at ≤ t`. Las re-expresiones generan un evento `restatement` en el feed.
+- **Selección al calcular** (`fundamentals/metrics.py`):
+  1. point-in-time;
+  2. unidades normalizadas (por ejemplo `USD_millions`);
+  3. períodos a ≤10 días agrupados (años de 52/53 semanas), con precedencia de fuente: filing > declaración > prensa >
+     resumen de buscador > prior > hipótesis > sintético;
+  4. moneda de reporte dominante: los puntos en otra moneda se descartan, `currency_conflict` bloquea la valuación;
+  5. trimestres reconstruidos desde los acumulados YTD del 10-Q (Q2=H−Q1, Q3=9M−H, Q4=FY−9M), con TTM solo sobre 4
+     trimestres contiguos;
+  6. todas las cuentas de balance a **una** fecha de balance;
+  7. comparaciones interanuales por fecha (±20 días).
 
 ## Tablas principales
 - **Mapa:**
