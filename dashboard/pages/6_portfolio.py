@@ -115,13 +115,14 @@ else:
                 px = D.query("SELECT date, adj_close, close FROM prices WHERE symbol = :s ORDER BY date", s=bsym)
                 if px.empty:
                     continue
-                ser = pd.Series(px["adj_close"].fillna(px["close"]).values, index=pd.to_datetime(px["date"]))
-                ser = ser[ser.index >= nav.index[0]]
+                full = pd.Series(px["adj_close"].fillna(px["close"]).values, index=pd.to_datetime(px["date"]))
+                ser = full[full.index >= nav.index[0]]          # para graficar desde el inicio del NAV
                 if len(ser) > 1:
                     fig.add_trace(go.Scatter(x=ser.index, y=100 * ser / ser.iloc[0], mode="lines", name=bsym,
                                              line=dict(color=D.SERIES[1 + i], width=2),
                                              hovertemplate="%{x|%Y-%m-%d}: %{y:.1f}<extra>" + bsym + "</extra>"))
-                    metrics[bsym] = performance(nav, ser, rf=D.cfg()["risk_free_rate"])
+                    # la historia completa permite el as-of correcto (último cierre <= inicio del NAV)
+                    metrics[bsym] = performance(nav, full, rf=D.cfg()["risk_free_rate"])
             fig.update_xaxes(type="date", tickformat="%d %b %Y")
             fig.update_yaxes(title="base 100")
             st.plotly_chart(D.plotly_layout(fig, height=340), width="stretch")

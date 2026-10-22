@@ -140,7 +140,8 @@ def test_units_scaled_and_currency_conflict_blocks_valuation(session):
     assert f.v("revenue_ttm") == pytest.approx(460e6)
     mixed = [dp("revenue", 100, "2026-06-30", "Q", "2026-08-01", unit="EUR", ccy="EUR"),
              dp("revenue", 100, "2026-03-31", "Q", "2026-05-01", unit="EUR", ccy="EUR"),
-             dp("revenue", 100, "2026-09-30", "Q", "2026-10-10", unit="USD", ccy="USD", src="seed")]
+             dp("revenue", 100, "2026-09-30", "Q", "2026-10-10", unit="USD", ccy="USD", src="seed",
+                ver=Verification.SEARCH_SUMMARY)]
     fm = compute_fundamentals("X", mixed, as_of=date(2026, 10, 15))
     assert fm.currency_conflict and fm.currency == "EUR"
     from qa.funnel.pack import market_inputs
@@ -550,3 +551,135 @@ def test_missing_factor_applies_cap():
     f = {k: FactorScore(score=9, rationale="t") for k in engine.FACTORS if k != "economic_capture"}
     sc = combine("X", f)
     assert sc.total == 5.0 and any("no evaluado" in c for c in sc.caps_applied)
+
+
+# ============================================================================= Ronda 2 (re-verificación)
+def test_r2_ytd_derivation_uses_consistent_vintages():
+    """Q1 re-expresado en el 10-Q del año siguiente; H original: Q2 = H - Q1 ORIGINAL (no H - Q1 re-expresado)."""
+    raw = sec({"NetCashProvidedByUsedInOperatingActivities": [
+        fact(10, "2024-01-01", "2024-03-31", "2024-05-01"), fact(22, "2024-01-01", "2024-06-30", "2024-08-01"),
+        fact(35, "2024-01-01", "2024-09-30", "2024-11-01"), fact(50, "2024-01-01", "2024-12-31", "2025-02-15", "10-K"),
+        fact(4, "2024-01-01", "2024-03-31", "2025-05-01", accn="B"), fact(11, "2025-01-01", "2025-03-31", "2025-05-01", accn="B")]})
+    f = compute_fundamentals("X", parse_companyfacts(raw, "X", cik=1), as_of=date(2025, 6, 15))
+    assert f.quarterly["ocf"][date(2024, 6, 30)] == 12
+    assert f.v("ocf_ttm") == 12 + 13 + 15 + 11
+
+
+def test_r2_lower_precedence_quarter_does_not_block_filing_derivation():
+    pts = [dp("revenue", v, e, "Q", k) for v, e, k in ((1000, "2025-09-26", "2025-11-04"), (1100, "2025-12-26", "2026-02-03"),
+                                                     (1200, "2026-03-27", "2026-05-05"))]
+    pts += [dp("revenue", 3300, "2026-03-27", "9M", "2026-05-05"), dp("revenue", 4700, "2026-06-26", "FY", "2026-08-20"),
+            dp("revenue", 1315.8, "2026-06-26", "Q", "2026-08-17", ver=Verification.SEARCH_SUMMARY, src="web_research_seed")]
+    f = compute_fundamentals("X", pts, as_of=date(2026, 9, 1))
+    assert f.v("revenue_ttm") == 4700
+
+
+def test_r2_balance_anchor_best_source_and_debt_elsewhere_fails_closed():
+    sec_pts = [dp("cash", 100, "2026-03-31", "instant", "2026-05-01"), dp("debt_total", 2000, "2026-03-31", "instant", "2026-05-01")]
+    seed = [dp("cash", 110, "2026-06-30", "instant", "2026-08-06", ver=Verification.SEARCH_SUMMARY, src="seed")]
+    f = compute_fundamentals("X", sec_pts + seed, as_of=date(2026, 8, 10))
+    assert f.balance_date == date(2026, 3, 31) and f.v("debt") == 2000
+    stale = [dp("cash", 400, "2023-12-31", "instant", "2024-02-01"), dp("debt_total", 5000, "2026-06-30", "instant", "2026-08-01")]
+    g = compute_fundamentals("X", stale, as_of=date(2026, 9, 1))
+    assert g.balance_date == date(2026, 6, 30) and g.v("cash_total") is None
+    kills, _ = kill_switches(g, None, None, {}, None, False)
+    assert any("balance incompleto" in k for k in kills)
+    other_date = [dp("cash", 200, "2026-06-30", "instant", "2026-08-01"), dp("debt_total", 1500, "2025-12-31", "instant", "2026-02-15")]
+    h = compute_fundamentals("X", other_date, as_of=date(2026, 9, 1))
+    assert h.debt_elsewhere
+    a = ScenarioAssumptions(name="base", probability=1, revenue_growth=[.1] * 3, ebit_margin=[.2] * 3, exit_multiple=10)
+    with pytest.raises(ValueError, match="otra fecha"):
+        run_scenario(a, h, MK)
+
+
+def test_r2_reporting_currency_from_latest_best_source():
+    old = [dp("revenue", 100, f"{y}-{m:02d}-28", "Q", f"{y}-{m:02d}-28", unit="CAD", ccy="CAD")
+           for y in range(2019, 2024) for m in (3, 6, 9, 12)]
+    new = [dp("revenue", 80, f"{y}-{m:02d}-28", "Q", f"{y}-{m:02d}-28") for y in (2025, 2026) for m in (3, 6, 9, 12)
+           if date(y, m, 28) <= date(2026, 6, 30)]
+    f = compute_fundamentals("X", old + new, as_of=date(2026, 9, 1))
+    assert f.currency == "USD" and not f.currency_conflict and f.v("revenue_ttm") == 320
+
+
+def test_r2_contradictory_unit_currency_rejected():
+    pts = [dp("revenue", 100, "2026-06-30", "Q", "2026-08-01", unit="USD", ccy="EUR")]
+    f = compute_fundamentals("X", pts, as_of=date(2026, 9, 1))
+    assert not f.quarterly and any("contradice" in w for w in f.warnings)
+
+
+def test_r2_ev_fcf_uses_unlevered_fcf():
+    f = _fund_with_balance()
+    a = ScenarioAssumptions(name="base", probability=1, revenue_growth=[.05] * 3, ebit_margin=[.12] * 3,
+                            exit_multiple=15, exit_multiple_type="EV/FCF")
+    r = run_scenario(a, f, MK)
+    y = r.years[2]
+    assert y["fcff"] > y["fcf"]                       # el FCFF no descuenta intereses
+    expected_equity = 15 * y["fcff"] + y["cash"] - y["debt"]
+    assert r.price_target[36] == pytest.approx(max(expected_equity, 0) / y["shares"])
+
+
+def test_r2_interest_rate_bounded():
+    with pytest.raises(ValueError):
+        ScenarioAssumptions(name="base", probability=1, revenue_growth=[.1] * 3, ebit_margin=[.2] * 3, exit_multiple=10,
+                            interest_rate=5.0)
+
+
+def test_r2_migration_of_pre_vintage_db(tmp_path):
+    import sqlite3
+    from qa.db.session import session_scope
+    db = tmp_path / "old.sqlite"
+    con = sqlite3.connect(db)
+    con.execute("""CREATE TABLE datapoints (id INTEGER PRIMARY KEY, entity VARCHAR(80), metric VARCHAR(80), value FLOAT,
+        unit VARCHAR(30), currency VARCHAR(5), period_end DATE, period_type VARCHAR(10), fiscal_label VARCHAR(20),
+        kind VARCHAR(20), verification VARCHAR(40), source_name VARCHAR(120), source_url TEXT, document_type VARCHAR(30),
+        known_at DATE, retrieved_at DATETIME, inputs JSON, author VARCHAR(80), note TEXT,
+        CONSTRAINT uq_datapoint UNIQUE (entity, metric, period_type, period_end, kind, source_name))""")
+    con.execute("CREATE INDEX ix_datapoints_metric ON datapoints (metric)")
+    con.execute("INSERT INTO datapoints (entity, metric, value, unit, period_end, period_type, kind, verification, "
+                "source_name, known_at) VALUES ('X','revenue',100,'USD','2025-03-31','Q','original','confirmed_by_filing',"
+                "'sec_edgar','2025-05-01')")
+    con.commit()
+    con.close()
+    raw = sec({"Revenues": [fact(100, "2025-01-01", "2025-03-31", "2025-05-01"), fact(90, "2025-01-01", "2025-03-31", "2026-05-01", accn="B")]})
+    with session_scope(f"sqlite:///{db}") as s:
+        repo.upsert_datapoints(s, parse_companyfacts(raw, "X", cik=1))
+    with session_scope(f"sqlite:///{db}") as s:
+        assert len(repo.load_datapoints(s, "X")) == 2
+
+
+def test_r2_manual_correction_replaces_wrong_row(tmp_path, session):
+    from qa.providers.manual import ManualCsvProvider
+    hdr = "entity,metric,value,unit,currency,period_end,period_type,fiscal_label,source_name,source_url,document_type,known_at\n"
+    ero = Company(ticker="ERO", name="x", exchange="NYSE", country="CA", currency="USD", nodes=["copper"], exposure=Exposure())
+    (tmp_path / "e.csv").write_text(hdr + "ERO,revenue,1000,USD,USD,2025-09-30,Q,,ir,https://x,pr,2025-11-15\n", encoding="utf-8")
+    repo.upsert_datapoints(session, ManualCsvProvider(tmp_path).get_facts(ero))
+    (tmp_path / "e.csv").write_text(hdr + "ERO,revenue,100,USD,USD,2025-09-30,Q,,ir,https://x,pr,2025-11-05\n", encoding="utf-8")
+    repo.upsert_datapoints(session, ManualCsvProvider(tmp_path).get_facts(ero))
+    rows = repo.load_datapoints(session, "ERO")
+    assert [(r.value, r.known_at) for r in rows] == [(100, date(2025, 11, 5))]
+
+
+def test_r2_restatement_visible_in_fundamentals():
+    raw = sec({"Revenues": [fact(100, "2024-01-01", "2024-03-31", "2024-05-01"), fact(75, "2024-01-01", "2024-03-31", "2025-06-01", "10-Q/A", accn="B")]})
+    f = compute_fundamentals("X", parse_companyfacts(raw, "X", cik=1), as_of=date(2026, 1, 1))
+    assert any("re-expresión" in w for w in f.warnings)
+
+
+def test_r2_performance_irregular_cadence_and_benchmark_edges():
+    idx = pd.to_datetime(["2026-01-30", "2026-02-27", "2026-03-03", "2026-03-31", "2026-04-02", "2026-04-30"]).date
+    nav = pd.Series([100, 101, 100.5, 102, 101.8, 103.0], index=idx)
+    p = performance(nav)
+    assert p["method"] == "tiempo_calendario" and p["volatility"] is not None
+    nav2 = pd.Series([100, 95, 95], index=pd.to_datetime(["2026-10-24", "2026-10-26", "2026-10-27"]).date)
+    late_bench = pd.Series([475.0, 475.0], index=pd.to_datetime(["2026-10-26", "2026-10-27"]))
+    assert "bench_note" in performance(nav2, late_bench)
+    dup = pd.Series([1.0, 1.0, 1.1], index=pd.to_datetime(["2026-10-23", "2026-10-23", "2026-10-27"]))
+    assert performance(nav2, dup)["bench_total_return"] == pytest.approx(0.1)
+
+
+def test_r2_fiscal_label_fits_column():
+    from qa.db.schema import DataPointRow
+    raw = {"facts": {"us-gaap": {"CashAndCashEquivalentsAtCarryingValue": {"units": {"USD": [
+        {"val": 1, "end": "2023-12-31", "filed": "2024-02-01", "form": "10-K", "accn": "A"}]}}}}}
+    lab = parse_companyfacts(raw, "X", cik=1)[0].fiscal_label
+    assert len(lab) <= DataPointRow.__table__.c.fiscal_label.type.length

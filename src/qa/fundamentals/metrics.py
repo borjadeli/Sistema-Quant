@@ -18,7 +18,6 @@ Reglas de selección (en este orden):
 from __future__ import annotations
 
 import re
-from collections import Counter
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
@@ -58,6 +57,7 @@ class Fundamentals:
     has_synthetic: bool = False              # cualquier dato sintético contamina el resultado (K4)
     currency_conflict: bool = False          # puntos en varias monedas de reporte (se descartaron los minoritarios)
     balance_date: date | None = None
+    debt_elsewhere: bool = False             # hay deuda reportada, pero no a la fecha de balance
     warnings: list[str] = field(default_factory=list)
 
     def v(self, name: str) -> float | None:
@@ -69,30 +69,40 @@ class Fundamentals:
 
 
 # =========================================================================== selección de datapoints
-def _normalize_unit(p: DataPoint) -> DataPoint | None:
-    """Lleva el valor a unidad base. Devuelve None si la unidad no es interpretable para la métrica."""
+def rank(p: DataPoint) -> int:
+    return SOURCE_PRECEDENCE.get(p.verification.value, 9)
+
+
+def _normalize_unit(p: DataPoint) -> tuple[DataPoint | None, str | None]:
+    """Lleva el valor a unidad base. Devuelve (punto, None) o (None, motivo) si la unidad no es interpretable
+    o contradice la moneda declarada."""
     unit = (p.unit or "").strip()
     if p.metric in SHARE_METRICS:
-        return p if unit.lower() in ("shares", "share", "") else None
+        return (p, None) if unit.lower() in ("shares", "share", "") else (None, f"unidad '{unit}' no es de acciones")
     if p.metric not in MONETARY:
-        return p
+        return p, None
     if re.fullmatch(r"[A-Z]{3}", unit):
-        ccy = p.currency or unit
-        return p if ccy == unit else p.model_copy(update={"currency": unit})
+        if p.currency and p.currency != unit:
+            return None, f"unidad {unit} contradice moneda {p.currency}"
+        return (p if p.currency == unit else p.model_copy(update={"currency": unit})), None
     m = _SCALED.match(unit)
     if m and p.value is not None:
         ccy = m.group(1).upper()
+        if p.currency and p.currency != ccy:
+            return None, f"unidad {unit} contradice moneda {p.currency}"
         return p.model_copy(update={"value": p.value * _SCALE[m.group(2).lower()], "unit": ccy, "currency": ccy,
-                                    "note": ((p.note or "") + f"; escalado desde {unit}").lstrip("; ")})
-    return None
+                                    "note": ((p.note or "") + f"; escalado desde {unit}").lstrip("; ")}), None
+    return None, f"unidad '{unit}' no interpretable"
 
 
-def _cluster_select(points: list[DataPoint]) -> list[DataPoint]:
-    """Por (métrica, tipo de período): agrupa fechas a <= CLUSTER_DAYS y elige un punto por grupo."""
+def _cluster_select(points: list[DataPoint]) -> tuple[list[DataPoint], dict[str, list[DataPoint]]]:
+    """Por (métrica, tipo de período): agrupa fechas a <= CLUSTER_DAYS y elige un punto por grupo
+    (mejor fuente; dentro de ella, el vintage más reciente). Devuelve también todos los vintages de esa fuente
+    para el punto elegido (clave = DataPoint.key()), necesarios para derivar trimestres con vintages consistentes."""
     groups: dict[tuple[str, str | None], list[DataPoint]] = {}
     for p in points:
         groups.setdefault((p.metric, p.period_type), []).append(p)
-    out = []
+    out, vint = [], {}
     for pts in groups.values():
         pts.sort(key=lambda x: x.period_end or date.min)
         cluster: list[DataPoint] = []
@@ -102,18 +112,20 @@ def _cluster_select(points: list[DataPoint]) -> list[DataPoint]:
                 cluster.append(p)
                 continue
             if cluster:
-                best = min(cluster, key=lambda x: (SOURCE_PRECEDENCE.get(x.verification.value, 9),
-                                                   -(x.known_at.toordinal() if x.known_at else 0)))
-                vals = {round(x.value, 6) for x in cluster if x.source.name == best.source.name and x.value is not None}
+                best = min(cluster, key=lambda x: (rank(x), -(x.known_at.toordinal() if x.known_at else 0)))
+                same = sorted((x for x in cluster if x.source.name == best.source.name),
+                              key=lambda x: x.known_at or date.min)
+                vals = {round(x.value, 6) for x in same if x.value is not None}
                 if len(vals) > 1:
                     best = best.model_copy(update={"note": ((best.note or "") + "; RE-EXPRESADO: vintages "
                                                             + ",".join(str(v) for v in sorted(vals))).lstrip("; ")})
                 out.append(best)
+                vint[best.key()] = same
             cluster = [p] if p is not None else []
-    return out
+    return out, vint
 
 
-def select_points(points: list[DataPoint], as_of: date, f: Fundamentals) -> list[DataPoint]:
+def select_points(points: list[DataPoint], as_of: date, f: Fundamentals) -> tuple[list[DataPoint], dict]:
     pit = [p for p in points if p.known_at is not None and p.known_at <= as_of
            and p.value is not None and p.period_end is not None]
     dropped_unknown_date = sum(1 for p in points if p.known_at is None)
@@ -121,27 +133,40 @@ def select_points(points: list[DataPoint], as_of: date, f: Fundamentals) -> list
         f.warnings.append(f"{dropped_unknown_date} datapoints sin known_at excluidos (no se sabe cuándo se conocieron)")
     norm = []
     for p in pit:
-        q = _normalize_unit(p)
+        q, why = _normalize_unit(p)
         if q is None:
-            f.warnings.append(f"unidad no interpretable descartada: {p.metric} '{p.unit}' ({p.source.name})")
+            f.warnings.append(f"descartado {p.metric} {p.period_end} ({p.source.name}): {why}")
         else:
             norm.append(q)
-    sel = _cluster_select(norm)
-    ccys = Counter(p.currency for p in sel if p.metric in MONETARY and p.currency)
-    if not ccys and any(p.metric in MONETARY for p in sel):
+    sel, vint = _cluster_select(norm)
+    monetary = [p for p in sel if p.metric in MONETARY and p.currency]
+    if not monetary and any(p.metric in MONETARY for p in sel):
         f.warnings.append("moneda de reporte desconocida")
-    if len(ccys) > 1:
-        f.currency_conflict = True
-        main = ccys.most_common(1)[0][0]
-        f.warnings.append(f"monedas mezcladas {dict(ccys)}: se usa {main} y se descartan las demás")
+    if monetary:
+        # moneda de reporte = la del dato MÁS RECIENTE de la MEJOR fuente disponible (no un conteo histórico)
+        best_r = min(rank(x) for x in monetary)
+        latest = max((x for x in monetary if rank(x) == best_r), key=lambda x: x.period_end)
+        main = latest.currency
+        others = [p for p in monetary if p.currency != main]
+        recent_others = [p for p in others if (as_of - p.period_end).days <= 800]
+        if recent_others:
+            f.currency_conflict = True
+            f.warnings.append(f"monedas mezcladas en los últimos ~2 años ({sorted({p.currency for p in recent_others})} "
+                              f"vs {main}): valuación bloqueada hasta resolver")
+        elif others:
+            f.warnings.append(f"cambio de moneda de reporte: se descartan {len(others)} datos antiguos en "
+                              f"{sorted({p.currency for p in others})}")
         sel = [p for p in sel if p.metric not in MONETARY or p.currency == main]
-    f.currency = ccys.most_common(1)[0][0] if ccys else None
-    return sel
+        f.currency = main
+    for p in sel:
+        if p.note and ("RE-EXPRESADO" in p.note or "restates=" in p.note) and (as_of - p.known_at).days <= 730:
+            f.warnings.append(f"re-expresión: {p.metric} {p.period_type} {p.period_end} (vintage {p.known_at})")
+    return sel, vint
 
 
 # =========================================================================== trimestres y TTM
 def _near(d: date, candidates, lo: int, hi: int):  # noqa: ANN001, ANN202
-    """Primer candidato cuyo fin está entre lo y hi días antes de d."""
+    """Candidato cuyo fin está entre lo y hi días antes de d (el más cercano a 91 días)."""
     best = None
     for c in candidates:
         gap = (d - c).days
@@ -150,46 +175,83 @@ def _near(d: date, candidates, lo: int, hi: int):  # noqa: ANN001, ANN202
     return best
 
 
-def _quarters(points: list[DataPoint], metric: str, additive: bool = True) -> dict[date, tuple[float, str]]:
+def _consistent_pair(m: DataPoint, s: DataPoint, vint: dict) -> tuple[DataPoint, DataPoint, str | None]:
+    """Elige vintages compatibles del minuendo (H/9M/FY) y del sustraendo (Q1/H/9M).
+
+    - El sustraendo es el vintage conocido al presentar el minuendo (lo que la empresa reportó junto).
+    - Si el minuendo es una re-expresión y el sustraendo nunca se re-expresó después, se usan los vintages
+      ORIGINALES de ambos: restar un acumulado re-expresado de uno original inventa un trimestre.
+    """
+    mv = vint.get(m.key(), [m])
+    sv = vint.get(s.key(), [s])
+    note = None
+    m_use = m
+    if len(mv) > 1 and m.known_at and not any(x.known_at and x.known_at >= m.known_at - timedelta(days=CLUSTER_DAYS)
+                                              for x in sv):
+        m_use = mv[0]
+        note = f"re-expresión de {m.period_type} {m.period_end} sin re-expresión del acumulado previo: vintages originales"
+    cands = [x for x in sv if x.known_at and m_use.known_at and x.known_at <= m_use.known_at]
+    s_use = cands[-1] if cands else sv[0]
+    return m_use, s_use, note
+
+
+def _quarters(points: list[DataPoint], metric: str, additive: bool = True, vint: dict | None = None,
+              warnings: list[str] | None = None) -> dict[date, tuple[float, str]]:
     """Serie trimestral de una métrica de flujo, reconstruyendo trimestres a partir de acumulados YTD.
 
+    Un trimestre reportado directamente por una fuente de MENOR precedencia no bloquea la derivación desde
+    fuentes de mayor precedencia (p.ej. Q4 de un resumen de buscador vs FY-9M de los filings).
     `additive=False` (p.ej. acciones promedio) desactiva toda derivación por resta.
     """
+    vint = vint or {}
     by: dict[str, dict[date, DataPoint]] = {"Q": {}, "H": {}, "9M": {}, "FY": {}}
     for p in points:
         if p.metric == metric and p.period_type in by:
             by[p.period_type][p.period_end] = p
-    q: dict[date, tuple[float, str]] = {d: (p.value, p.key()) for d, p in by["Q"].items()}
+    q: dict[date, tuple[float, str, int]] = {d: (p.value, p.key(), rank(p)) for d, p in by["Q"].items()}
     if not additive:
-        return dict(sorted(q.items()))
+        return {d: v[:2] for d, v in sorted(q.items())}
 
-    def has_q(end: date) -> bool:
-        return any(abs((end - d).days) <= 7 for d in q)
+    def slot(end: date, r: int) -> bool:
+        """True si hay que (re)calcular el trimestre que termina en `end` con insumos de precedencia r."""
+        near = [d for d in q if abs((end - d).days) <= 7]
+        if not near:
+            return True
+        if all(q[d][2] > r for d in near):          # el directo es de peor fuente: lo reemplaza el derivado
+            for d in near:
+                q.pop(d)
+            return True
+        return False
+
+    def derive(end: date, minuend: DataPoint, sub: DataPoint, label: str) -> None:
+        m_use, s_use, note = _consistent_pair(minuend, sub, vint)
+        r = max(rank(m_use), rank(s_use))
+        if slot(end, r):
+            q[end] = (m_use.value - s_use.value, f"derived:{label}({m_use.key()};{s_use.key()})", r)
+            if note and warnings is not None:
+                warnings.append(f"{metric}: {note}")
 
     for end, h in sorted(by["H"].items()):                         # Q2 = H - Q1
-        if has_q(end):
-            continue
-        q1 = _near(end, [d for d, p in by["Q"].items()], 80, 100)
+        q1 = _near(end, list(by["Q"]), 80, 100)
         if q1 is not None:
-            q[end] = (h.value - by["Q"][q1].value, f"derived:H-Q1({h.key()};{by['Q'][q1].key()})")
+            derive(end, h, by["Q"][q1], "H-Q1")
     for end, n9 in sorted(by["9M"].items()):                       # Q3 = 9M - H
-        if has_q(end):
-            continue
         h_end = _near(end, list(by["H"]), 80, 100)
         if h_end is not None:
-            q[end] = (n9.value - by["H"][h_end].value, f"derived:9M-H({n9.key()};{by['H'][h_end].key()})")
+            derive(end, n9, by["H"][h_end], "9M-H")
     for end, fy in sorted(by["FY"].items()):                       # Q4 = FY - 9M  o  FY - (Q1+Q2+Q3)
-        if has_q(end):
-            continue
         n9_end = _near(end, list(by["9M"]), 80, 100)
         if n9_end is not None:
-            q[end] = (fy.value - by["9M"][n9_end].value, f"derived:FY-9M({fy.key()};{by['9M'][n9_end].key()})")
+            derive(end, fy, by["9M"][n9_end], "FY-9M")
+            continue
+        if not slot(end, rank(fy)):
             continue
         prior = sorted(d for d in q if timedelta(days=60) < end - d < timedelta(days=300))
         if len(prior) >= 3 and _contiguous(prior[-3:] + [end]):
             last3 = prior[-3:]
-            q[end] = (fy.value - sum(q[d][0] for d in last3), f"derived:FY-Q1Q2Q3({fy.key()})")
-    return dict(sorted(q.items()))
+            q[end] = (fy.value - sum(q[d][0] for d in last3), f"derived:FY-Q1Q2Q3({fy.key()})",
+                      max([rank(fy)] + [q[d][2] for d in last3]))
+    return {d: v[:2] for d, v in sorted(q.items())}
 
 
 def _contiguous(dates: list[date]) -> bool:
@@ -230,7 +292,7 @@ def _div(a: float | None, b: float | None) -> float | None:
 def compute_fundamentals(entity: str, points: list[DataPoint], as_of: date | None = None) -> Fundamentals:
     as_of = as_of or date.today()
     f = Fundamentals(entity=entity, as_of=as_of, currency=None)
-    pts = select_points(points, as_of, f)
+    pts, vint = select_points(points, as_of, f)
     vers = {p.verification.value for p in pts}
     f.has_synthetic = "synthetic_test_data" in vers
     f.data_quality = ("none" if not pts else "synthetic" if f.has_synthetic
@@ -239,15 +301,17 @@ def compute_fundamentals(entity: str, points: list[DataPoint], as_of: date | Non
     M = f.metrics
 
     fy_by = {m: {p.period_end: p for p in pts if p.metric == m and p.period_type == "FY"} for m in FLOW_METRICS}
-    series = {m: _quarters(pts, m) for m in FLOW_METRICS}
+    series = {m: _quarters(pts, m, vint=vint, warnings=f.warnings) for m in FLOW_METRICS}
     f.quarterly = {m: {d: v for d, (v, _) in s.items()} for m, s in series.items() if s}
     for m in FLOW_METRICS:
         M[f"{m}_ttm"] = _ttm(series[m], fy=fy_by[m])
 
-    # ---- balance: una sola fecha
+    # ---- balance: una sola fecha, la más reciente de la MEJOR fuente disponible (entre todas las cuentas)
     stocks = {m: {p.period_end: p for p in pts if p.metric == m and p.period_type == "instant"} for m in STOCK_METRICS}
-    anchor = stocks["cash"] or next((stocks[m] for m in STOCK_METRICS if stocks[m]), {})
-    f.balance_date = max(anchor) if anchor else None
+    all_bs = [p for m in STOCK_METRICS for p in stocks[m].values()]
+    if all_bs:
+        best = min(rank(p) for p in all_bs)
+        f.balance_date = max(p.period_end for p in all_bs if rank(p) == best)
     for m in STOCK_METRICS:
         at = None
         if f.balance_date is not None:
@@ -259,6 +323,9 @@ def compute_fundamentals(entity: str, points: list[DataPoint], as_of: date | Non
             older = max((d for d in stocks[m]), default=None)
             M[m] = Metric(None, note=f"sin dato a la fecha de balance {f.balance_date}" +
                           (f" (último disponible {older}, no se mezcla)" if older else ""))
+    if f.balance_date is not None and M["cash"].value is None:
+        f.warnings.append(f"sin caja a la fecha de balance {f.balance_date}: valuación no calculable")
+    debt_points = [p for m in ("debt_total", "debt_noncurrent", "debt_current") for p in stocks[m].values()]
     if f.balance_date and (as_of - f.balance_date).days > 200:
         f.warnings.append(f"balance desactualizado: {f.balance_date} ({(as_of - f.balance_date).days} días)")
 
@@ -295,10 +362,22 @@ def compute_fundamentals(entity: str, points: list[DataPoint], as_of: date | Non
     if M["cash"].value is not None:
         sti = M["short_term_investments"].value
         cash = M["cash"].value + (sti or 0.0)
-    debt, debt_note = M["debt_total"].value, "debt_total"
-    if debt is None and (M["debt_noncurrent"].value is not None or M["debt_current"].value is not None):
-        debt = (M["debt_noncurrent"].value or 0) + (M["debt_current"].value or 0)
+    # deuda: total vs componentes a la fecha de balance; gana la combinación de mejor fuente
+    def _r(metric: str) -> int:
+        at = M[metric].inputs
+        return min((rank(p) for p in debt_points if at and p.key() == at[0]), default=99)
+    debt, debt_note = None, None
+    comp = [m for m in ("debt_noncurrent", "debt_current") if M[m].value is not None]
+    r_total = _r("debt_total") if M["debt_total"].value is not None else 99
+    r_comp = max((_r(m) for m in comp), default=99)
+    if M["debt_total"].value is not None and r_total <= r_comp:
+        debt, debt_note = M["debt_total"].value, "debt_total"
+    elif comp:
+        debt = sum(M[m].value for m in comp)
         debt_note = "no corriente + corriente a la fecha de balance"
+    f.debt_elsewhere = debt is None and bool(debt_points)
+    if f.debt_elsewhere:
+        f.warnings.append("deuda reportada en otra fecha distinta del balance: no se asume 0 (valuación bloqueada)")
     M["gross_margin"] = Metric(_div(gp, rev), "TTM")
     M["ebitda_ttm"] = Metric(ebitda, "TTM", note="EBIT + D&A (no ajustado)")
     M["ebitda_margin"] = Metric(_div(ebitda, rev), "TTM")
@@ -327,7 +406,7 @@ def compute_fundamentals(entity: str, points: list[DataPoint], as_of: date | Non
     else:
         M["cash_runway_quarters"] = Metric(None, note="FCF positivo o sin datos")
     # Dilución: acciones diluidas promedio, mismo trimestre un año antes (por fecha)
-    sh = _quarters(pts, "diluted_shares", additive=False)
+    sh = _quarters(pts, "diluted_shares", additive=False, vint=vint)
     if sh:
         d = list(sh)
         M["diluted_shares"] = Metric(sh[d[-1]][0], period=str(d[-1]), inputs=[sh[d[-1]][1]])

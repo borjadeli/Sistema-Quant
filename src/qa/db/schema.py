@@ -155,7 +155,7 @@ class DataPointRow(Base):
     currency: Mapped[str | None] = mapped_column(String(5))
     period_end: Mapped[date | None] = mapped_column(Date)
     period_type: Mapped[str | None] = mapped_column(String(10))
-    fiscal_label: Mapped[str | None] = mapped_column(String(20))
+    fiscal_label: Mapped[str | None] = mapped_column(String(40))
     kind: Mapped[str] = mapped_column(String(20))
     verification: Mapped[str] = mapped_column(String(40))
     source_name: Mapped[str] = mapped_column(String(120))

@@ -247,6 +247,14 @@ def kill_switches(f: Fundamentals | None, ss: ScenarioSet | None, adv_usd: float
             kills.append("K4: datos sintéticos — no invertible")
     if red_flags.get("going_concern"):
         kills.append("K1: duda de empresa en marcha (going concern)")
+    if f is not None and f.data_quality != "none":
+        if f.balance_date is not None and f.v("cash_total") is None:
+            kills.append(f"K4: balance incompleto (sin caja a la fecha de balance {f.balance_date}): "
+                         "liquidez y apalancamiento no verificables")
+        if getattr(f, "debt_elsewhere", False):
+            kills.append("K7: deuda reportada en otra fecha que el balance: apalancamiento no verificable")
+        if f.currency_conflict:
+            kills.append("K4: monedas de reporte mezcladas en datos recientes")
     if f is not None:
         runway = f.v("cash_runway_quarters")
         if runway is not None and runway < 4 and not red_flags.get("financing_committed"):
@@ -273,6 +281,8 @@ def kill_switches(f: Fundamentals | None, ss: ScenarioSet | None, adv_usd: float
             kills.append(f"K5: retorno esperado 24m negativo ({er:+.0%})")
         if ss.prob_permanent_loss > 0.5:
             kills.append(f"K6: P(pérdida permanente) {ss.prob_permanent_loss:.0%} > 50%")
+        if any("SUPONE 0" in w for w in ss.warnings):
+            alerts.append("deuda supuesta 0 (no reportada en el balance XBRL): verificar antes de operar")
         if any(r.financing_need > 0 for r in ss.results if r.name == "base"):
             alerts.append("el escenario base requiere financiamiento externo (dilución)")
     if audit_verdict == "fail":

@@ -88,7 +88,8 @@ class ScenarioAssumptions(BaseModel):
     capex_pct_revenue: float = 0.05
     nwc_pct_incremental_revenue: float = 0.15
     annual_dilution: float = 0.01       # SBC / emisiones no ligadas a financiamiento
-    interest_rate: float = 0.05         # costo de la deuda financiera (se paga con caja)
+    interest_rate: float = Field(0.05, ge=0.0, le=0.25,
+                                 description="costo anual de la deuda como FRACCIÓN (0.05 = 5%); se paga con caja")
     exit_multiple: float
     exit_multiple_type: MultipleType = "EV/EBIT"
     rationale: str = ""
@@ -149,8 +150,12 @@ def balance_inputs(f: Fundamentals) -> tuple[float, float, list[str]]:
         raise ValueError("caja desconocida: no se asume 0 — valuación no calculable hasta tener balance")
     notes = []
     if debt is None:
+        if getattr(f, "debt_elsewhere", False):
+            raise ValueError("deuda reportada en otra fecha que el balance: no se asume 0 — valuación no calculable")
+        if f.data_quality != "filing":
+            raise ValueError("deuda no reportada en una fuente que no es filing completo: no se asume 0")
         debt = 0.0
-        notes.append(f"sin deuda financiera reportada al {f.balance_date}: se SUPONE 0 (verificar en el balance)")
+        notes.append(f"sin deuda financiera en el balance XBRL al {f.balance_date}: se SUPONE 0 (verificar)")
     return cash, debt, notes
 
 
@@ -179,6 +184,8 @@ def run_scenario(a: ScenarioAssumptions, f: Fundamentals, mk: MarketInputs,
         da, capex = rev * a.da_pct_revenue, rev * a.capex_pct_revenue
         d_nwc = (rev - prev_rev) * a.nwc_pct_incremental_revenue
         fcf = ni + da - capex - d_nwc                # FCF al accionista (después de intereses e impuestos)
+        nopat = ebit * (1 - a.tax_rate) if ebit > 0 else ebit
+        fcff = nopat + da - capex - d_nwc            # FCF de la empresa (sin intereses): base del múltiplo EV/FCF
         shares *= (1 + a.annual_dilution)
         cash += fcf
         min_cash = 0.05 * rev
@@ -191,12 +198,14 @@ def run_scenario(a: ScenarioAssumptions, f: Fundamentals, mk: MarketInputs,
             fin_need_total += need
             cash = min_cash
         years.append({"year": t + 1, "revenue": rev, "ebit": ebit, "ebit_margin": a.ebit_margin[t], "fcf": fcf,
+                      "fcff": fcff,
                       "interest": interest, "cash": cash, "debt": debt0, "shares": shares, "net_income": ni, "da": da})
         prev_rev = rev
     targets, rets = {}, {}
     for h in HORIZONS_M:
         y = years[h // 12 - 1]
-        metric = _metric_for_multiple(a.exit_multiple_type, y["revenue"], y["ebit"], y["da"], y["net_income"], y["fcf"])
+        # múltiplos EV/* se aplican a métricas de la EMPRESA (FCFF); P/E a la del accionista (resultado neto)
+        metric = _metric_for_multiple(a.exit_multiple_type, y["revenue"], y["ebit"], y["da"], y["net_income"], y["fcff"])
         if metric <= 0 and a.exit_multiple_type != "EV/Sales":
             # múltiplo sobre métrica negativa no tiene sentido: valor = caja neta (piso contable) — explícito
             equity = y["cash"] - y["debt"]

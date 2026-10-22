@@ -84,7 +84,7 @@ def cmd_ingest(args) -> None:  # noqa: ANN001
         if args.benchmarks:
             ingest_benchmarks(s, rep)
         nf = detect_new_filings(s, date.today() - timedelta(days=30))
-        nr = detect_restatements(s, date.today() - timedelta(days=30))
+        nr = detect_restatements(s, date.min)          # todas (deduplicadas): también backfills y re-expresiones viejas
         npm = detect_price_moves(s)
     print(f"OK {len(rep.ok)} | con errores {len(rep.failed)} | feed: {nf} filings, {nr} re-expresiones, "
           f"{npm} movimientos de precio")

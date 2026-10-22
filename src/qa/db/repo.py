@@ -86,7 +86,28 @@ def _d(s: str | None) -> date | None:
 
 
 # --------------------------------------------------------------------------- datapoints
+# Fuentes cuyos vintages son documentos inmutables (cada presentación es un hecho histórico): append-only.
+APPEND_ONLY_SOURCES = {"sec_edgar"}
+
+
 def upsert_datapoints(s: Session, points: list[DataPoint]) -> int:
+    """Guarda datapoints.
+
+    - Fuentes con vintages inmutables (SEC): una fila por (período, vintage); nunca se pisa el pasado.
+    - Fuentes editables (CSV manual, investigación web, fixtures): el lote ES la verdad actual de esa fuente para
+      esa entidad; las filas previas de esa fuente/entidad que no vienen en el lote se eliminan, así una corrección
+      reemplaza al valor erróneo en lugar de quedar como un 'vintage' fantasma.
+    """
+    editable: dict[tuple[str, str], set[tuple]] = {}
+    for p in points:
+        if p.source.name not in APPEND_ONLY_SOURCES:
+            editable.setdefault((p.entity, p.source.name), set()).add(
+                (p.metric, p.period_type, p.period_end, p.kind.value, p.known_at))
+    for (entity, src), keep in editable.items():
+        for row in s.scalars(select(DataPointRow).where(DataPointRow.entity == entity, DataPointRow.source_name == src)):
+            if (row.metric, row.period_type, row.period_end, row.kind, row.known_at) not in keep:
+                s.delete(row)
+    s.flush()
     n = 0
     for p in points:
         q = select(DataPointRow).where(
