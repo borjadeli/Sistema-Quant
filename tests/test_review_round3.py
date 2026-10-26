@@ -902,3 +902,22 @@ def test_real_companyfacts_gap_is_reported():
     pts = [dp("revenue", 1, "2026-03-31", "Q", "2026-04-28")]
     assert "10-Q presentado el 2026-07-28" in prov._filing_gap(1, pts)
     assert prov._filing_gap(1, pts + [dp("revenue", 1, "2026-06-30", "Q", "2026-07-28")]) is None
+
+
+def test_real_market_cap_from_price_and_shares_when_yahoo_omits_it(monkeypatch):
+    import pandas as pd
+    from qa.providers import yahoo
+
+    class FI(dict):
+        def __getitem__(self, k):           # fast_info sin market cap (Yahoo devuelve 401 en quoteSummary)
+            if k == "market_cap":
+                raise KeyError(k)
+            return dict.__getitem__(self, k)
+    df = pd.DataFrame({"Open": [10.0], "High": [10.0], "Low": [10.0], "Close": [10.0], "Volume": [1000]},
+                      index=pd.to_datetime(["2026-10-23"]))
+    fake = NS(Ticker=lambda s: NS(fast_info=FI(last_price=10.0, currency="USD", shares=1_000_000),
+                                  history=lambda **k: df.copy()))
+    monkeypatch.setattr(yahoo, "_yf", lambda: fake)
+    c = Company(ticker="X", name="x", exchange="NASDAQ", country="US", currency="USD", nodes=["hbm"], exposure=Exposure())
+    snap = yahoo.YahooProvider().snapshot(c)
+    assert snap.market_cap == 10_000_000 and snap.market_cap_usd == 10_000_000

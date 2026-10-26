@@ -81,7 +81,12 @@ class YahooProvider:
             price = float(fi["last_price"])
             currency = fi.get("currency") or company.currency
             shares = fi.get("shares")
-            mcap = fi.get("market_cap")
+            try:
+                mcap = fi["market_cap"]       # fast_info.get() no traduce las claves snake_case en todas las versiones
+            except Exception:  # noqa: BLE001
+                mcap = None
+            if not mcap and shares:
+                mcap = price * float(shares)  # mismo cálculo que hace Yahoo (precio x acciones)
         except Exception as e:
             raise ProviderUnavailable(f"yahoo snapshot {sym}: {e}") from e
         hist = self.history(sym, start=date.today() - pd.Timedelta(days=40))

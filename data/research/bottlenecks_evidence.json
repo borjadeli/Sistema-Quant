@@ -897,7 +897,7 @@
     "known_suppliers": [
       {"company": "Vertiv Holdings", "ticker_if_listed": "VRT", "note": "CDUs/thermal; acquired ThermoKey and Strategic Thermal Labs"},
       {"company": "Asia Vital Components (AVC)", "ticker_if_listed": "3017.TW", "note": "Leading NVIDIA cold plate supplier"},
-      {"company": "Auras Technology", "ticker_if_listed": "3324.TW", "note": "Liquid cooling ~60% of sales (KGI estimate)"},
+      {"company": "Auras Technology", "ticker_if_listed": "3324.TWO", "note": "Liquid cooling ~60% of sales (KGI estimate)"},
       {"company": "Delta Electronics", "ticker_if_listed": "2308.TW", "note": "Liquid cooling/power; not covered in gathered evidence"}
     ],
     "counter_evidence": [
@@ -1085,7 +1085,7 @@
       {"company": "Nitto Boseki (Nittobo)", "ticker_if_listed": "3110.T", "note": "~90% T-glass share"},
       {"company": "Nan Ya Plastics", "ticker_if_listed": "1303.TW", "note": "Scaling second-source glass cloth"},
       {"company": "Taiwan Glass Industry", "ticker_if_listed": "1802.TW", "note": "Scaling second-source glass cloth"},
-      {"company": "Fulltech Fiber Glass", "ticker_if_listed": "1815.TW", "note": "Named as second source"}
+      {"company": "Fulltech Fiber Glass", "ticker_if_listed": "1815.TWO", "note": "Named as second source"}
     ],
     "counter_evidence": [
       {
