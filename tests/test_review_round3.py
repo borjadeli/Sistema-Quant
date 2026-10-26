@@ -718,3 +718,138 @@ def test_r4_exact_evidence_dates_are_not_capped_by_review_date():
                          reviewed_at=date(2026, 10, 21))
     assert registry_as_of({"b": b}, default_map(), date(2026, 11, 4)) == {}
     assert stale_evidence({"b": b})
+
+
+# ============================================================================ ronda 4b (comité y datos/mapa)
+def test_r4b_small_full_exit_and_small_new_entry_always_trade(session):
+    now = datetime.now(timezone.utc)
+    q = {"A": ledger.Quote(10.0, now, "t", "large"), "B": ledger.Quote(10.0, now, "t", "large")}
+    ledger.rebalance(session, "S", {"A": 0.004}, q)                     # entrada nueva < banda: se opera
+    assert ledger.holdings(session, "S").get("A", 0) > 0
+    ledger.rebalance(session, "S", {}, q)                                # salida total < banda: se opera
+    assert ledger.holdings(session, "S") == {}
+
+
+def _band_pipeline(session, tmp_path):
+    m, u, reg = _demo_setup(session)
+    return Pipeline(_demo_ctx(session), m, u, reg, portfolio_name="B", mode="test", runs_dir=tmp_path)
+
+
+def test_r4b_no_trade_band_yields_to_min_cash_and_caps(session, tmp_path):
+    p = _band_pipeline(session, tmp_path)
+    cur = {f"H{i:02d}": 0.081667 for i in range(12)}
+    meta = {k: PositionMeta(k, layer=f"l{k}", primary_bottleneck=f"b{k}", eligible=True) for k in list(cur) + ["NEW"]}
+    targets = {k: 0.0776 for k in cur} | {"NEW": 0.0485}
+    notes: dict = {}
+    out = p._no_trade_band(targets, cur, meta, {}, notes)
+    assert sum(out.values()) <= 0.98 + 1e-9                             # la caja mínima manda sobre la banda
+    assert out["NEW"] == 0.0485
+    held = {"X": 0.1045}
+    meta = {"X": PositionMeta("X", layer="l", primary_bottleneck="b", eligible=True)}
+    out = p._no_trade_band({"X": 0.10}, held, meta, {}, {})
+    assert out["X"] == 0.10                                               # el tope por posición manda sobre la banda
+    out = p._no_trade_band({"X": 0.0815}, {"X": 0.083}, meta, {}, {})
+    assert out["X"] == 0.083                                              # ajuste chico sin conflicto: no se opera
+
+
+def test_r4b_pm_sees_k9_holding_as_hold_only(session, tmp_path, synthetic_ok):
+    _holding_setup(session, tmp_path)
+    r = scripted_responses()
+    r["auditor"] = {"broken": True}
+    seen = {}
+
+    def pm(pack):  # noqa: ANN001, ANN202
+        for c in pack["candidates"]:
+            seen[c["company_id"]] = (c["score"] or {}).get("eligible"), (c["score"] or {}).get("kill_switches")
+        return _pm({"TEST_SLOW": ("HOLD", 0.08)})(pack)
+    r["portfolio_manager"] = pm
+    _run(session, tmp_path, r)
+    assert seen["TEST_SLOW"] == ("hold_only", [])
+    assert ledger.holdings(session, "P").get("TEST_SLOW", 0) > 0
+
+
+def test_r4b_reserve_is_not_passed_to_pause_turn_budget(session):
+    got = {}
+
+    class Spy:
+        def complete(self, **kw):  # noqa: ANN003, ANN201
+            got["budget"] = kw["budget_usd"]
+            raise LLMError("x")
+    ctx = RunContext(session=session, llm=Spy(), budget=Budget(5, 50), reuse=False, reserve_usd=0.7)
+    run_agent(ctx, "auditor", "X", "t", {"a": 1})
+    assert got["budget"] == pytest.approx(5 - 0.7)
+    run_agent(ctx, "portfolio_manager", "portfolio", "t", {"candidates": []})
+    assert got["budget"] == pytest.approx(5)
+
+
+def test_r4b_manual_csv_structural_errors_never_delete_rows(tmp_path, session, monkeypatch):
+    from qa.providers import registry
+    from qa.providers.base import ProviderUnavailable
+    from qa.providers.manual import ManualCsvProvider
+    c = Company(ticker="ERO", name="x", exchange="NYSE", country="CA", currency="USD", nodes=["copper"], exposure=Exposure())
+    good = (HDR + "ERO,revenue,284.3,USD,USD,2026-06-30,Q,,ir,https://x,pr,2026-08-01\n"
+            "ERO,cash,90,USD,USD,2026-06-30,instant,,ir,https://x,pr,2026-08-01\n")
+
+    class NoPrices:
+        name = "stub"
+
+        def snapshot(self, c):  # noqa: ANN001, ANN202
+            raise ProviderUnavailable("offline")
+    monkeypatch.setattr(registry, "price_provider", lambda: NoPrices())
+    f = tmp_path / "m.csv"
+    for bad in (HDR + 'ERO,revenue,284.3,USD,USD,2026-06-30,Q,"Q2 2026,ir,https://x,pr,2026-08-01\n',   # comilla
+                good.replace(",", ";"),                                                                 # Excel es-ES
+                good.replace("ir,https://x", "ir,https://x,extra")):                                  # columnas corridas
+        f.write_text(good, encoding="utf-8")
+        monkeypatch.setattr(registry, "fundamentals_providers", lambda: [ManualCsvProvider(tmp_path)])
+        registry.ingest_company(session, c, registry.IngestReport())
+        assert len(repo.load_datapoints(session, "ERO")) == 2
+        f.write_text(bad, encoding="utf-8")
+        prov = ManualCsvProvider(tmp_path)
+        monkeypatch.setattr(registry, "fundamentals_providers", lambda: [prov])
+        rep = registry.IngestReport()
+        registry.ingest_company(session, c, rep)
+        assert prov.file_errors and len(repo.load_datapoints(session, "ERO")) == 2, bad[:60]
+
+
+def test_r4b_manual_csv_rejects_reserved_source_names_and_locates_errors(tmp_path):
+    from qa.providers.manual import load_manual_csv
+    p = tmp_path / "x.csv"
+    p.write_text(HDR + "ERO,revenue,1,USD,USD,2026-06-30,Q,,sec_edgar,https://x,10q,2026-08-01\n", encoding="utf-8")
+    pts, rej, err = load_manual_csv(p)
+    assert not pts and "reservado" in rej[0] and err is None
+    body = HDR + "".join(f"ERO,revenue,{i},USD,USD,2026-06-30,Q,,ir,https://x,pr,2026-08-01\n" for i in range(1, 10))
+    p.write_bytes(body.encode("utf-8") + "ERO,revenue,1,USD,USD,2026-06-30,Q,Société,ir,https://x,pr,2026-08-01\n"
+                  .encode("cp1252"))
+    _, _, err = load_manual_csv(p)
+    assert err.startswith("x.csv:11:")
+
+
+def test_r4b_map_proposals_extra_keys_root_nodes_and_currency(overlay_tmp):
+    import yaml
+    from qa.agents.map_agents import apply_proposal, _company_currency
+    apply_proposal(_prop("add_node", {"id": "hbm4_base_die", "name": "HBM4 base die", "type": "component",
+                                      "segment": "memory_dram", "depends_on": ["hbm"], "description": "base die"}))
+    node = yaml.safe_load((overlay_tmp / "map_overlay.yaml").read_text())["nodes"][0]
+    assert "description" not in node and "base die" in node["notes"]
+    with pytest.raises(ValueError, match="reservadas"):
+        apply_proposal(_prop("add_node", {"id": "x9", "name": "N", "type": "component", "segment": "memory_dram",
+                                          "depends_on": ["hbm"], "layer": "memory"}))
+    apply_proposal(_prop("add_node", {"id": "hbm_test_handlers", "name": "HBM test handlers", "type": "equipment",
+                                      "segment": "memory_dram", "feeds": ["hbm"]}))          # nodo raíz
+    ov = yaml.safe_load((overlay_tmp / "map_overlay.yaml").read_text())
+    assert {"source": "hbm_test_handlers", "target": "hbm"} in [{k: e[k] for k in ("source", "target")} for e in ov["edges"]]
+    assert _company_currency({"exchange": "LSE", "currency": "USD"}) == "USD"
+    assert _company_currency({"exchange": "LSE", "currency": "GBX"}) == "GBP"
+    with pytest.raises(ValueError):
+        _company_currency({"exchange": "NASDAQ", "currency": "JPY"})
+
+
+def test_r4b_evidence_ranges_never_before_publication():
+    from qa.bottlenecks import _parse_evidence_date, known_date
+    assert _parse_evidence_date({"date": "2026-10-28/11-02"})[0] == date(2026, 11, 2)
+    assert _parse_evidence_date({"date": "2026-10-28/02"})[0] == date(2026, 11, 2)
+    assert _parse_evidence_date({"date": "2025-12/01"})[0] == date(2026, 1, 31)
+    assert _parse_evidence_date({"date": "2026-10-16 / 2026-10-19"})[0] == date(2026, 10, 19)
+    assert known_date({"date": "2026-11 (approx.)"}, date(2026, 10, 21)) == date(2026, 11, 30)
+    assert known_date({"date": "2026 (exact date not captured)"}, date(2026, 10, 21)) == date(2026, 10, 21)

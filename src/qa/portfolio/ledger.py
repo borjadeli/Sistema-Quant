@@ -62,8 +62,12 @@ def min_trade_fraction() -> float:
 
 
 def rebalance(s: Session, portfolio: str, targets: dict[str, float], quotes: dict[str, Quote],
-              rec_ids: dict[str, int] | None = None, now: datetime | None = None) -> list[PaperTrade]:
-    """Lleva la cartera a los pesos objetivo. Ventas primero, luego compras (sin apalancamiento)."""
+              rec_ids: dict[str, int] | None = None, now: datetime | None = None,
+              min_fraction: float | None = None) -> list[PaperTrade]:
+    """Lleva la cartera a los pesos objetivo. Ventas primero, luego compras (sin apalancamiento).
+
+    Los ajustes PARCIALES menores a `min_fraction` del NAV (por defecto la banda de configuración) no se operan; una
+    salida total o una entrada nueva se opera siempre."""
     assert_simulated()
     cfg = settings()["portfolio"]
     now = now or datetime.now(timezone.utc)
@@ -77,7 +81,10 @@ def rebalance(s: Session, portfolio: str, targets: dict[str, float], quotes: dic
         q = quotes[k]
         target_qty = targets.get(k, 0.0) * total / q.price
         diff = target_qty - h.get(k, 0.0)
-        if abs(diff * q.price) < min_trade_fraction() * total:   # banda sin operación (= banda HOLD)
+        partial = h.get(k, 0.0) > 0 and targets.get(k, 0.0) > 0
+        if partial and abs(diff * q.price) < (min_trade_fraction() if min_fraction is None else min_fraction) * total:
+            continue                                  # banda sin operación (= banda HOLD)
+        if abs(diff * q.price) < 1e-9 * max(total, 1.0):
             continue
         orders.append((k, diff))
     orders.sort(key=lambda x: x[1])                   # ventas (negativas) primero

@@ -205,7 +205,8 @@ def run_agent(ctx: RunContext, agent: str, subject: str, task: str, pack: dict,
     schema = strict_schema(spec.output)
     try:
         resp = ctx.llm.complete(agent=agent, model=model, system=sysmsg, user=user, schema=schema, effort=effort,
-                                max_tokens=max_tokens, web_search_uses=ws, budget_usd=ctx.budget.remaining())
+                                max_tokens=max_tokens, web_search_uses=ws,
+                                budget_usd=ctx.budget.remaining() - (need - bound))   # sin tocar la reserva del comité
     except LLMError as e:                     # incluye LLMRefusal; lo ya facturado se cuenta igual
         ctx.budget.spent_run += e.cost_usd
         status = "refusal" if isinstance(e, LLMRefusal) else "error"

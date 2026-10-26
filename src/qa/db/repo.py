@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 
 import pandas as pd
-from sqlalchemy import delete, select
+from sqlalchemy import and_, delete, or_, select
 from sqlalchemy.orm import Session, defer
 
 from qa.db.schema import (Bottleneck, Company as CompanyRow, CompanyRelationship, DataPointRow, MapEdge,
@@ -101,7 +101,7 @@ def row_provider(row: DataPointRow) -> str:
 
 
 def upsert_datapoints(s: Session, points: list[DataPoint], provider: str | None = None,
-                      entities: set[str] | None = None) -> int:
+                      entities: set[str] | None = None, delete: bool = True) -> int:
     """Guarda datapoints.
 
     - Fuentes con vintages inmutables (SEC): una fila por (período, vintage); nunca se pisa el pasado.
@@ -110,11 +110,16 @@ def upsert_datapoints(s: Session, points: list[DataPoint], provider: str | None 
       filas previas que no vienen en el lote se eliminan aunque el lote esté vacío (fila ahora rechazada, entidad
       borrada del CSV, semilla que dejó de calificar) o aunque cambie la fuente citada.
     - Sin `provider` (compatibilidad): reemplazo por (entidad, nombre de fuente).
+    - `delete=False`: solo inserta/actualiza (lote incompleto, p.ej. un archivo que no se pudo leer entero).
     """
-    if provider is not None and provider not in APPEND_ONLY_SOURCES:
+    if not delete:
+        pass
+    elif provider is not None and provider not in APPEND_ONLY_SOURCES:
         keep = {(p.entity, p.metric, p.period_type, p.period_end, p.kind.value, p.source.name, p.known_at)
                 for p in points}
-        q = select(DataPointRow).where(DataPointRow.source_name.notin_(APPEND_ONLY_SOURCES))
+        q = select(DataPointRow).where(or_(DataPointRow.provider == provider,
+                                           and_(DataPointRow.provider.is_(None),
+                                                DataPointRow.source_name.notin_(APPEND_ONLY_SOURCES))))
         if entities is not None:
             q = q.where(DataPointRow.entity.in_(set(entities) | {p.entity for p in points}))
         for row in s.scalars(q):

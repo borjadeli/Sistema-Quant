@@ -66,8 +66,8 @@ def ingest_company(s: Session, c: Company, report: IngestReport, history_days: i
                 pts = prov.get_facts(c) if prov.supports(c) else []
                 if prov.reconcile_safe:
                     repo.upsert_datapoints(s, pts, provider=prov.name, entities={c.id})
-                else:
-                    repo.upsert_datapoints(s, pts)
+                else:                     # lote incompleto: solo agrega/actualiza, nunca borra
+                    repo.upsert_datapoints(s, pts, provider=prov.name, entities={c.id}, delete=False)
                     report.add(c.id, f"fundamentals[{prov.name}]", "archivos ilegibles: no se reconcilian filas viejas "
                                                                     f"({'; '.join(prov.file_errors)[:300]})")
                 if pts:

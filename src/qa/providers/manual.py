@@ -7,6 +7,7 @@ Filas sin source_url o sin known_at se rechazan: no hay dato sin fuente.
 from __future__ import annotations
 
 import csv
+import io
 import json
 import re
 from datetime import date, timedelta
@@ -19,6 +20,7 @@ from qa.universe.model import Company
 REQUIRED = ["entity", "metric", "value", "unit", "period_end", "period_type", "source_name", "source_url", "known_at"]
 PERIOD_TYPES = {"Q", "H", "9M", "FY", "instant"}
 NON_MONETARY = {"diluted_shares", "shares_outstanding"}
+RESERVED_SOURCES = {"sec_edgar", "web_research_seed", "synthetic_fixture"}   # nombres de fuente de otros proveedores
 
 
 class ManualCsvProvider:
@@ -72,6 +74,9 @@ def _parse_row(row: dict, where: str) -> DataPoint:
     ptype = row["period_type"].strip()
     if ptype not in PERIOD_TYPES:
         raise ValueError(f"{where}: period_type '{ptype}' inválido (usar {sorted(PERIOD_TYPES)})")
+    if row["source_name"].strip().lower() in RESERVED_SOURCES:
+        raise ValueError(f"{where}: source_name '{row['source_name']}' está reservado para otro proveedor: citar el "
+                         "documento (p.ej. 'SEC EDGAR 40-F', 'SEDAR+ MD&A')")
     if metric not in set(FLOW_METRICS) | set(STOCK_METRICS) | {"diluted_shares"}:
         raise ValueError(f"{where}: métrica desconocida '{metric}'")
     if metric in STOCK_METRICS and ptype != "instant":
@@ -97,26 +102,41 @@ def _parse_row(row: dict, where: str) -> DataPoint:
 def load_manual_csv(path: Path) -> tuple[list[DataPoint], list[str], str | None]:
     """Devuelve (datapoints válidos, motivos de rechazo por fila con archivo:línea, error de archivo o None).
 
-    Acepta UTF-8 con o sin BOM (Excel "CSV UTF-8"). Un archivo en otra codificación o con comillas mal cerradas
-    no aborta la ingesta: se reporta y se conservan las filas válidas leídas antes del error."""
+    Acepta UTF-8 con o sin BOM (Excel "CSV UTF-8"). Es un ERROR DE ARCHIVO (no aborta la ingesta, se conservan las
+    filas válidas leídas antes y la base no se reconcilia con ese proveedor): otra codificación, comillas sin
+    cerrar, encabezado sin las columnas obligatorias (p.ej. separador ';' de un Excel en español) o filas con más
+    columnas que el encabezado."""
     out, rejected = [], []
-    line = 1
+    raw = path.read_bytes()
     try:
-        with open(path, encoding="utf-8-sig", newline="") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                line = reader.line_num
-                where = f"{path.name}:{line}"
-                try:
-                    out.append(_parse_row(row, where))
-                except (ValueError, KeyError) as e:
-                    msg = str(e)
-                    rejected.append(msg if msg.startswith(where) else f"{where}: {type(e).__name__}: {msg}")
+        text = raw.decode("utf-8-sig")
     except UnicodeDecodeError as e:
-        err = f"{path.name}: no es UTF-8 ({e.reason} en el byte {e.start}): guardar como 'CSV UTF-8'"
+        ln = raw[:e.start].count(b"\n") + 1
+        err = (f"{path.name}:{ln}: no es UTF-8 ({e.reason} en el byte {e.start}): guardar como 'CSV UTF-8'; "
+               "no se usa el archivo")
         return out, rejected + [err], err
+    reader = csv.DictReader(io.StringIO(text, newline=""), strict=True)
+    start_line = 2
+    try:
+        header = reader.fieldnames or []
+        lacking = [k for k in REQUIRED if k not in header]
+        if lacking:
+            sep = " (¿separador ';'? usar ',')" if len(header) <= 1 and ";" in (header[0] if header else "") else ""
+            err = f"{path.name}:1: encabezado sin columnas obligatorias {lacking}{sep}; no se usa el archivo"
+            return out, rejected + [err], err
+        for row in reader:
+            where = f"{path.name}:{start_line}"
+            start_line = reader.line_num + 1
+            if None in row:                      # más campos que columnas: comas sin comillas, columnas corridas
+                err = f"{where}: la fila tiene más campos que el encabezado; no se usa el resto del archivo"
+                return out, rejected + [err], err
+            try:
+                out.append(_parse_row(row, where))
+            except (ValueError, KeyError) as e:
+                msg = str(e)
+                rejected.append(msg if msg.startswith(where) else f"{where}: {type(e).__name__}: {msg}")
     except csv.Error as e:
-        err = f"{path.name}:{line}: CSV mal formado ({e}): se descarta el resto del archivo"
+        err = f"{path.name}:{start_line}: CSV mal formado ({e}): se descarta desde esa línea"
         return out, rejected + [err], err
     return out, rejected, None
 

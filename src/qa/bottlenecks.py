@@ -95,31 +95,56 @@ def default_bottlenecks():
     return load_bottlenecks(default_map(), default_universe())
 
 
-# Fecha al INICIO del campo: "2026-10-16", "2026-08 (approx.)", "2026", y rangos "2026-10-16/19", "2026-08/09",
-# "2025-2026". Las menciones posteriores en el texto (p.ej. "Q1 FY2026") no se interpretan.
-_LEAD = re.compile(r"^\s*(\d{4})(?:-(\d{2})(?!\d))?(?:-(\d{2})(?!\d))?(?:\s*/\s*(\d{2})(?!\d)|-(\d{4})(?!\d))?")
+# Fecha al INICIO del campo: "2026-10-16", "2026-08 (approx.)", "2026", con rango opcional: "2026-10-16/19",
+# "2026-10-28/11-02", "2026-10-16 / 2026-10-19", "2026-08/09", "2025-12/01", "2025-2026". Las menciones posteriores
+# en el texto (p.ej. "Q1 FY2026") no se interpretan.
+_START = re.compile(r"^\s*(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?(?!\d)")
+_END = re.compile(r"^\s*(?:/|–|-(?=\s*\d{4}(?!\d))|to\s)\s*(?:(\d{4})-(\d{2})-(\d{2})|(\d{4})-(\d{2})|(\d{2})-(\d{2})|"
+                  r"(\d{4})|(\d{1,2}))(?!\d)")
 
 
-def _parse_evidence_date(e: dict) -> tuple[date | None, bool]:
-    """(fecha, es_exacta). Fechas parciales o rangos se llevan al FINAL del período (conservador para
-    point-in-time); un día exacto (o un rango de días) es exacto."""
-    m = _LEAD.match(str(e.get("date") or ""))
+def _month_end(y: int, m: int) -> date:
+    return date(y + (m == 12), m % 12 + 1, 1) - timedelta(days=1)
+
+
+def _parse_evidence_date(e: dict) -> tuple[date | None, bool, date | None]:
+    """(fin, es_exacta, inicio) de la fecha de una evidencia. Fechas parciales o rangos se llevan al FINAL del
+    período (conservador para point-in-time); un día exacto o un rango de días es exacto. Un extremo de rango
+    anterior al inicio se pasa al mes/año siguiente ("2026-10-28/02" = 2 de noviembre)."""
+    txt = str(e.get("date") or "")
+    m = _START.match(txt)
     if not m:
-        return None, False
-    y, mth, d, rng, y2 = m.groups()
+        return None, False, None
     try:
-        if y2:
-            return date(int(y2), 12, 31), False
-        if d:
-            return date(int(y), int(mth), int(rng or d)), True
-        if mth:
-            mm = int(rng or mth)
-            if not 1 <= mm <= 12:
-                return None, False
-            return date(int(y) + (mm == 12), mm % 12 + 1, 1) - timedelta(days=1), False
-        return date(int(y), 12, 31), False
+        y, mth, d = int(m.group(1)), m.group(2) and int(m.group(2)), m.group(3) and int(m.group(3))
+        if mth and not 1 <= mth <= 12:
+            return None, False, None
+        start = date(y, mth or 1, d or 1)
+        end, exact = (date(y, mth, d), True) if d else ((_month_end(y, mth), False) if mth else (date(y, 12, 31), False))
+        r = _END.match(txt[m.end():])
+        if r:
+            g = r.groups()
+            if g[0]:                                        # /YYYY-MM-DD
+                end, exact = date(int(g[0]), int(g[1]), int(g[2])), bool(d)
+            elif g[3]:                                      # /YYYY-MM
+                end, exact = _month_end(int(g[3]), int(g[4])), False
+            elif g[5]:                                      # /MM-DD
+                cand = date(y, int(g[5]), int(g[6]))
+                end, exact = (cand if cand >= start else date(y + 1, int(g[5]), int(g[6]))), bool(d)
+            elif g[7]:                                      # -YYYY
+                end, exact = date(int(g[7]), 12, 31), False
+            elif g[8]:                                      # /DD (si había día) o /MM (si había mes)
+                n = int(g[8])
+                if d:
+                    cand = date(y, mth, n)
+                    end = cand if cand >= start else (date(y, mth % 12 + 1, n) if mth < 12 else date(y + 1, 1, n))
+                elif mth:
+                    end = _month_end(y, n) if n >= mth else _month_end(y + 1, n)
+            if end < start:
+                return None, False, None
+        return end, exact, start
     except ValueError:
-        return None, False
+        return None, False, None
 
 
 def evidence_date(e: dict) -> date | None:
@@ -131,10 +156,14 @@ def known_date(e: dict, reviewed_at: date | None) -> date | None:
     """Desde cuándo el sistema puede usar una evidencia. Una fecha EXACTA es su fecha (aunque sea posterior a la
     revisión: entonces la revisión está desactualizada, ver stale_evidence). Una fecha parcial o ausente se acota a
     la revisión del registro (lo que estaba en el registro se conocía al compilarlo)."""
-    d, exact = _parse_evidence_date(e)
+    d, exact, start = _parse_evidence_date(e)
     if exact or reviewed_at is None:
         return d
-    return reviewed_at if d is None else min(d, reviewed_at)
+    if d is None:
+        return reviewed_at
+    if start is not None and start > reviewed_at:     # período que empieza después de la revisión: no se acota
+        return d
+    return min(d, reviewed_at)
 
 
 def stale_evidence(registry: dict[str, BottleneckRecord]) -> list[str]:
@@ -142,8 +171,10 @@ def stale_evidence(registry: dict[str, BottleneckRecord]) -> list[str]:
     out = []
     for b in registry.values():
         for e in b.raw.get("evidence", []) + b.raw.get("counter_evidence", []):
-            d, exact = _parse_evidence_date(e)
-            if exact and b.reviewed_at is not None and d > b.reviewed_at:
+            d, exact, start = _parse_evidence_date(e)
+            late = (exact and d is not None and d > b.reviewed_at) or (start is not None and start > b.reviewed_at) \
+                if b.reviewed_at is not None else False
+            if late:
                 out.append(f"bottleneck {b.id}: evidencia del {d} posterior a evidence_reviewed_at {b.reviewed_at} "
                            "(actualizar la fecha de revisión en data/bottlenecks/bottlenecks.yaml)")
     return out

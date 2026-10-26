@@ -133,12 +133,33 @@ def review_proposal(s: Session, pid: int, approve: bool, reviewer: str, note: st
 
 NODE_KEYS = {"id", "name", "type", "segment", "concentration", "substitutability", "depends_on", "notes"}
 EDGE_KEYS = {"source", "target", "relation"}
+RESERVED_KEYS = {"layer"}      # 'layer' lo deriva el segmento; '_*' son metadatos internos
 
 
-def _check_keys(entry: dict, allowed: set[str], what: str) -> None:
-    extra = sorted(k for k in entry if k not in allowed)
-    if extra:      # 'layer' lo deriva el segmento; '_*' son metadatos internos; el resto no existe en el modelo
-        raise ValueError(f"{what}: campos no permitidos {extra} (permitidos: {sorted(allowed)})")
+def _prepare(kind: str, payload: dict) -> dict:
+    """Normaliza el payload del agente: rechaza claves reservadas; en un nodo, las claves descriptivas que el
+    modelo no tiene (p.ej. 'description') pasan a `notes`; en una arista, se descartan. `feeds` (solo nodos) son
+    aristas salientes: permiten agregar un nodo RAÍZ (sin dependencias) sin quedar aislado."""
+    bad = sorted(k for k in payload if k in RESERVED_KEYS or str(k).startswith("_"))
+    if bad:
+        raise ValueError(f"add_{kind}: claves reservadas {bad} (la capa sale del segmento)")
+    allowed = (NODE_KEYS | {"feeds"}) if kind == "node" else EDGE_KEYS
+    entry = {k: v for k, v in payload.items() if k in allowed}
+    extra = {k: v for k, v in payload.items() if k not in allowed}
+    if extra and kind == "node":
+        txt = "; ".join(f"{k}: {v}" for k, v in extra.items())
+        entry["notes"] = f"{entry['notes']}; {txt}" if isinstance(entry.get("notes"), str) and entry["notes"] else txt
+    return entry
+
+
+def _overlay_items(kind: str, entry: dict) -> list[tuple[str, dict]]:
+    """(sección del overlay, ítem) que escribe un cambio: un nodo con `feeds` escribe también sus aristas."""
+    if kind == "company":
+        return [("companies", entry)]
+    if kind == "edge":
+        return [("edges", entry)]
+    node = {k: v for k, v in entry.items() if k != "feeds"}
+    return [("nodes", node)] + [("edges", {"source": entry["id"], "target": t}) for t in entry.get("feeds") or []]
 
 
 def _simulate(kind: str, entry: dict):  # noqa: ANN202
@@ -156,9 +177,8 @@ def _simulate(kind: str, entry: dict):  # noqa: ANN202
                 shutil.copy(src, t / name)
         target = t / ("discovered.yaml" if kind == "company" else "map_overlay.yaml")
         data = (yaml.safe_load(target.read_text(encoding="utf-8")) if target.exists() else None) or {}
-        key = {"company": "companies", "node": "nodes", "edge": "edges"}[kind]
-        data.setdefault(key, [])
-        data[key].append(entry)
+        for key, item in _overlay_items(kind, entry):
+            data.setdefault(key, []).append(item)
         target.write_text(yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8")
         try:
             return load_map(t / "industry_map.yaml"), load_universe(t / "companies.yaml", RELATIONSHIPS_PATH)
@@ -182,7 +202,6 @@ def _validate_overlay(kind: str, entry: dict) -> None:
         if not entry.get("nodes") or bad:
             raise ValueError(f"nodos inexistentes en el mapa: {bad or 'ninguno indicado'}")
     elif kind == "node":
-        _check_keys(entry, NODE_KEYS, "add_node")
         for k in ("id", "name", "type", "segment"):
             if not entry.get(k):
                 raise ValueError(f"add_node requiere '{k}'")
@@ -190,11 +209,10 @@ def _validate_overlay(kind: str, entry: dict) -> None:
             raise ValueError(f"nodo {entry['id']} ya existe")
         if entry["segment"] not in m.segments:
             raise ValueError(f"segmento inexistente: {entry['segment']}")
-        bad = [n for n in entry.get("depends_on", []) if n not in m.nodes]
+        bad = [n for n in list(entry.get("depends_on") or []) + list(entry.get("feeds") or []) if n not in m.nodes]
         if bad:
-            raise ValueError(f"depends_on con nodos inexistentes: {bad}")
+            raise ValueError(f"depends_on/feeds con nodos inexistentes: {bad}")
     elif kind == "edge":
-        _check_keys(entry, EDGE_KEYS, "add_edge")
         for k in ("source", "target"):
             if entry.get(k) not in m.nodes:
                 raise ValueError(f"add_edge: {k} inexistente ({entry.get(k)})")
@@ -203,6 +221,8 @@ def _validate_overlay(kind: str, entry: dict) -> None:
     m2, u2 = _simulate(kind, entry)
     if kind == "node" and entry["id"] not in m2.nodes:
         raise ValueError(f"add_node: el nodo {entry['id']} no quedó incorporado")
+    if kind in ("node", "edge") and not nx.is_directed_acyclic_graph(m2.graph()):
+        raise ValueError(f"add_{kind} crearía un ciclo en el mapa")
     if kind == "edge":
         if not any(e.source == entry["source"] and e.target == entry["target"] for e in m2.edges):
             raise ValueError("add_edge: la arista no quedó incorporada")
@@ -216,13 +236,20 @@ def _validate_overlay(kind: str, entry: dict) -> None:
         raise ValueError(f"el cambio introduce errores de validación: {new[:5]}")
 
 
+# bolsas fuera de EE.UU. con líneas habituales en USD (GDRs en LSE, líneas .U en TSX, SIX/HKEX/SGX)
+USD_LINES_OK = {"LSE", "TSX", "TSXV", "SIX", "HKEX", "SGX"}
+CURRENCY_ALIASES = {"GBX": "GBP", "GBP": "GBP"}        # precios en peniques: el proveedor los escala (GBp)
+
+
 def _company_currency(c: dict) -> str:
-    """Moneda de cotización: la del agente si coincide con la bolsa; si falta, la de la bolsa. Nunca USD por defecto."""
-    from qa.universe.model import EXCHANGE_CURRENCY  # noqa: PLC0415
+    """Moneda de cotización: la de la bolsa por defecto; la del agente se acepta si coincide con la bolsa o si es USD
+    en una bolsa con líneas en dólares. En EE.UU. siempre USD. Nunca USD por defecto fuera de EE.UU."""
+    from qa.universe.model import EXCHANGE_CURRENCY, US_EXCHANGES  # noqa: PLC0415
     exch = str(c.get("exchange") or "").upper()
     by_exch = EXCHANGE_CURRENCY.get(exch)
-    given = (c.get("currency") or "").upper() or None
-    if given and by_exch and given != by_exch:
+    raw = (c.get("currency") or "").strip()
+    given = CURRENCY_ALIASES.get(raw.upper(), raw.upper()) or None
+    if given and by_exch and given != by_exch and not (given == "USD" and exch in USD_LINES_OK and exch not in US_EXCHANGES):
         raise ValueError(f"moneda {given} contradice la bolsa {exch} ({by_exch}): verificar y editar antes de aprobar")
     ccy = given or by_exch
     if not ccy:
@@ -250,11 +277,13 @@ def apply_proposal(p: MapChangeProposal) -> None:
         if not isinstance(p.payload, dict) or "raw" in p.payload:
             raise ValueError("payload no estructurado (JSON inválido del agente): editar antes de aprobar")
         kind = "node" if p.change_type == "add_node" else "edge"
-        _validate_overlay(kind, p.payload)
+        entry = _prepare(kind, p.payload)
+        _validate_overlay(kind, entry)
         data = (yaml.safe_load(MAP_OVERLAY.read_text(encoding="utf-8")) if MAP_OVERLAY.exists() else None) or {}
         data.setdefault("nodes", [])
         data.setdefault("edges", [])
-        data["nodes" if kind == "node" else "edges"].append(p.payload | {"_proposal": p.id})
+        for key, item in _overlay_items(kind, entry):
+            data[key].append(item | {"_proposal": p.id})
         MAP_OVERLAY.write_text(yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8")
     else:
         raise ValueError(f"{p.change_type}: aplicar manualmente en data/bottlenecks (requiere revisión de evidencia)")

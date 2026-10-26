@@ -140,7 +140,7 @@ def validate_universe(u: Universe, m: IndustryMap) -> list[str]:
             errors.append(f"{c.id}: sin nodos")
         if len(c.currency) != 3:
             errors.append(f"{c.id}: moneda inválida '{c.currency}'")
-    symbols = Counter(c.yahoo_symbol for c in u.companies.values())
+    symbols = Counter(c.yahoo_symbol.upper() for c in u.companies.values())     # 'besi.as' == 'BESI.AS'
     errors += [f"símbolo de datos duplicado: {s}" for s, k in symbols.items() if k > 1]
     for r in u.relationships:
         if r.verification in (Verification.CONFIRMED_FILING, Verification.COMPANY_STATEMENT,

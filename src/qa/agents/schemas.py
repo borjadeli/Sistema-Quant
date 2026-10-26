@@ -161,7 +161,10 @@ class PortfolioOutput(BaseModel):
 class MapProposal(BaseModel):
     change_type: Literal["add_node", "add_edge", "add_bottleneck", "update_bottleneck_status", "add_company",
                          "link_company"]
-    payload_json: str = Field(description="JSON con los campos del cambio (id, name, type, source, target, ...)")
+    payload_json: str = Field(description="JSON del cambio. add_node: id, name, type, segment, depends_on, feeds "
+                                          "(aristas salientes, para nodos raíz), concentration, substitutability, "
+                                          "notes. add_edge: source, target, relation. add_company: name, ticker, "
+                                          "exchange, country, currency, map_nodes")
     rationale: str
     evidence: list[Evidence]
 

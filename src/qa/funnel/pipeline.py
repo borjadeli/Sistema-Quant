@@ -319,33 +319,48 @@ class Pipeline:
         if not candidates and not current:
             report.notes.append("comité: sin candidatos con score")
             return
+        kills_by: dict[str, list[str]] = {}
+        incomplete_held = set()
+        for d in candidates + extra:
+            cid = d.company.id
+            kills = list(d.scorecard.kill_switches)
+            if d.tier != "L3":
+                kills.append("K9: no completó L3 (bear case + auditoría) — no puede entrar a cartera")
+            kills_by[cid] = kills
+            if kills and cur_w.get(cid, 0) > 0 and all(k.startswith("K9") for k in kills):
+                # análisis INCOMPLETO de una posición (error, presupuesto, --tiers sin L3): no es evidencia
+                # negativa -> no se vende por omisión, pero tampoco se aumenta
+                incomplete_held.add(cid)
+        briefs = []
+        for d in candidates:                # el PM ve la MISMA elegibilidad que aplica el código
+            b = self._dossier_pack(d, brief=True)
+            cid = d.company.id
+            if b.get("score") is not None:
+                if cid in incomplete_held:
+                    b["score"] |= {"eligible": "hold_only", "kill_switches": [], "incomplete_analysis": kills_by[cid]}
+                else:
+                    b["score"] |= {"eligible": not kills_by[cid], "kill_switches": kills_by[cid]}
+            briefs.append(b)
         pack = {"current_portfolio_weights": cur_w, "cash_weight": 1 - sum(cur_w.values()),
                 "constraints": {k: self.cfg["portfolio"][k] for k in
                                 ("max_positions", "min_positions", "max_weight", "max_weight_per_bottleneck",
                                  "max_weight_per_layer", "min_cash")},
-                "candidates": [self._dossier_pack(d, brief=True) for d in candidates]}
+                "candidates": briefs}
         res = run_agent(self.ctx, "portfolio_manager", "portfolio",
                         "Decidí la cartera modelo para este ciclo.", pack, hash_view(pack))
         if not res.ok:
             report.notes.append(f"comité no ejecutado: {res.status} {res.error or ''}")
             return
         pm: S.PortfolioOutput = res.output
-        meta, incomplete_held = {}, set()
+        meta = {}
         for d in candidates + extra:
             cid = d.company.id
-            kills = list(d.scorecard.kill_switches)
-            if d.tier != "L3":
-                kills.append("K9: no completó L3 (bear case + auditoría) — no puede entrar a cartera")
-            eligible = not kills
-            if kills and cur_w.get(cid, 0) > 0 and all(k.startswith("K9") for k in kills):
-                # análisis INCOMPLETO de una posición (error, presupuesto, --tiers sin L3): no es evidencia
-                # negativa -> no se vende por omisión, pero tampoco se aumenta
-                eligible = True
-                incomplete_held.add(cid)
             meta[cid] = PositionMeta(
                 company_id=cid, layer=self.m.nodes[d.company.primary_node].layer,
-                primary_bottleneck=_primary_bottleneck(d, self.reg), eligible=eligible,
-                speculative=d.company.status == "candidate" or "speculative" in d.company.tags, kill_reasons=kills)
+                primary_bottleneck=_primary_bottleneck(d, self.reg),
+                eligible=not kills_by[cid] or cid in incomplete_held,
+                speculative=d.company.status == "candidate" or "speculative" in d.company.tags,
+                kill_reasons=kills_by[cid])
         by_id = {d.company.id: d for d in candidates + extra}
         pm_dec = {x.company_id: x for x in pm.decisions if x.company_id in by_id}
         for x in pm.decisions:
@@ -382,15 +397,15 @@ class Pipeline:
                 targets[k] = round(targets[k] * room / f_sum, 4) if f_sum else 0.0
                 notes_by.setdefault(k, []).append(txt)
             notes.append(txt)
+        targets = self._no_trade_band(targets, cur_w, meta, unanalyzed, notes_by)
         report.constraint_notes = notes
         # Una recomendación por cada empresa con dossier cuyo peso decide este comité: las del PM y también las
         # posiciones que el PM no mencionó pero cuyo peso cambia (venta por kill switch, recorte por topes).
         rec_ids = {}
-        band = ledger.min_trade_fraction()
         for cid in sorted(set(pm_dec) | ({k for k in by_id if k in cur_w or k in targets})):
             d, x = by_id[cid], pm_dec.get(cid)
             cur, final_w = cur_w.get(cid, 0.0), targets.get(cid, 0.0)
-            final_action = _final_action(cur, final_w, band)
+            final_action = _final_action(cur, final_w, TRADE_EPS)     # la banda ya se aplicó: acción = operación
             if x is None and final_action in ("HOLD", "AVOID"):
                 continue
             q = quotes.get(cid)
@@ -417,12 +432,56 @@ class Pipeline:
         if missing_q:
             report.notes.append(f"sin cotización para {missing_q}: no se ejecuta rebalanceo simulado")
             return
-        trades = ledger.rebalance(s, self.portfolio_name, targets, quotes, rec_ids)
+        trades = ledger.rebalance(s, self.portfolio_name, targets, quotes, rec_ids, min_fraction=TRADE_EPS)
         report.trades = [{"symbol": t.symbol, "side": t.side, "qty": round(t.quantity, 4), "price": t.price,
                           "price_source": t.price_source, "price_time": t.price_time.isoformat()} for t in trades]
         ledger.mark_to_market(s, self.portfolio_name, self.ctx.decision_date, quotes)
 
     # ================================================================== helpers
+    def _no_trade_band(self, targets: dict[str, float], cur_w: dict[str, float], meta: dict[str, PositionMeta],
+                       unanalyzed: dict[str, float], notes_by: dict[str, list[str]]) -> dict[str, float]:
+        """Banda sin operación: un ajuste parcial de una posición existente menor a la banda (0.5% del NAV) no se
+        opera (se mantiene el peso actual). Las salidas totales y las entradas nuevas se operan siempre. La banda se
+        levanta, empezando por el ajuste más grande, cuando mantener el peso violaría la caja mínima o un tope."""
+        cfg = self.cfg["portfolio"]
+        band = ledger.min_trade_fraction()
+        out = dict(targets)
+        snapped = {k for k, w in targets.items() if k not in unanalyzed and w > 0 and cur_w.get(k, 0) > 0
+                   and abs(w - cur_w[k]) < band}
+        for k in snapped:
+            out[k] = cur_w[k]
+        up = {k for k in snapped if cur_w[k] > targets[k] + 1e-12}      # mantener SUBE el peso vs el objetivo
+
+        def violation() -> set[str] | None:
+            """Posiciones (con banda aplicada hacia arriba) que conviene liberar para cumplir; None si cumple."""
+            for k in up:
+                if out[k] > cfg["max_weight"] + 1e-9:
+                    return {k}
+            for key, cap in (("layer", cfg["max_weight_per_layer"]), ("primary_bottleneck", cfg["max_weight_per_bottleneck"])):
+                groups: dict[str, list[str]] = {}
+                for k in out:
+                    g = getattr(meta[k], key) if k in meta else None
+                    if g:
+                        groups.setdefault(g, []).append(k)
+                for g, ms in groups.items():
+                    if sum(out[k] for k in ms) > cap + 1e-9 and up & set(ms):
+                        return up & set(ms)
+            if sum(out.values()) > 1 - cfg["min_cash"] + 1e-9 and up:
+                return set(up)
+            return None
+
+        while (v := violation()) is not None:
+            k = max(v, key=lambda x: cur_w[x] - targets[x])
+            out[k] = targets[k]
+            up.discard(k)
+            notes_by.setdefault(k, []).append(f"{k}: ajuste menor a la banda de {band:.1%} igual se opera "
+                                              "(necesario para la caja mínima o un tope)")
+        for k in snapped:
+            if out[k] == cur_w[k] and abs(targets[k] - cur_w[k]) > TRADE_EPS:
+                notes_by.setdefault(k, []).append(f"{k}: ajuste {targets[k] - cur_w[k]:+.2%} menor a la banda de "
+                                                  f"{band:.1%}: no se opera")
+        return out
+
     def _quotes(self, companies: list[Company]) -> dict[str, ledger.Quote]:
         out = {}
         for c in companies:
@@ -566,8 +625,8 @@ class Pipeline:
             incomplete.append(f"K9: sin evaluación fundamental válida ({_status(d, 'fundamental')}): "
                               "going concern / financiamiento no evaluados")
         if d.scenarios is None:
-            incomplete.append(f"K9: sin escenarios de valuación válidos ({_status(d, 'valuation')}): "
-                              "K5/K6 no evaluables")
+            why = d.scenario_checks[-1] if d.scenario_checks else _status(d, "valuation")
+            incomplete.append(f"K9: sin escenarios de valuación válidos ({why}): K5/K6 no evaluables")
         if tier == "L3" and d.out("bear") is None:
             incomplete.append(f"K9: sin bear case ({_status(d, 'bear')})")
         if tier == "L3" and aud is None:
@@ -703,6 +762,9 @@ def _from_rubric(r: S.RubricScore) -> FactorScore:
     note = "" if score == r.score else f" [ajustado a la banda {r.rubric_band}]"
     return FactorScore(score=score, method="agent", rationale=r.rationale + note,
                        evidence=[e.source_url or e.claim[:120] for e in r.evidence], missing=r.missing_information)
+
+
+TRADE_EPS = 1e-4        # el comité ya aplicó la banda: por debajo de esto es ruido de redondeo
 
 
 def committee_reserve(n_candidates: int) -> float:

@@ -41,7 +41,11 @@ registro de bottlenecks (`data/bottlenecks/`): 21 bottlenecks con evidencia, con
    busca proveedores cotizantes que no estén en el universo.
 3. **Revisión** (`qa proposals --approve ID`). Las propuestas aprobadas se escriben a overlays
    (`map_overlay.yaml`, `discovered.yaml`) que los loaders combinan con la base curada. El YAML humano queda
-   limpio y cada cambio automático es auditable.
+   limpio y cada cambio automático es auditable. Antes de escribir, el cambio se simula con los loaders reales y
+   se rechaza si el mapa o el universo resultante tiene errores nuevos (tipos, nodo aislado, ciclo, ticker o
+   símbolo duplicado sin distinguir mayúsculas). Un nodo raíz se agrega con `feeds` (sus aristas salientes); las
+   claves descriptivas que el modelo no tiene pasan a `notes`; `layer` y `_*` están reservadas. La moneda de una
+   empresa descubierta sale de la bolsa (USD solo en bolsas con líneas en dólares, como LSE o TSX).
 
 La v0.1.1 ya incorporó así 2 nodos (MLCC, itrio/escandio) y 13 empresas (Murata, Technoprobe, AT&S, Kioxia,
 Nittobo, etc.) que salieron de la evidencia de bottlenecks.
