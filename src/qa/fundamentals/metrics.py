@@ -135,7 +135,7 @@ def _cluster_select(points: list[DataPoint]) -> tuple[list[DataPoint], dict[str,
                 same = sorted((x for x in cluster if x.source.name == best.source.name),
                               key=lambda x: x.known_at or date.min)
                 vals = {round(x.value, 6) for x in same if x.value is not None}
-                if len(vals) > 1:
+                if len(vals) > 1 and any(";material" in (x.note or "") for x in same):
                     best = best.model_copy(update={"note": ((best.note or "") + "; RE-EXPRESADO: vintages "
                                                             + ",".join(str(v) for v in sorted(vals))).lstrip("; ")})
                 out.append(best)
@@ -178,7 +178,7 @@ def select_points(points: list[DataPoint], as_of: date, f: Fundamentals) -> tupl
         sel = [p for p in sel if p.metric not in MONETARY or p.currency == main]
         f.currency = main
     for p in sel:
-        if p.note and ("RE-EXPRESADO" in p.note or "restates=" in p.note) and (as_of - p.known_at).days <= 730:
+        if p.note and ("RE-EXPRESADO" in p.note or ";material" in p.note) and (as_of - p.known_at).days <= 730:
             f.warnings.append(f"re-expresión: {p.metric} {p.period_type} {p.period_end} (vintage {p.known_at})")
     return sel, vint
 

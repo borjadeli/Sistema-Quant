@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from qa.bottlenecks import BottleneckRecord, company_bottlenecks, registry_as_of
 from qa.config import RESEARCH_DIR, settings
 from qa.db import repo
-from qa.db.schema import FeedEvent, as_utc
+from qa.db.schema import FeedEvent, Price, as_utc
 from qa.fundamentals.metrics import Fundamentals, compute_fundamentals
 from qa.map.model import IndustryMap
 from qa.universe.model import Company
@@ -59,13 +59,21 @@ def market_inputs(s: Session, c: Company, f: Fundamentals | None,
     shares = (f.v("diluted_shares") if f else None) or snap.shares_outstanding
     if not shares:
         return None
-    fx = 1.0
+    fx, src = 1.0, snap.source
     if f is not None and (f.currency is None or f.currency_conflict or snap.currency is None):
         return None     # moneda de reporte desconocida o mezclada: no se asume fx=1
     if f is not None and f.currency != snap.currency:
-        return None     # moneda de reporte != cotización: requiere FX explícito (no se asume)
+        # moneda de reporte != cotización: solo con un tipo de cambio EXPLÍCITO y vigente a la fecha del precio
+        from qa.providers.registry import fx_symbol  # noqa: PLC0415
+        sym = fx_symbol(f.currency, snap.currency)
+        snap_day = as_utc(snap.as_of).date()
+        row = s.execute(select(Price.date, Price.close, Price.source).where(Price.symbol == sym, Price.date <= snap_day)
+                        .order_by(Price.date.desc()).limit(1)).first()
+        if row is None or (snap_day - row[0]).days > 5 or not row[1]:
+            return None
+        fx, src = float(row[1]), f"{snap.source}; FX {f.currency}->{snap.currency} {row[1]:.4f} al {row[0]} ({row[2]})"
     return MarketInputs(price=snap.price, shares=shares, price_currency=snap.currency or c.currency,
-                        price_time=as_utc(snap.as_of).isoformat(), price_source=snap.source, fx_report_to_price=fx)
+                        price_time=as_utc(snap.as_of).isoformat(), price_source=src, fx_report_to_price=fx)
 
 
 def _clean(x):  # noqa: ANN001, ANN202

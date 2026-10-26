@@ -26,8 +26,12 @@
 4. Para L1+ hace falta `ANTHROPIC_API_KEY`. Antes de gastar, `qa estimate` y `qa funnel --dry-run`.
 
 ## Limitaciones conocidas
-- La cobertura XBRL de emisores extranjeros (20-F con IFRS) es parcial. La moneda de reporte puede diferir de la
-  de cotización: en ese caso el sistema **no valúa** hasta que exista un FX explícito (no se asume).
+- La cobertura XBRL de emisores extranjeros (20-F con IFRS) es parcial. Si la moneda de reporte difiere de la de
+  cotización (p.ej. CCJ: reporta en CAD, cotiza en USD), la ingesta guarda la serie de tipo de cambio de Yahoo
+  (`FX:CADUSD`) y la valuación usa el FX vigente a la fecha del precio, con su fuente; sin FX explícito no se valúa.
+- `companyfacts` de la SEC a veces tarda (o falla) en incorporar un filing ya presentado (en la primera ingesta real,
+  RMBS y AMKR: falta el 10-Q del 28-jul-2026). La ingesta lo compara contra el índice de presentaciones, lo avisa y
+  deja un evento `data_gap` en el feed; mientras tanto se usa el último balance disponible y la investigación semilla.
 - ADRs: el ratio ADR/acción subyacente (`adr_ratio`) no se obtiene automáticamente todavía.
 - yfinance puede cambiar o bloquearse; por eso todo queda etiquetado con fuente y timestamp.
 - Las cifras de `seed_companies_verified.json` (20/20 semillas investigadas) y de `bottlenecks_evidence.json` salieron

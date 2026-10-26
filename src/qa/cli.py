@@ -86,7 +86,7 @@ def cmd_ingest(args) -> None:  # noqa: ANN001
         if args.benchmarks:
             ingest_benchmarks(s, rep)
         nf = detect_new_filings(s, utc_today() - timedelta(days=30))
-        nr = detect_restatements(s, date.min)          # todas (deduplicadas): también backfills y re-expresiones viejas
+        nr = detect_restatements(s, utc_today() - timedelta(days=548))   # últimos ~18 meses (deduplicadas)
         npm = detect_price_moves(s)
     print(f"OK {len(rep.ok)} | con errores {len(rep.failed)} | feed: {nf} filings, {nr} re-expresiones, "
           f"{npm} movimientos de precio")
@@ -96,6 +96,10 @@ def cmd_ingest(args) -> None:  # noqa: ANN001
             print(f"  fila rechazada [{prov.name}]: {bad}")
     for cid, errs in list(rep.failed.items())[:40]:
         print(f"  {cid}: {errs}")
+    if rep.warnings:
+        print(f"Avisos de datos ({len(rep.warnings)} empresas):")
+        for cid, ws in list(rep.warnings.items())[:60]:
+            print(f"  {cid}: {'; '.join(ws)}")
 
 
 def cmd_estimate(args) -> None:  # noqa: ANN001

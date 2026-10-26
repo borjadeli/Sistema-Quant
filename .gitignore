@@ -6,3 +6,6 @@ data/runs/
 data/exports/
 .venv/
 data/demo_runs/
+data/*.sqlite-journal
+data/*.sqlite-wal
+data/*.sqlite-shm

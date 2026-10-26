@@ -853,3 +853,52 @@ def test_r4b_evidence_ranges_never_before_publication():
     assert _parse_evidence_date({"date": "2026-10-16 / 2026-10-19"})[0] == date(2026, 10, 19)
     assert known_date({"date": "2026-11 (approx.)"}, date(2026, 10, 21)) == date(2026, 11, 30)
     assert known_date({"date": "2026 (exact date not captured)"}, date(2026, 10, 21)) == date(2026, 10, 21)
+
+
+# ============================================================================ primera ingesta real (SEC)
+def test_real_concept_switch_is_not_a_restatement(session):
+    """Patrimonio sin minoritarios (concepto preferido) y luego con minoritarios en un comparativo: otra medida."""
+    raw = {"facts": {"us-gaap": {
+        "StockholdersEquity": {"units": {"USD": [fact(653, None, "2025-09-30", "2025-10-28")]}},
+        "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest": {"units": {"USD": [
+            fact(677, None, "2025-09-30", "2026-10-22", accn="B")]}},
+        "NetIncomeLoss": {"units": {"USD": [fact(100, "2026-01-01", "2026-03-31", "2026-05-01"),
+                                            fact(100.5, "2026-01-01", "2026-03-31", "2026-08-01", accn="C"),
+                                            fact(80, "2026-01-01", "2026-03-31", "2026-08-02", "10-Q/A", accn="D")]}}}}}
+    pts = parse_companyfacts(raw, "X", cik=1)
+    eq = [p for p in pts if p.metric == "equity"]
+    assert [p.value for p in eq] == [653]                       # el comparativo con minoritarios se ignora
+    ni = [p for p in pts if p.metric == "net_income"]
+    assert ";material" not in ni[1].note and ";material" in ni[2].note      # 0.5% no es material; /A sí
+    repo.upsert_datapoints(session, pts)
+    from qa.feed.events import detect_restatements
+    assert detect_restatements(session, date(2026, 1, 1)) == 1
+
+
+def test_real_explicit_fx_when_reporting_and_quote_currency_differ(session):
+    from qa.db.schema import Price
+    from qa.funnel.pack import market_inputs
+    c = Company(ticker="CCJ", name="Cameco", exchange="NYSE", country="CA", currency="USD", nodes=["uranium_mining"],
+                exposure=Exposure())
+    f = compute_fundamentals("CCJ", [dp("revenue", 3500, "2025-12-31", "FY", "2026-03-15", unit="CAD", ccy="CAD"),
+                                     dp("diluted_shares", 435, "2025-12-31", "FY", "2026-03-15", unit="shares", ccy=None)],
+                             as_of=date(2026, 10, 22))
+    session.add(MarketSnapshot(company_id="CCJ", as_of=datetime(2026, 10, 22, 20, tzinfo=timezone.utc), price=90.0,
+                               currency="USD", shares_outstanding=435e6, source="yahoo"))
+    session.flush()
+    assert market_inputs(session, c, f, date(2026, 10, 22)) is None            # sin FX explícito no se valúa
+    session.add(Price(symbol="FX:CADUSD", date=date(2026, 10, 22), close=0.72, currency="USD", source="yahoo"))
+    session.flush()
+    mk = market_inputs(session, c, f, date(2026, 10, 22))
+    assert mk.fx_report_to_price == 0.72 and "FX CAD->USD" in mk.price_source
+
+
+def test_real_companyfacts_gap_is_reported():
+    from qa.providers.sec_edgar import SecEdgarProvider
+    prov = SecEdgarProvider(user_agent="test")
+    sub = {"filings": {"recent": {"form": ["8-K", "10-Q", "10-Q"], "filingDate": ["2026-09-04", "2026-07-28", "2026-04-28"],
+                                  "reportDate": ["2026-08-31", "2026-06-30", "2026-03-31"]}}}
+    prov._get = lambda url: sub
+    pts = [dp("revenue", 1, "2026-03-31", "Q", "2026-04-28")]
+    assert "10-Q presentado el 2026-07-28" in prov._filing_gap(1, pts)
+    assert prov._filing_gap(1, pts + [dp("revenue", 1, "2026-06-30", "Q", "2026-07-28")]) is None

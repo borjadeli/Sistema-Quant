@@ -21,7 +21,10 @@ verification, source{name, url, document_type, published_at, retrieved_at}, know
   `analyst_prior`, `hypothesis` o `synthetic_test_data`.
 - **Vintages y re-expresiones.** Cada presentación que cambia el valor de un período es una fila nueva (vintage) con su
   propio `known_at` y la nota `restates=...`. Los comparativos idénticos no generan filas nuevas. Una decisión en t usa el
-  vintage más reciente con `known_at ≤ t`. Las re-expresiones generan un evento `restatement` en el feed.
+  vintage más reciente con `known_at ≤ t`. Solo es re-expresión un cambio en el MISMO concepto XBRL (o un re-etiquetado
+  al concepto preferido): otro concepto de menor prioridad es otra medida (p.ej. patrimonio con minoritarios en un
+  comparativo) y se ignora. Las re-expresiones **materiales** (cambio ≥ 2% o enmienda /A) de los últimos ~18 meses
+  generan un evento `restatement` en el feed.
 - **Proveedores editables** (CSV manual, investigación semilla, fixtures): cada fila guarda su `provider`. En cada
   ingesta el contenido actual del proveedor es la verdad para esa entidad: se borran las filas que ya no están, las que
   ahora se rechazan y las que cambiaron de fuente citada, aunque el lote quede vacío. Si un archivo no se pudo leer

@@ -31,6 +31,8 @@ from qa.universe.model import Company
 
 TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json"
+SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik:010d}.json"
+PERIODIC_FORMS = {"10-Q", "10-K", "20-F", "40-F", "10-Q/A", "10-K/A", "20-F/A", "40-F/A"}
 
 # métrica interna -> conceptos XBRL en orden de preferencia
 US_GAAP: dict[str, list[str]] = {
@@ -50,7 +52,7 @@ US_GAAP: dict[str, list[str]] = {
     "sbc": ["ShareBasedCompensation", "AllocatedShareBasedCompensationExpense"],
     "ocf": ["NetCashProvidedByUsedInOperatingActivities"],
     "capex": ["PaymentsToAcquirePropertyPlantAndEquipment", "PaymentsToAcquireProductiveAssets"],
-    "cash": ["CashAndCashEquivalentsAtCarryingValue"],
+    "cash": ["CashAndCashEquivalentsAtCarryingValue", "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents"],
     "short_term_investments": ["ShortTermInvestments", "MarketableSecuritiesCurrent",
                                "AvailableForSaleSecuritiesDebtSecuritiesCurrent"],
     "debt_total": ["LongTermDebt", "DebtInstrumentCarryingAmount"],
@@ -114,6 +116,7 @@ class SecEdgarProvider:
         self.timeout = settings()["providers"].get("request_timeout_s", 30)
         self._tickers: dict[str, int] | None = None
         self._last_call = 0.0
+        self.gaps: dict[str, str] = {}          # empresa -> filing presentado que companyfacts todavía no tiene
 
     # ------------------------------------------------------------------ http
     def _get(self, url: str) -> Any:
@@ -146,12 +149,41 @@ class SecEdgarProvider:
         if cik is None:
             raise ProviderUnavailable(f"{company.ticker}: sin CIK en SEC (¿no presenta en EDGAR?)")
         raw = self._get(FACTS_URL.format(cik=cik))
-        return parse_companyfacts(raw, company.id, cik)
+        pts = parse_companyfacts(raw, company.id, cik)
+        gap = self._filing_gap(cik, pts)
+        if gap:
+            self.gaps[company.id] = gap
+        return pts
+
+    def _filing_gap(self, cik: int, pts: list[DataPoint]) -> str | None:
+        """companyfacts a veces tarda (o falla) en incorporar un filing ya presentado: se compara contra el índice
+        de presentaciones para avisarlo en lugar de tomar datos viejos como los últimos."""
+        try:
+            recent = self._get(SUBMISSIONS_URL.format(cik=cik))["filings"]["recent"]
+        except (ProviderUnavailable, KeyError, TypeError):
+            return None
+        last = max((p.period_end for p in pts if p.metric != "shares_outstanding" and p.period_end), default=None)
+        for form, filed, period in zip(recent.get("form", []), recent.get("filingDate", []), recent.get("reportDate", [])):
+            if form in PERIODIC_FORMS and period:
+                rep_date = date.fromisoformat(period)
+                if last is None or (rep_date - last).days > 10:
+                    return (f"el XBRL de la SEC (companyfacts) no incluye el {form} presentado el {filed} (período "
+                            f"{period}); datos hasta {last}")
+                return None
+        return None
+
+
+MATERIAL_RESTATEMENT = 0.02      # cambio >= 2% del valor publicado (o una enmienda /A): re-expresión material
 
 
 def parse_companyfacts(raw: dict, entity: str, cik: int | None = None,
                        restatement_tolerance: float = 0.001) -> list[DataPoint]:
-    """Convierte el JSON companyfacts en DataPoints ORIGINALES (uno por vintage) con trazabilidad completa."""
+    """Convierte el JSON companyfacts en DataPoints ORIGINALES (uno por vintage) con trazabilidad completa.
+
+    Un valor distinto para un período ya publicado es una RE-EXPRESIÓN solo si viene del MISMO concepto XBRL
+    (`restates=`, con `material` si cambia >= 2% o es una enmienda /A). Otro concepto no es una re-expresión: es
+    otra medida (p.ej. patrimonio con minoritarios vs sin ellos, ProfitLoss vs NetIncomeLoss). Si es de menor
+    prioridad se ignora; si es de mayor prioridad o de otra taxonomía (IFRS -> US GAAP) es un vintage `retag=`."""
     facts = raw.get("facts", {})
     # (metric, ptype, end) -> {filed: (rank, row, taxonomy, concept, unit)}
     cands: dict[tuple, dict[date, tuple]] = {}
@@ -180,7 +212,7 @@ def parse_companyfacts(raw: dict, entity: str, cik: int | None = None,
                             slot[filed] = (rank, row, taxonomy, concept, unit)
     out: list[DataPoint] = []
     for (metric, ptype, end), by_filed in cands.items():
-        last_val, last_filed = None, None
+        last_val, last_filed, last_tc = None, None, None
         for filed in sorted(by_filed):
             rank, row, taxonomy, concept, unit = by_filed[filed]
             val = float(row["val"])
@@ -190,9 +222,18 @@ def parse_companyfacts(raw: dict, entity: str, cik: int | None = None,
                     continue                      # comparativo idéntico: no es un vintage nuevo
             note = f"rank={rank};concept={taxonomy}:{concept};accn={row.get('accn')}"
             if last_val is not None:
-                note += f";restates={last_val}@{last_filed}"
+                l_tax, l_rank, l_concept = last_tc
+                material = (abs(val - last_val) / max(abs(last_val), 1e-9) >= MATERIAL_RESTATEMENT
+                            or str(row.get("form", "")).endswith("/A"))
+                if (taxonomy, concept) == (l_tax, l_concept):
+                    note += f";restates={last_val}@{last_filed}" + (";material" if material else "")
+                elif taxonomy == l_tax and rank > l_rank:
+                    continue                      # otro concepto, de menor prioridad: otra medida, se ignora
+                else:                             # re-etiquetado al concepto preferido u otra taxonomía
+                    note += f";retag={l_tax}:{l_concept};restates={last_val}@{last_filed}" + \
+                        (";material" if material else "")
             out.append(_datapoint(entity, metric, ptype, end, val, unit, row, filed, cik, note))
-            last_val, last_filed = val, filed
+            last_val, last_filed, last_tc = val, filed, (taxonomy, rank, concept)
     return sorted(out, key=lambda p: (p.metric, p.period_end or date.min, p.known_at or date.min))
 
 

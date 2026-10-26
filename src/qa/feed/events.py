@@ -29,12 +29,16 @@ def detect_new_filings(s: Session, since: date) -> int:
 
 
 def detect_restatements(s: Session, since: date) -> int:
-    """Vintages nuevos (known_at >= since) que re-expresan un valor ya publicado: es una red flag a revisar."""
+    """Vintages nuevos (known_at >= since) que cambian de forma MATERIAL un valor ya publicado (cambio >= 2% o
+    enmienda /A), en el mismo concepto o re-etiquetado al concepto preferido: es una red flag a revisar. Otra medida
+    (concepto de menor prioridad) y los ajustes chicos no generan evento."""
     rows = s.scalars(select(DataPointRow).where(DataPointRow.known_at >= since, DataPointRow.kind == "original",
-                                                DataPointRow.note.contains("restates="))).all()
+                                                DataPointRow.note.contains("restates="),
+                                                DataPointRow.note.contains(";material"))).all()
     n = 0
     for r in rows:
-        title = f"Re-expresión: {r.metric} {r.period_type} {r.period_end}"
+        kind = "Re-etiquetado XBRL con otro valor (posible re-expresión)" if "retag=" in r.note else "Re-expresión"
+        title = f"{kind}: {r.metric} {r.period_type} {r.period_end}"
         exists = s.scalars(select(FeedEvent).where(FeedEvent.company_id == r.entity,
                                                    FeedEvent.event_type == "restatement",
                                                    FeedEvent.title == title, FeedEvent.event_date == r.known_at)).first()
