@@ -61,7 +61,11 @@ Promoción L2 → L3: `score ≥ 6.0`, los 8 mejores, más la cartera.
    cada llamada, así que un corte a mitad de corrida no lo borra del presupuesto mensual. Un stream cortado (error de
    transporte) o un Ctrl-C registran lo ya facturado, incluido el input del pedido cortado, y el embudo sigue con la
    próxima empresa.
-9. **Corridas incompletas.** Cada corrida queda en `pipeline_runs` (`running` → `completed`). El dashboard ignora
+9. **Banda sin operación (0.5% del NAV).** La aplica el comité, no el ledger: un ajuste parcial menor a la banda
+   no se opera (la recomendación dice HOLD), salvo que mantener el peso viole la caja mínima o un tope (posición,
+   capa, bottleneck); entonces se opera, empezando por el ajuste más grande. Las salidas totales y las entradas
+   nuevas se operan siempre. La acción de cada recomendación es exactamente la operación que se ejecuta.
+10. **Corridas incompletas.** Cada corrida queda en `pipeline_runs` (`running` → `completed`). El dashboard ignora
    scores, escenarios, discrepancias y recomendaciones de corridas que no terminaron, y el estado del embudo solo
    se escribe al final.
 

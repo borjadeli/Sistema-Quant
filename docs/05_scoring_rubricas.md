@@ -87,7 +87,8 @@ Un factor **no evaluado** (agente fallido u omitido) cuenta como 0 para los tope
 
 **K9 en una posición que ya está en cartera.** Un análisis incompleto (error del agente, presupuesto agotado,
 `--tiers` sin L3) no es evidencia negativa. Si los únicos bloqueos de una posición son K9, se mantiene con su peso
-actual como máximo (puede recortarse, nunca aumentarse) y se anota "revisar". Solo K1–K8 la llevan a 0.
+actual como máximo (puede recortarse, nunca aumentarse) y se anota "revisar". Solo K1–K8 la llevan a 0. El
+Portfolio Manager la ve como `eligible: "hold_only"` (con los K9 en `incomplete_analysis`), no como un kill switch.
 
 ## Alertas (no bloquean, se muestran y bajan la confianza)
 - dilución > 8% anual

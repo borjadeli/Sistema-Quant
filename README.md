@@ -25,7 +25,7 @@ la replicás manualmente. Nunca envía órdenes reales (`live_trading_enabled: f
   contra unos US$1.350 si se analizara todo en profundidad.
 - **Opciones**: calls con probabilidades risk-neutral y por escenarios, comparadas siempre contra comprar la acción.
 - **Cartera simulada** append-only, métricas vs SPY/QQQ/sectoriales y calibración (Brier).
-- **Dashboard** Streamlit, export a Excel/CSV y 142 tests (incluye las regresiones de cuatro rondas de revisión
+- **Dashboard** Streamlit, export a Excel/CSV y 150 tests (incluye las regresiones de cuatro rondas de revisión
   adversarial).
 
 ## Instalación

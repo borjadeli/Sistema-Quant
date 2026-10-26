@@ -106,3 +106,16 @@ Estado al 2026-10-21. ✅ hecho y verificado por tests · 🟡 implementado, fal
    - el dry-run no simulaba el control de presupuesto por cota (ahora sí, con las salidas previas embebidas y la
      reserva del comité, e informa el presupuesto necesario);
    - las fechas exactas de evidencia posteriores a la revisión del registro se adelantaban en los replays.
+   La segunda parte de la ronda (comité y datos/mapa) encontró y se corrigió (tests `test_r4b_*`):
+   - una salida total o una compra nueva menor a 0.5% del NAV nunca se operaba; la banda se aplicaba por posición
+     sin mirar la caja (podía dejar caja 0% o una posición sobre el tope): ahora la aplica el comité y cede ante
+     la caja mínima y los topes;
+   - el PM veía una posición con solo K9 como "kill switch" y su prompt le pedía venderla: ahora la ve
+     `hold_only`;
+   - la reserva del comité no se descontaba del presupuesto de las continuaciones `pause_turn`;
+   - un CSV con comillas sin cerrar o separador `;` (Excel en español) hacía que la reconciliación borrara todas
+     las filas manuales, y un archivo parcialmente ilegible borraba por el camino de compatibilidad: ahora son
+     errores de archivo y no se borra nada; ubicación exacta del error; fuentes reservadas rechazadas;
+   - propuestas del mapa: claves descriptivas extra, nodos raíz (`feeds`), USD en LSE/TSX, GBX y duplicados de
+     símbolo en minúsculas; rangos de fechas de evidencia entre meses/años y fechas parciales posteriores a la
+     revisión.
